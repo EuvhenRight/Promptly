@@ -57,35 +57,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
   useEffect(() => {
-    console.log('--- Admin Layout Auth Check ---');
-    console.log(`State: isUserLoading=${isUserLoading}, isProfileLoading=${isProfileLoading}`);
-    console.log('User:', user ? { uid: user.uid, email: user.email } : null);
-    console.log('Profile:', userProfile ? { role: userProfile.role, name: userProfile.displayName } : null);
-
-    // Wait until both authentication and profile loading are complete.
-    if (isUserLoading || isProfileLoading) {
-      console.log('Decision: Waiting for data to load...');
-      console.log('---------------------------------');
-      return;
+    const isDataLoading = isUserLoading || (user && isProfileLoading);
+    if (isDataLoading) {
+      return; // Wait until all data is loaded before making a decision
     }
 
-    // After loading, we can safely check the user's status and role.
+    // After all loading is complete, we can safely check the user's status and role.
     if (!user || !userProfile || userProfile.role !== 'admin') {
-      console.log(`Decision: Redirecting. Reason: user=${!!user}, profile=${!!userProfile}, role=${userProfile?.role}`);
-      console.log('---------------------------------');
       router.replace('/');
-    } else {
-      console.log('Decision: Access granted.');
-      console.log('---------------------------------');
     }
   }, [user, userProfile, isUserLoading, isProfileLoading, router]);
 
+  const isLoading = isUserLoading || (user && isProfileLoading);
+
   // Render loading indicators while data is being fetched.
-  if (isUserLoading || (user && isProfileLoading)) {
+  if (isLoading) {
     return <AdminLoader message={isUserLoading ? "Authenticating..." : "Verifying permissions..."} />;
   }
   
-  // Only render the admin panel if all checks have passed.
+  // Only render the admin panel if all checks have passed and we haven't been redirected.
   if (user && userProfile?.role === 'admin') {
     return (
         <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -140,6 +130,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  // In all other cases (e.g., redirecting), render nothing to avoid layout flicker.
+  // In all other cases (e.g., redirecting or not yet authorized), render nothing to avoid layout flicker.
   return null;
 }

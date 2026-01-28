@@ -86,33 +86,40 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
         if (firebaseUser) {
           // User is signed in. Ensure their Firestore document exists.
           const userDocRef = doc(firestore, 'users', firebaseUser.uid);
-          const userDocSnap = await getDoc(userDocRef);
+          
+          try {
+            const userDocSnap = await getDoc(userDocRef);
 
-          if (!userDocSnap.exists()) {
-            // This is a new user. Create their profile document in Firestore.
-            const newUserProfile: UserProfile = {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email ?? 'no-email@promptly.com',
-              displayName: firebaseUser.displayName ?? 'Anonymous User',
-              photoURL: firebaseUser.photoURL ?? '',
-              role: 'user', // Assign 'user' role by default
-              purchasedPrompts: [],
-            };
-            
-            // Non-blocking write. Errors are now properly emitted.
-            setDoc(userDocRef, newUserProfile).catch(error => {
-                // This will surface any permission errors to the developer overlay.
+            if (!userDocSnap.exists()) {
+              // This is a new user. Create their profile document in Firestore.
+              const newUserProfile: UserProfile = {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email ?? 'no-email@promptly.com',
+                displayName: firebaseUser.displayName ?? 'Anonymous User',
+                photoURL: firebaseUser.photoURL ?? '',
+                role: 'user', // Assign 'user' role by default
+                purchasedPrompts: [],
+              };
+              
+              // **CRITICAL FIX**: Await the setDoc to prevent race conditions.
+              // This ensures the user profile exists before the user state is set,
+              // which prevents downstream components from reading a non-existent profile.
+              await setDoc(userDocRef, newUserProfile);
+            }
+          } catch (error) {
+            console.error("FirebaseProvider: Error checking or creating user profile:", error);
+             if (error instanceof Error && 'code' in error && (error as any).code.includes('permission-denied')) {
                 errorEmitter.emit(
                     'permission-error',
                     new FirestorePermissionError({
                         path: userDocRef.path,
-                        operation: 'create',
-                        requestResourceData: newUserProfile,
+                        operation: 'get', // or 'create' depending on where it failed
                     })
                 );
-            });
+             }
           }
         }
+        // Now that the profile is guaranteed to exist (or we've tried to create it), set the auth state.
         setUserAuthState({ user: firebaseUser, isUserLoading: false, userError: null });
       },
       (error) => { // Auth listener error
