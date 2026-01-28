@@ -1,3 +1,5 @@
+'use client';
+
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { DUMMY_PROMPTS } from '@/lib/dummy-data';
@@ -5,13 +7,35 @@ import Image from 'next/image';
 import { placeholderImages } from '@/lib/dummy-data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DUMMY_CREATORS } from '@/lib/dummy-data';
-import { Star } from 'lucide-react';
+import { Star, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useUser, useFirestore } from '@/firebase';
+import { addPromptToCart } from '@/firebase/cart';
+import { useToast } from '@/hooks/use-toast';
 
 export default function PromptDetailPage({ params }: { params: { id: string } }) {
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const { toast } = useToast();
   const prompt = DUMMY_PROMPTS.find((p) => p.id === params.id);
   const author = DUMMY_CREATORS.find((c) => c.uid === prompt?.authorId);
+
+  const handleAddToCart = () => {
+    if (!user || !firestore || !prompt) {
+      toast({
+        variant: 'destructive',
+        title: 'Помилка',
+        description: 'Будь ласка, увійдіть, щоб додати товар у кошик.',
+      });
+      return;
+    }
+    addPromptToCart(firestore, user.uid, prompt.id);
+    toast({
+      title: 'Успіх!',
+      description: `"${prompt.title}" додано до вашого кошика.`,
+    });
+  };
 
   if (!prompt || !author) {
     return (
@@ -81,11 +105,17 @@ export default function PromptDetailPage({ params }: { params: { id: string } })
             <p className="text-muted-foreground">{prompt.description}</p>
 
             <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6 space-y-4">
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center gap-4">
                  <h2 className="text-2xl font-bold">{prompt.price === 0 ? 'Free' : `$${prompt.price.toFixed(2)}`}</h2>
-                 <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
-                    Buy Now
-                 </Button>
+                 <div className="flex items-center gap-2">
+                   <Button size="lg" variant="outline" onClick={handleAddToCart}>
+                      <ShoppingCart className="mr-2 h-5 w-5" />
+                      Додати в кошик
+                   </Button>
+                   <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
+                      Купити зараз
+                   </Button>
+                 </div>
               </div>
               <div className="p-8 bg-muted rounded-lg text-center relative">
                   <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center rounded-lg">
