@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
+import { PlusCircle } from "lucide-react";
 
 export default function AdminPromptsPage() {
     return (
@@ -8,7 +9,10 @@ export default function AdminPromptsPage() {
             <div className="flex items-center justify-between gap-4">
                 <h1 className="text-lg font-semibold md:text-2xl">Prompt Manager</h1>
                 <Button asChild>
-                    <Link href="/admin/prompts/new">Add New Prompt</Link>
+                    <Link href="/admin/prompts/new">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add New Prompt
+                    </Link>
                 </Button>
             </div>
             <Card>
