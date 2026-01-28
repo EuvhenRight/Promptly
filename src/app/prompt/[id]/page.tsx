@@ -1,5 +1,6 @@
 'use client';
 
+import { useParams } from 'next/navigation';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { DUMMY_PROMPTS } from '@/lib/dummy-data';
@@ -14,7 +15,8 @@ import { useUser, useFirestore } from '@/firebase';
 import { addPromptToCart } from '@/firebase/cart';
 import { useToast } from '@/hooks/use-toast';
 
-export default function PromptDetailPage({ params }: { params: { id: string } }) {
+export default function PromptDetailPage() {
+  const params = useParams<{ id: string }>();
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
