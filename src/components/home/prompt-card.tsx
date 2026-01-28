@@ -15,7 +15,7 @@ export default function PromptCard({ prompt }: PromptCardProps) {
   const promptImage = placeholderImages.find(p => p.id === prompt.images[0]);
 
   return (
-    <Card className="overflow-hidden break-inside-avoid shadow-md transition-shadow duration-300 hover:shadow-xl hover:shadow-primary/10">
+    <Card className="overflow-hidden break-inside-avoid shadow-md transition-all duration-300 hover:shadow-xl hover:shadow-primary/20 group">
       <CardHeader className="p-0">
         <div className="relative aspect-video">
           {promptImage && (
@@ -23,14 +23,14 @@ export default function PromptCard({ prompt }: PromptCardProps) {
                 src={promptImage.imageUrl}
                 alt={prompt.title}
                 fill
-                className="object-cover"
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
                 data-ai-hint={promptImage.imageHint}
              />
           )}
         </div>
       </CardHeader>
       <CardContent className="p-4">
-        <h3 className="font-headline text-lg font-semibold leading-tight truncate">{prompt.title}</h3>
+        <h3 className="font-headline text-lg font-semibold leading-tight truncate group-hover:text-primary transition-colors">{prompt.title}</h3>
         {author && (
           <div className="mt-2 flex items-center gap-2">
             <Avatar className="h-6 w-6">
