@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { doc } from 'firebase/firestore';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { signOutUser } from '@/firebase/auth';
 import type { UserProfile } from '@/lib/types';
 import { Bot, Home, FileText, Users, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -50,21 +51,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const userProfileRef = useMemoFirebase(
     () => (user ? doc(firestore, 'users', user.uid) : null),
-    [firestore, user]
+    [firestore, user?.uid] // More stable dependency
   );
   
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
   useEffect(() => {
+    console.log('--- Admin Layout Auth Check ---');
+    console.log(`State: isUserLoading=${isUserLoading}, isProfileLoading=${isProfileLoading}`);
+    console.log('User:', user ? { uid: user.uid, email: user.email } : null);
+    console.log('Profile:', userProfile ? { role: userProfile.role, name: userProfile.displayName } : null);
+
     // Wait until both authentication and profile loading are complete.
     if (isUserLoading || isProfileLoading) {
+      console.log('Decision: Waiting for data to load...');
+      console.log('---------------------------------');
       return;
     }
 
     // After loading, we can safely check the user's status and role.
     if (!user || !userProfile || userProfile.role !== 'admin') {
-      // If there's no user, no profile, or the role is not 'admin', redirect.
+      console.log(`Decision: Redirecting. Reason: user=${!!user}, profile=${!!userProfile}, role=${userProfile?.role}`);
+      console.log('---------------------------------');
       router.replace('/');
+    } else {
+      console.log('Decision: Access granted.');
+      console.log('---------------------------------');
     }
   }, [user, userProfile, isUserLoading, isProfileLoading, router]);
 
