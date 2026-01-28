@@ -27,15 +27,15 @@ export default function PromptDetailPage() {
     if (!user || !firestore || !prompt) {
       toast({
         variant: 'destructive',
-        title: 'Помилка',
-        description: 'Будь ласка, увійдіть, щоб додати товар у кошик.',
+        title: 'Error',
+        description: 'Please sign in to add items to your cart.',
       });
       return;
     }
     addPromptToCart(firestore, user.uid, prompt.id);
     toast({
-      title: 'Успіх!',
-      description: `"${prompt.title}" додано до вашого кошика.`,
+      title: 'Success!',
+      description: `"${prompt.title}" has been added to your cart.`,
     });
   };
 
@@ -107,15 +107,15 @@ export default function PromptDetailPage() {
             <p className="text-muted-foreground">{prompt.description}</p>
 
             <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6 space-y-4">
-              <div className="flex justify-between items-center gap-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
                  <h2 className="text-2xl font-bold">{prompt.price === 0 ? 'Free' : `$${prompt.price.toFixed(2)}`}</h2>
-                 <div className="flex items-center gap-2">
-                   <Button size="lg" variant="outline" onClick={handleAddToCart}>
+                 <div className="flex flex-grow justify-end items-center gap-2 sm:flex-grow-0">
+                   <Button size="lg" variant="outline" onClick={handleAddToCart} className="flex-1 sm:flex-initial">
                       <ShoppingCart className="mr-2 h-5 w-5" />
-                      Додати в кошик
+                      Add to Cart
                    </Button>
-                   <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
-                      Купити зараз
+                   <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 flex-1 sm:flex-initial">
+                      Buy Now
                    </Button>
                  </div>
               </div>

@@ -39,11 +39,11 @@ export default function CartPage() {
 
   const renderContent = () => {
     if (isLoading) {
-      return <p>Завантаження кошика...</p>;
+      return <p>Loading your cart...</p>;
     }
 
     if (!cart || cartItems.length === 0) {
-      return <p>Ваш кошик порожній.</p>;
+      return <p>Your cart is empty.</p>;
     }
 
     return (
@@ -82,25 +82,25 @@ export default function CartPage() {
         <div className="lg:col-span-1">
           <Card>
             <CardHeader>
-              <CardTitle>Підсумок</CardTitle>
+              <CardTitle>Summary</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between">
-                <span>Проміжний підсумок</span>
+                <span>Subtotal</span>
                 <span>${subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Податок</span>
+                <span>Tax</span>
                 <span>${tax.toFixed(2)}</span>
               </div>
               <Separator />
               <div className="flex justify-between font-bold text-lg">
-                <span>Всього</span>
+                <span>Total</span>
                 <span>${total.toFixed(2)}</span>
               </div>
             </CardContent>
             <CardFooter>
-              <Button size="lg" className="w-full">Перейти до оплати</Button>
+              <Button size="lg" className="w-full">Proceed to Checkout</Button>
             </CardFooter>
           </Card>
         </div>
@@ -113,7 +113,7 @@ export default function CartPage() {
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="flex-grow container mx-auto px-4 py-8">
-        <h1 className="font-headline text-3xl md:text-4xl font-bold mb-8">Ваш кошик</h1>
+        <h1 className="font-headline text-3xl md:text-4xl font-bold mb-8">Your Cart</h1>
         {renderContent()}
       </main>
       <Footer />

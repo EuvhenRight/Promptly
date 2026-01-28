@@ -16,7 +16,7 @@ const fontSpaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: 'PromptVerse',
+  title: 'Promptly',
   description: 'A marketplace for the best AI prompts.',
 };
 

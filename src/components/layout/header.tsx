@@ -61,7 +61,7 @@ export default function Header() {
         <div className="mr-4 hidden items-center md:flex">
           <Link href="/" className="flex items-center gap-2">
             <Bot className="h-6 w-6 text-primary" />
-            <span className="font-headline text-xl font-bold">PromptVerse</span>
+            <span className="font-headline text-xl font-bold">Promptly</span>
           </Link>
         </div>
 
@@ -79,7 +79,7 @@ export default function Header() {
                   <Link href="/" className="flex items-center gap-2">
                     <Bot className="h-6 w-6 text-primary" />
                     <span className="font-headline text-xl font-bold">
-                      PromptVerse
+                      Promptly
                     </span>
                   </Link>
                 </SheetTitle>
