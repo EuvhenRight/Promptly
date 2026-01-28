@@ -56,38 +56,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
   useEffect(() => {
-    // Don't do anything until auth state is fully resolved.
-    if (isUserLoading) {
+    // Wait until both authentication and profile loading are complete.
+    if (isUserLoading || isProfileLoading) {
       return;
     }
-    
-    // If auth is resolved and there's no user, they can't be an admin.
-    if (!user) {
-        router.replace('/');
-        return;
-    }
 
-    // If we have a user, wait until their profile is fetched.
-    if (isProfileLoading) {
-        return;
-    }
-
-    // Once profile is loaded, check the role.
-    // If there's no profile or the role is not 'admin', redirect.
-    if (!userProfile || userProfile.role !== 'admin') {
-        router.replace('/');
+    // After loading, we can safely check the user's status and role.
+    if (!user || !userProfile || userProfile.role !== 'admin') {
+      // If there's no user, no profile, or the role is not 'admin', redirect.
+      router.replace('/');
     }
   }, [user, userProfile, isUserLoading, isProfileLoading, router]);
 
-  // Render loading indicators based on the current state
-  if (isUserLoading) {
-    return <AdminLoader message="Authenticating..." />;
+  // Render loading indicators while data is being fetched.
+  if (isUserLoading || (user && isProfileLoading)) {
+    return <AdminLoader message={isUserLoading ? "Authenticating..." : "Verifying permissions..."} />;
   }
   
-  if (user && isProfileLoading) {
-    return <AdminLoader message="Verifying permissions..." />;
-  }
-
   // Only render the admin panel if all checks have passed.
   if (user && userProfile?.role === 'admin') {
     return (
@@ -128,7 +113,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => router.push('/')}>Back to App</DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => router.push('/')}>Logout</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          signOutUser()
+                          router.push('/')
+                        }}>Logout</DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
              </header>
@@ -140,6 +128,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  // In all other cases (e.g., redirecting), render nothing.
+  // In all other cases (e.g., redirecting), render nothing to avoid layout flicker.
   return null;
 }
