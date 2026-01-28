@@ -99,9 +99,6 @@ export default function Header() {
                 <div className="mt-8 flex flex-col gap-4">
                   <nav className="mt-4 flex flex-col gap-2">
                     <Button variant="ghost" asChild className="justify-start">
-                      <Link href="#">Academy</Link>
-                    </Button>
-                    <Button variant="ghost" asChild className="justify-start">
                       <Link href="#">Pricing</Link>
                     </Button>
                     <Button variant="ghost" asChild className="justify-start">
@@ -115,7 +112,6 @@ export default function Header() {
 
         <div className="hidden md:flex items-center gap-6 ml-10">
            <nav className="flex items-center gap-6 text-sm">
-             <Link href="#" className="transition-colors hover:text-foreground/80 text-foreground/60 font-medium">Academy</Link>
              <Link href="#" className="transition-colors hover:text-foreground/80 text-foreground/60 font-medium">Pricing</Link>
              <Link href="#" className="transition-colors hover:text-foreground/80 text-foreground/60 font-medium">Community</Link>
            </nav>
