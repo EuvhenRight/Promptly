@@ -11,7 +11,13 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 
 export default function Header() {
   return (
@@ -33,28 +39,36 @@ export default function Header() {
               </Button>
             </SheetTrigger>
             <SheetContent side="left">
-              <div className="flex flex-col gap-4 p-4">
-                <Link href="/" className="flex items-center gap-2">
-                  <Bot className="h-6 w-6 text-primary" />
-                  <span className="font-headline text-xl font-bold">
-                    PromptVerse
-                  </span>
-                </Link>
-                <nav className="flex flex-col gap-2">
-                  <Button variant="ghost" className="justify-start">Categories</Button>
-                  <Button variant="ghost" className="justify-start">Explore</Button>
-                  <Button variant="ghost" className="justify-start">Top Creators</Button>
-                </nav>
-              </div>
+              <SheetHeader>
+                <SheetTitle>
+                  <Link href="/" className="flex items-center gap-2">
+                    <Bot className="h-6 w-6 text-primary" />
+                    <span className="font-headline text-xl font-bold">
+                      PromptVerse
+                    </span>
+                  </Link>
+                </SheetTitle>
+              </SheetHeader>
+              <nav className="flex flex-col gap-2">
+                <Button variant="ghost" className="justify-start">
+                  Categories
+                </Button>
+                <Button variant="ghost" className="justify-start">
+                  Explore
+                </Button>
+                <Button variant="ghost" className="justify-start">
+                  Top Creators
+                </Button>
+              </nav>
             </SheetContent>
           </Sheet>
         </div>
 
         <div className="flex flex-1 items-center justify-center md:justify-start">
-            <div className="relative w-full max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search prompts..." className="pl-10" />
-            </div>
+          <div className="relative w-full max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search prompts..." className="pl-10" />
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
