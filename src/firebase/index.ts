@@ -25,9 +25,9 @@ export function initializeFirebase() {
   } else {
     // Development environment
     if (!firebaseConfig.apiKey) {
-        console.error(
-          'Firebase API Key is missing. Please make sure your .env.local file is set up correctly with the NEXT_PUBLIC_FIREBASE_API_KEY variable. You may need to restart your development server after creating or updating the .env.local file.'
-        );
+      throw new Error(
+        'Firebase API Key is missing. Please create a `.env.local` file in the root of your project and add your Firebase project configuration. You can find these keys in your Firebase project settings. Example: NEXT_PUBLIC_FIREBASE_API_KEY="AIza..."\n\nAfter creating the file, you MUST restart your development server.'
+      );
     }
     firebaseApp = initializeApp(firebaseConfig);
   }
