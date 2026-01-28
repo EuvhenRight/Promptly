@@ -2,11 +2,10 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { placeholderImages, DUMMY_CREATORS } from '@/lib/dummy-data';
+import { placeholderImages } from '@/lib/dummy-data';
 import type { Prompt } from '@/lib/types';
 import { Heart, Eye, ShoppingCart } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 type PromptCardProps = {
   prompt: Prompt;
@@ -19,7 +18,6 @@ const formatStat = (num: number): string => {
 };
 
 export default function PromptCard({ prompt }: PromptCardProps) {
-  const author = DUMMY_CREATORS.find((c) => c.uid === prompt.authorId);
   const promptImage = placeholderImages.find(p => p.id === prompt.images[0]);
 
   const handleLike = (e: React.MouseEvent) => {
@@ -46,7 +44,7 @@ export default function PromptCard({ prompt }: PromptCardProps) {
             </Link>
 
             {/* Overlay with gradient and content. pointer-events-none lets clicks pass through to the Link */}
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                 <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
                     <h3 className="font-bold text-base leading-tight truncate">{prompt.title}</h3>
                     {prompt.stats && (
@@ -80,17 +78,6 @@ export default function PromptCard({ prompt }: PromptCardProps) {
                 <Heart className="h-5 w-5" />
             </button>
         </div>
-        
-        {/* Author info below the image */}
-        {author && (
-            <div className="mt-3 flex items-center gap-2">
-                <Avatar className="h-6 w-6">
-                    <AvatarImage src={author.photoURL} alt={author.displayName} />
-                    <AvatarFallback>{author.displayName?.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <span className="text-sm font-medium text-foreground">{author.displayName}</span>
-            </div>
-        )}
     </div>
   );
 }
