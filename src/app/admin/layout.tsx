@@ -1,13 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { doc } from 'firebase/firestore';
-import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { signOutUser } from '@/firebase/auth';
-import type { UserProfile } from '@/lib/types';
-import { Bot, Home, FileText, Users, Loader2 } from 'lucide-react';
+import { useUser } from '@/firebase';
+import { signInWithGoogle, signOutUser } from '@/firebase/auth';
+import { Bot, Home, FileText, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -34,72 +31,62 @@ function AdminNavLink({ href, children, icon: Icon }: { href: string, children: 
     )
 }
 
-function AdminLoader({ message }: { message: string }) {
-    return (
-        <div className="flex h-screen items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="ml-3 text-lg">{message}</p>
-        </div>
-    )
-}
+const GoogleIcon = () => (
+  <svg viewBox="0 0 48" className="h-5 w-5">
+    <path
+      fill="#FFC107"
+      d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039L38.802 8.922C34.962 5.518 29.8 3.5 24 3.5C11.31 3.5 1.5 13.31 1.5 26S11.31 48.5 24 48.5c11.438 0 20.286-8.38 21.6-19.199l.011-.217z"
+    />
+    <path
+      fill="#FF3D00"
+      d="M6.306 14.691c2.242-2.85 5.484-4.691 9.194-4.691c3.059 0 5.842 1.154 7.961 3.039L29.263 12.2C25.423 8.796 20.262 6.5 15.5 6.5C9.933 6.5 4.952 9.658 1.453 14.168L6.306 14.691z"
+    />
+    <path
+      fill="#4CAF50"
+      d="M24 48.5c5.757 0 10.938-2.117 14.7-5.571L32.5 36.93C30.01 39.205 27.205 40.5 24 40.5c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l6.04-6.04C34.963 5.518 29.802 3.5 24 3.5c-12.69 0-22.5 9.81-22.5 22.5S11.31 48.5 24 48.5z"
+    />
+    <path
+      fill="#1976D2"
+      d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039L38.802 8.922C34.962 5.518 29.8 3.5 24 3.5C11.31 3.5 1.5 13.31 1.5 26S11.31 48.5 24 48.5c11.438 0 20.286-8.38 21.6-19.199l.011-.217z"
+    />
+  </svg>
+);
 
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
-  const firestore = useFirestore();
   const router = useRouter();
 
-  const userProfileRef = useMemoFirebase(
-    () => (user ? doc(firestore, 'users', user.uid) : null),
-    [firestore, user?.uid] // More stable dependency
-  );
-  
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
+  // NOTE: The admin access check has been temporarily disabled for development.
+  // The layout will render for all users, regardless of their role.
+  // To re-enable protection, the original logic for checking user roles
+  // should be restored here.
 
-  useEffect(() => {
-    const isDataLoading = isUserLoading || (user && isProfileLoading);
-    if (isDataLoading) {
-      return; // Wait until all data is loaded before making a decision
-    }
-
-    // After all loading is complete, we can safely check the user's status and role.
-    if (!user || !userProfile || userProfile.role !== 'admin') {
-      router.replace('/');
-    }
-  }, [user, userProfile, isUserLoading, isProfileLoading, router]);
-
-  const isLoading = isUserLoading || (user && isProfileLoading);
-
-  // Render loading indicators while data is being fetched.
-  if (isLoading) {
-    return <AdminLoader message={isUserLoading ? "Authenticating..." : "Verifying permissions..."} />;
-  }
-  
-  // Only render the admin panel if all checks have passed and we haven't been redirected.
-  if (user && userProfile?.role === 'admin') {
-    return (
-        <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-          <div className="hidden border-r bg-muted/40 md:block">
-            <div className="flex h-full max-h-screen flex-col gap-2">
-              <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-                <Link href="/admin" className="flex items-center gap-2 font-semibold">
-                  <Bot className="h-6 w-6 text-primary" />
-                  <span className="">Promptly Admin</span>
-                </Link>
-              </div>
-              <div className="flex-1">
-                <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-                  <AdminNavLink href="/admin" icon={Home}>Dashboard</AdminNavLink>
-                  <AdminNavLink href="/admin/prompts" icon={FileText}>Prompts</AdminNavLink>
-                  <AdminNavLink href="/admin/users" icon={Users}>Users</AdminNavLink>
-                </nav>
-              </div>
+  return (
+      <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+        <div className="hidden border-r bg-muted/40 md:block">
+          <div className="flex h-full max-h-screen flex-col gap-2">
+            <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+              <Link href="/admin" className="flex items-center gap-2 font-semibold">
+                <Bot className="h-6 w-6 text-primary" />
+                <span className="">Promptly Admin</span>
+              </Link>
+            </div>
+            <div className="flex-1">
+              <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+                <AdminNavLink href="/admin" icon={Home}>Dashboard</AdminNavLink>
+                <AdminNavLink href="/admin/prompts" icon={FileText}>Prompts</AdminNavLink>
+                <AdminNavLink href="/admin/users" icon={Users}>Users</AdminNavLink>
+              </nav>
             </div>
           </div>
-          <div className="flex flex-col">
-             <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
-                {/* Mobile Nav could go here */}
-                <div className="w-full flex-1" />
+        </div>
+        <div className="flex flex-col">
+           <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
+              <div className="w-full flex-1" />
+              {isUserLoading ? (
+                <div className="h-10 w-24 animate-pulse rounded-md bg-muted" />
+              ) : user ? (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="secondary" size="icon" className="rounded-full">
@@ -121,15 +108,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         }}>Logout</DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
-             </header>
-            <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-              {children}
-            </main>
-          </div>
+              ) : (
+                <Button onClick={signInWithGoogle}>
+                  <GoogleIcon />
+                  Sign In with Google
+                </Button>
+              )}
+           </header>
+          <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
+            {children}
+          </main>
         </div>
-    );
-  }
-
-  // In all other cases (e.g., redirecting or not yet authorized), render nothing to avoid layout flicker.
-  return null;
+      </div>
+  );
 }
