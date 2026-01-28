@@ -33,6 +33,16 @@ function AdminNavLink({ href, children, icon: Icon }: { href: string, children: 
     )
 }
 
+function AdminLoader({ message }: { message: string }) {
+    return (
+        <div className="flex h-screen items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="ml-3 text-lg">{message}</p>
+        </div>
+    )
+}
+
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
@@ -46,28 +56,40 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
   useEffect(() => {
-    const isLoading = isUserLoading || isProfileLoading;
-    if (isLoading) {
-      return; // Still checking, wait.
+    // Don't do anything until auth state is fully resolved.
+    if (isUserLoading) {
+      return;
+    }
+    
+    // If auth is resolved and there's no user, they can't be an admin.
+    if (!user) {
+        router.replace('/');
+        return;
     }
 
-    if (!user || userProfile?.role !== 'admin') {
-      router.replace('/'); // Redirect to home if not logged in or not an admin
+    // If we have a user, wait until their profile is fetched.
+    if (isProfileLoading) {
+        return;
+    }
+
+    // Once profile is loaded, check the role.
+    // If there's no profile or the role is not 'admin', redirect.
+    if (!userProfile || userProfile.role !== 'admin') {
+        router.replace('/');
     }
   }, [user, userProfile, isUserLoading, isProfileLoading, router]);
 
-  const isLoading = isUserLoading || isProfileLoading;
-
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="ml-3 text-lg">Verifying access...</p>
-      </div>
-    );
+  // Render loading indicators based on the current state
+  if (isUserLoading) {
+    return <AdminLoader message="Authenticating..." />;
+  }
+  
+  if (user && isProfileLoading) {
+    return <AdminLoader message="Verifying permissions..." />;
   }
 
-  if (userProfile?.role === 'admin' && user) {
+  // Only render the admin panel if all checks have passed.
+  if (user && userProfile?.role === 'admin') {
     return (
         <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
           <div className="hidden border-r bg-muted/40 md:block">
@@ -118,6 +140,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  // Fallback for the brief moment before redirect, or if role is not admin
+  // In all other cases (e.g., redirecting), render nothing.
   return null;
 }
