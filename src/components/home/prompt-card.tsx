@@ -19,16 +19,9 @@ const formatStat = (num: number): string => {
 
 export default function PromptCard({ prompt }: PromptCardProps) {
   const promptImage = placeholderImages.find(p => p.id === prompt.images[0]);
-
-  const handleLike = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // Later, you can add state management or a server action for liking
-    console.log("Liked prompt:", prompt.id);
-  };
   
   return (
-    <div className="mb-4 break-inside-avoid">
+    <div>
         <div className="group relative w-full overflow-hidden rounded-2xl bg-card">
             <Link href={`/prompt/${prompt.id}`} className="block cursor-pointer">
                 {promptImage && (
@@ -71,7 +64,6 @@ export default function PromptCard({ prompt }: PromptCardProps) {
 
             {/* Like button - positioned over the card, becomes interactive on hover */}
             <button 
-                onClick={handleLike}
                 className="absolute top-3 right-3 z-10 rounded-full bg-black/30 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/50 opacity-0 group-hover:opacity-100"
                 aria-label="Like prompt"
             >

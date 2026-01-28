@@ -66,3 +66,22 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  /* Custom styles for react-masonry-css */
+  .prompt-feed-grid {
+    display: flex;
+    margin-left: -1rem; /* gutter size offset (16px) */
+    width: auto;
+  }
+  
+  .prompt-feed-grid_column {
+    padding-left: 1rem; /* gutter size (16px) */
+    background-clip: padding-box;
+  }
+
+  /* Each item in a column */
+  .prompt-feed-grid_column > div {
+    margin-bottom: 1rem; /* vertical gap (16px) */
+  }
+}
