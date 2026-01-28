@@ -37,6 +37,11 @@ export type Prompt = {
   };
   tags: string[];
   categories: string[];
+  stats?: {
+    views: number;
+    sales: number;
+    likes: number;
+  };
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 };

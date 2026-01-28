@@ -1,29 +1,8 @@
-export type Prompt = {
-  id: string;
-  authorId: string;
-  title: string;
-  description: string;
-  price: number;
-  images: string[];
-  rating: {
-    average: number;
-    count: number;
-  };
-  tags: string[];
-};
+import type { Prompt as PromptType, UserProfile } from './types';
 
-export type Creator = {
-  uid: string;
-  displayName: string;
-  avatarUrl: string;
-  isSeller: boolean;
-  stats: {
-    totalSales: number;
-    monthlySales: number;
-    weeklySales: number;
-    reputation: number;
-  };
-};
+export type Prompt = PromptType;
+
+export type Creator = UserProfile;
 
 export type FilterOption = {
   id: string;
@@ -40,6 +19,8 @@ export const DUMMY_PROMPTS: Prompt[] = [
     images: ['prompt-1-img'],
     rating: { average: 4.8, count: 124 },
     tags: ['cyberpunk', 'cityscape', 'sci-fi'],
+    categories: ['Midjourney'],
+    stats: { views: 12500, sales: 312, likes: 2300 },
   },
   {
     id: '2',
@@ -50,6 +31,8 @@ export const DUMMY_PROMPTS: Prompt[] = [
     images: ['prompt-2-img'],
     rating: { average: 4.9, count: 256 },
     tags: ['fantasy', 'creature', 'forest'],
+    categories: ['Stable Diffusion'],
+    stats: { views: 22100, sales: 540, likes: 4100 },
   },
   {
     id: '3',
@@ -60,6 +43,8 @@ export const DUMMY_PROMPTS: Prompt[] = [
     images: ['prompt-3-img'],
     rating: { average: 4.7, count: 88 },
     tags: ['portrait', 'photorealistic', 'human'],
+    categories: ['FLUX'],
+    stats: { views: 8900, sales: 120, likes: 980 },
   },
   {
     id: '4',
@@ -70,6 +55,8 @@ export const DUMMY_PROMPTS: Prompt[] = [
     images: ['prompt-4-img'],
     rating: { average: 4.6, count: 312 },
     tags: ['anime', 'vintage', '90s'],
+    categories: ['ChatGPT Image'],
+    stats: { views: 35200, sales: 0, likes: 6200 },
   },
   {
     id: '5',
@@ -80,6 +67,8 @@ export const DUMMY_PROMPTS: Prompt[] = [
     images: ['prompt-5-img'],
     rating: { average: 4.8, count: 95 },
     tags: ['abstract', 'fluid', 'art'],
+    categories: ['Midjourney'],
+    stats: { views: 7600, sales: 88, likes: 1100 },
   },
   {
     id: '6',
@@ -90,42 +79,54 @@ export const DUMMY_PROMPTS: Prompt[] = [
     images: ['prompt-6-img'],
     rating: { average: 4.7, count: 150 },
     tags: ['steampunk', 'invention', 'mechanical'],
+    categories: ['SDXL'],
+    stats: { views: 18400, sales: 250, likes: 2900 },
   },
 ];
 
 export const DUMMY_CREATORS: Creator[] = [
   {
     uid: '1',
+    email: 'pixel@forge.com',
     displayName: 'PixelForge',
-    avatarUrl: 'https://picsum.photos/seed/1/40/40',
+    photoURL: 'https://picsum.photos/seed/1/40/40',
+    role: 'user',
     isSeller: true,
     stats: { totalSales: 56200, monthlySales: 4300, weeklySales: 950, reputation: 99 },
   },
   {
     uid: '2',
+    email: 'artisan@ai.com',
     displayName: 'ArtisanAI',
-    avatarUrl: 'https://picsum.photos/seed/2/40/40',
+    photoURL: 'https://picsum.photos/seed/2/40/40',
+    role: 'user',
     isSeller: true,
     stats: { totalSales: 78000, monthlySales: 5100, weeklySales: 1200, reputation: 98 },
   },
   {
     uid: '3',
+    email: 'dream@weaver.com',
     displayName: 'DreamWeaver',
-    avatarUrl: 'https://picsum.photos/seed/3/40/40',
+    photoURL: 'https://picsum.photos/seed/3/40/40',
+    role: 'user',
     isSeller: true,
     stats: { totalSales: 41500, monthlySales: 3200, weeklySales: 750, reputation: 97 },
   },
   {
     uid: '4',
+    email: 'synth@sprite.com',
     displayName: 'SynthSprite',
-    avatarUrl: 'https://picsum.photos/seed/4/40/40',
+    photoURL: 'https://picsum.photos/seed/4/40/40',
+    role: 'user',
     isSeller: true,
     stats: { totalSales: 25000, monthlySales: 2800, weeklySales: 600, reputation: 95 },
   },
     {
     uid: '5',
+    email: 'giga@prompt.com',
     displayName: 'GigaPrompt',
-    avatarUrl: 'https://picsum.photos/seed/5/40/40',
+    photoURL: 'https://picsum.photos/seed/5/40/40',
+    role: 'user',
     isSeller: true,
     stats: { totalSales: 18500, monthlySales: 1900, weeklySales: 450, reputation: 96 },
   },

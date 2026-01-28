@@ -1,14 +1,11 @@
 import { DUMMY_PROMPTS } from '@/lib/dummy-data';
 import PromptCard from './prompt-card';
-import Link from 'next/link';
 
 export default function PromptFeed() {
   return (
-    <div className="columns-1 gap-5 space-y-5 md:columns-2 lg:columns-3 xl:columns-4">
+    <div className="columns-2 md:columns-3 lg:columns-4 2xl:columns-5 gap-4 space-y-4">
       {DUMMY_PROMPTS.map((prompt) => (
-        <Link key={prompt.id} href={`/prompt/${prompt.id}`} className="block">
-          <PromptCard prompt={prompt} />
-        </Link>
+        <PromptCard key={prompt.id} prompt={prompt} />
       ))}
     </div>
   );
