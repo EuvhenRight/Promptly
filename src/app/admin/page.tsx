@@ -1,8 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useFirestore } from '@/firebase';
-import { useCollection, useMemoFirebase } from '@/firebase/firestore/use-collection';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Prompt, UserProfile } from '@/lib/types';
 import { collection, query } from 'firebase/firestore';
 import { Users, FileText, DollarSign, Loader2 } from 'lucide-react';
