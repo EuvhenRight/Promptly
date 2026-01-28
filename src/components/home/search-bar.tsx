@@ -4,15 +4,40 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 
-export default function SearchBar() {
+interface SearchBarProps {
+  activeFilter: string;
+}
+
+const mockData: { [key: string]: { title: string; results: string } } = {
+  Featured: { title: 'Featured Prompts', results: '2.7k' },
+  Hot: { title: 'Hot Prompts', results: '15.1k' },
+  New: { title: 'New Prompts', results: '534k' },
+  Top: { title: 'Top Prompts', results: '1.2M' },
+  Video: { title: 'Video Prompts', results: '450' },
+  'ChatGPT Image': { title: 'ChatGPT Image Prompts', results: '1.2k' },
+  Midjourney: { title: 'Midjourney Prompts', results: '8.8k' },
+  FLUX: { title: 'FLUX Prompts', results: '180' },
+  Sora: { title: 'Sora Prompts', results: '99' },
+  'Stable Diffusion': { title: 'Stable Diffusion Prompts', results: '7.5k' },
+  Portraits: { title: 'Portrait Prompts', results: '3.1k' },
+  Photography: { title: 'Photography Prompts', results: '4.9k' },
+  Anime: { title: 'Anime Prompts', results: '6.4k' },
+  Logo: { title: 'Logo Prompts', results: '2.2k' },
+  'Character Design': { title: 'Character Design Prompts', results: '4.1k' },
+};
+
+
+export default function SearchBar({ activeFilter }: SearchBarProps) {
+    const currentData = mockData[activeFilter] || { title: `${activeFilter} Prompts`, results: '...' };
+
   return (
     <section className="py-12 md:py-16 text-center bg-background">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="text-4xl md:text-5xl font-bold font-headline tracking-tight">
-          Featured Prompts
+          {currentData.title}
         </h1>
         <p className="mt-3 text-lg text-muted-foreground">
-          About 2,718 results
+          About {currentData.results} results
         </p>
 
         <div className="mt-8 max-w-3xl mx-auto">

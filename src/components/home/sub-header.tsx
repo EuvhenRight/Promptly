@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -18,10 +17,13 @@ const iconMap: { [key: string]: React.ElementType } = {
   default: Bot,
 };
 
+interface SubHeaderProps {
+  activeFilter: string;
+  onFilterChange: (filter: string) => void;
+}
 
-export default function SubHeader() {
-  const [activeMainLink, setActiveMainLink] = useState('Featured');
-  const [activeStyleLink, setActiveStyleLink] = useState('');
+
+export default function SubHeader({ activeFilter, onFilterChange }: SubHeaderProps) {
 
   return (
     <div className="border-b bg-background/95">
@@ -32,13 +34,13 @@ export default function SubHeader() {
               <Link
                 key={link}
                 href="#"
-                onClick={() => {
-                    setActiveMainLink(link)
-                    setActiveStyleLink('')
+                onClick={(e) => {
+                    e.preventDefault();
+                    onFilterChange(link)
                 }}
                 className={cn(
                   'py-3 px-2 text-sm font-semibold whitespace-nowrap',
-                  activeMainLink === link
+                  activeFilter === link
                     ? 'border-b-2 border-primary text-primary'
                     : 'text-muted-foreground hover:text-primary'
                 )}
@@ -58,12 +60,11 @@ export default function SubHeader() {
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                        setActiveStyleLink(item.id)
-                        setActiveMainLink('')
+                        onFilterChange(item.name)
                     }}
                     className={cn(
                         'rounded-full px-3 h-9 gap-2',
-                        activeStyleLink === item.id ? 'bg-muted text-primary font-semibold' : 'hover:bg-muted'
+                        activeFilter === item.name ? 'bg-muted text-primary font-semibold' : 'hover:bg-muted'
                     )}
                     >
                     <Icon className="h-4 w-4" />
