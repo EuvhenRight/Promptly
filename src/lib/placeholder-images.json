@@ -4,127 +4,169 @@
       "id": "hero-banner",
       "description": "Abstract swirling colors representing AI creativity",
       "imageUrl": "https://images.unsplash.com/photo-1602464729960-f95937746b68?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxhYnN0cmFjdCUyMGFydHxlbnwwfHx8fDE3Njk2MDIyMDF8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "abstract art"
+      "imageHint": "abstract art",
+      "width": 1080,
+      "height": 600
     },
     {
       "id": "prompt-1-img",
       "description": "A futuristic city with flying cars and neon signs, vertical",
-      "imageUrl": "https://images.unsplash.com/photo-1707999464758-0ad86b14290f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8Y3liZXJwdW5rJTIwY2l0eXxlbnwwfHx8fDE3Njk1NTc4NDB8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "cyberpunk city"
+      "imageUrl": "https://images.unsplash.com/photo-1602136773736-34d445b989cb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxjeWJlcnB1bmslMjBjaXR5fGVufDB8fHx8MTc2OTU1Nzg0MHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "cyberpunk city",
+      "width": 400,
+      "height": 620
     },
     {
       "id": "prompt-2-img",
       "description": "A mystical creature in a glowing forest, vertical",
-      "imageUrl": "https://images.unsplash.com/photo-1651181380183-ff405917a50f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxmYW50YXN5JTIwY3JlYXR1cmV8ZW58MHx8fHwxNzY5NTk4MzUzfDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "fantasy creature"
+      "imageUrl": "https://images.unsplash.com/photo-1761325684397-b91138faca5f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxmYW50YXN5JTIwY3JlYXR1cmV8ZW58MHx8fHwxNzY5NTk4MzUzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fantasy creature",
+      "width": 400,
+      "height": 710
     },
     {
       "id": "prompt-3-img",
       "description": "A close-up, highly detailed portrait of a person, vertical",
-      "imageUrl": "https://images.unsplash.com/photo-1752572052528-cf7559edad25?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxyZWFsaXN0aWMlMjBwb3J0cmFpdHxlbnwwfHx8fDE3Njk2MDQ5Mzd8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "realistic portrait"
+      "imageUrl": "https://images.unsplash.com/photo-1765828596186-e6b506708303?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxyZWFsaXN0aWMlMjBwb3J0cmFpdHxlbnwwfHx8fDE3Njk2MDQ5Mzd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "realistic portrait",
+      "width": 400,
+      "height": 580
     },
     {
       "id": "prompt-4-img",
       "description": "A character drawn in a 90s anime style, vertical",
-      "imageUrl": "https://images.unsplash.com/photo-1766043650776-e71079fd4d3f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxyZXRybyUyMGFuaW1lfGVufDB8fHx8MTc2OTYwNDkzNnww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "retro anime"
+      "imageUrl": "https://images.unsplash.com/photo-1753091994547-216ca0052520?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxyZXRybyUyMGFuaW1lfGVufDB8fHx8MTc2OTYwNDkzNnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "retro anime",
+      "width": 400,
+      "height": 650
     },
     {
       "id": "prompt-5-img",
       "description": "Colorful smoke and liquid in an abstract pattern, vertical",
-      "imageUrl": "https://images.unsplash.com/photo-1461083493316-8d2bc9965b5b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8YWJzdHJhY3QlMjBzbW9rZXxlbnwwfHx8fDE3Njk2MDQ5MzZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "abstract smoke"
+      "imageUrl": "https://images.unsplash.com/photo-1759269151262-8022a57dace8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxhYnN0cmFjdCUyMHNtb2tlfGVufDB8fHx8MTc2OTYwNDkzNnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract smoke",
+      "width": 400,
+      "height": 750
     },
     {
       "id": "prompt-6-img",
       "description": "A complex machine made of brass and gears, vertical",
-      "imageUrl": "https://images.unsplash.com/photo-1768268959053-770212976791?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxzdGVhbXB1bmslMjBtYWNoaW5lfGVufDB8fHx8MTc2OTYwNDkzN3ww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "steampunk machine"
+      "imageUrl": "https://images.unsplash.com/photo-1561921612-320c9dad1c22?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxzdGVhbXB1bmslMjBtYWNoaW5lfGVufDB8fHx8MTc2OTYwNDkzN3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "steampunk machine",
+      "width": 400,
+      "height": 680
     },
     {
       "id": "prompt-7-img",
       "description": "A dark and moody gothic cathedral interior",
-      "imageUrl": "https://images.unsplash.com/photo-1489910339994-ce69e94e4856?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxnb3RoaWMlMjBhcmNoaXRlY3R1cmV8ZW58MHx8fHwxNzY5NjM0MDg1fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "gothic architecture"
+      "imageUrl": "https://images.unsplash.com/photo-1619904252549-88d890e7455b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8Z290aGljJTIwYXJjaGl0ZWN0dXJlfGVufDB8fHx8MTc2OTYzNDA4NXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "gothic architecture",
+      "width": 400,
+      "height": 590
     },
     {
       "id": "prompt-8-img",
       "description": "A soft watercolor painting of a mountain range at sunrise",
-      "imageUrl": "https://images.unsplash.com/photo-1578301977886-43be7b983104?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHx3YXRlcmNvbG9yJTIwbGFuZHNjYXBlfGVufDB8fHx8MTc2OTU0MjA2Nnww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "watercolor landscape"
+      "imageUrl": "https://images.unsplash.com/photo-1752316226410-16702ace22d8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHx3YXRlcmNvbG9yJTIwbGFuZHNjYXBlfGVufDB8fHx8MTc2OTU0MjA2Nnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "watercolor landscape",
+      "width": 400,
+      "height": 610
     },
     {
       "id": "prompt-9-img",
       "description": "A clean and simple logo for a modern tech company",
-      "imageUrl": "https://images.unsplash.com/photo-1610340804490-e9d7b22aee1d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxtaW5pbWFsaXN0JTIwbG9nb3xlbnwwfHx8fDE3Njk1NjE5ODN8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "minimalist logo"
+      "imageUrl": "https://images.unsplash.com/photo-1760037034697-eee0b07ae072?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8bWluaW1hbGlzdCUyMGxvZ298ZW58MHx8fHwxNzY5NTYxOTgzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "minimalist logo",
+      "width": 400,
+      "height": 550
     },
     {
       "id": "prompt-10-img",
       "description": "A detailed sci-fi robot with glowing blue eyes",
-      "imageUrl": "https://images.unsplash.com/photo-1634912314602-0d01437e3540?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxzY2ktZmklMjByb2JvdHxlbnwwfHx8fDE3Njk1NzkzMDN8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "sci-fi robot"
+      "imageUrl": "https://images.unsplash.com/photo-1658999109686-c1d354090b6e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxzY2ktZmklMjByb2JvdHxlbnwwfHx8fDE3Njk1NzkzMDN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "sci-fi robot",
+      "width": 400,
+      "height": 720
     },
     {
       "id": "prompt-11-img",
       "description": "A vibrant and delicious-looking plate of food, top-down shot",
-      "imageUrl": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxmb29kJTIwcGhvdG9ncmFwaHl8ZW58MHx8fHwxNzY5NTc0OTI4fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "food photography"
+      "imageUrl": "https://images.unsplash.com/photo-1556761223-4c4282c73f77?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxmb29kJTIwcGhvdG9ncmFwaHl8ZW58MHx8fHwxNzY5NTc0OTI4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "food photography",
+      "width": 400,
+      "height": 600
     },
     {
       "id": "prompt-12-img",
       "description": "A cozy isometric room with a lot of plants and a cat",
-      "imageUrl": "https://images.unsplash.com/photo-1760434875920-2b7a79ea163a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxpc29tZXRyaWMlMjByb29tfGVufDB8fHx8MTc2OTYzNDA4NXww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "isometric room"
+      "imageUrl": "https://images.unsplash.com/photo-1663063036902-df7d871b39a2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxpc29tZXRyaWMlMjByb29tfGVufDB8fHx8MTc2OTYzNDA4NXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "isometric room",
+      "width": 400,
+      "height": 660
     },
     {
       "id": "prompt-13-img",
       "description": "A seamless pattern of tropical leaves and flowers",
-      "imageUrl": "https://images.unsplash.com/photo-1741298167030-9e0ce6ab08dc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHx2ZWN0b3IlMjBwYXR0ZXJufGVufDB8fHx8MTc2OTYzNDA4Nnww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "vector pattern"
+      "imageUrl": "https://images.unsplash.com/photo-1684766462347-78b3bfc0995d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHx2ZWN0b3IlMjBwYXR0ZXJufGVufDB8fHx8MTc2OTYzNDA4Nnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "vector pattern",
+      "width": 400,
+      "height": 570
     },
     {
       "id": "prompt-14-img",
       "description": "A low-poly landscape of a floating island in the sky",
-      "imageUrl": "https://images.unsplash.com/photo-1666017057906-e5c47d26b971?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8bG93JTIwcG9seXxlbnwwfHx8fDE3Njk2MzQwODZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "low poly"
+      "imageUrl": "https://images.unsplash.com/photo-1655146475657-bcd9b5ca5dd7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxsb3clMjBwb2x5fGVufDB8fHx8MTc2OTYzNDA4Nnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "low poly",
+      "width": 400,
+      "height": 630
     },
     {
       "id": "prompt-15-img",
       "description": "A concept art of a friendly monster character",
-      "imageUrl": "https://images.unsplash.com/photo-1758124993030-3465a0187f84?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxtb25zdGVyJTIwY2hhcmFjdGVyfGVufDB8fHx8MTc2OTYzNDA4N3ww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "monster character"
+      "imageUrl": "https://images.unsplash.com/photo-1732780769509-67862ed50b03?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8bW9uc3RlciUyMGNoYXJhY3RlcnxlbnwwfHx8fDE3Njk2MzQwODd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "monster character",
+      "width": 400,
+      "height": 690
     },
     {
       "id": "prompt-16-img",
       "description": "A surreal landscape with floating objects and strange colors",
       "imageUrl": "https://images.unsplash.com/photo-1595232548387-101b19c0c757?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxzdXJyZWFsJTIwbGFuZHNjYXBlfGVufDB8fHx8MTc2OTYwODI0NHww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "surreal landscape"
+      "imageHint": "surreal landscape",
+      "width": 400,
+      "height": 730
     },
     {
       "id": "prompt-17-img",
       "description": "A beautiful photo of a colorful space nebula",
-      "imageUrl": "https://images.unsplash.com/photo-1681673819004-695da4fa9328?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxzcGFjZSUyMG5lYnVsYXxlbnwwfHx8fDE3Njk1ODQyNDB8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "space nebula"
+      "imageUrl": "https://images.unsplash.com/photo-1709142221334-290c5a72de26?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8c3BhY2UlMjBuZWJ1bGF8ZW58MHx8fHwxNzY5NTg0MjQwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "space nebula",
+      "width": 400,
+      "height": 640
     },
     {
       "id": "prompt-18-img",
       "description": "A detailed pixel art scene of a bustling city street",
-      "imageUrl": "https://images.unsplash.com/photo-1633421878925-ac220d8f6e4f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxwaXhlbCUyMGFydHxlbnwwfHx8fDE3Njk2MDYxMjN8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "pixel art"
+      "imageUrl": "https://images.unsplash.com/flagged/photo-1572392640988-ba48d1a74457?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxwaXhlbCUyMGFydHxlbnwwfHx8fDE3Njk2MDYxMjN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "pixel art",
+      "width": 400,
+      "height": 560
     },
     {
       "id": "prompt-19-img",
       "description": "A fantasy map in the style of old cartography",
-      "imageUrl": "https://images.unsplash.com/photo-1720253814850-0b81a96f52ff?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxmYW50YXN5JTIwbWFwfGVufDB8fHx8MTc2OTYyNjQ1MHww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "fantasy map"
+      "imageUrl": "https://images.unsplash.com/photo-1520299607509-dcd935f9a839?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxmYW50YXN5JTIwbWFwfGVufDB8fHx8MTc2OTYyNjQ1MHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fantasy map",
+      "width": 400,
+      "height": 670
     },
     {
       "id": "prompt-20-img",
       "description": "A professional mockup of a mobile app on a smartphone screen",
-      "imageUrl": "https://images.unsplash.com/photo-1544816155-12df9643f363?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxwcm9kdWN0JTIwbW9ja3VwfGVufDB8fHx8MTc2OTU0MzA4MHww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "product mockup"
+      "imageUrl": "https://images.unsplash.com/photo-1711563386439-75ce269ac998?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxwcm9kdWN0JTIwbW9ja3VwfGVufDB8fHx8MTc2OTU0MzA4MHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "product mockup",
+      "width": 400,
+      "height": 700
     }
   ]
 }

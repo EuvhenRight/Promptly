@@ -28,15 +28,14 @@ export default function PromptCard({ prompt }: PromptCardProps) {
                     <Image
                         src={promptImage.imageUrl}
                         alt={prompt.title}
-                        width={400}
-                        height={640}
+                        width={promptImage.width}
+                        height={promptImage.height}
                         className="w-full h-auto object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
                         data-ai-hint={promptImage.imageHint}
                     />
                 )}
             </Link>
 
-            {/* Overlay with gradient and content. pointer-events-none lets clicks pass through to the Link */}
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                 <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
                     <h3 className="font-bold text-base leading-tight truncate">{prompt.title}</h3>
@@ -62,7 +61,6 @@ export default function PromptCard({ prompt }: PromptCardProps) {
                 </div>
             </div>
 
-            {/* Like button - positioned over the card, becomes interactive on hover */}
             <button 
                 className="absolute top-3 right-3 z-10 rounded-full bg-black/30 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/50 opacity-0 group-hover:opacity-100"
                 aria-label="Like prompt"
