@@ -7,29 +7,32 @@ import { getFirestore } from 'firebase/firestore'
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
-  if (!getApps().length) {
-    // Important! initializeApp() is called without any arguments because Firebase App Hosting
-    // integrates with the initializeApp() function to provide the environment variables needed to
-    // populate the FirebaseOptions in production. It is critical that we attempt to call initializeApp()
-    // without arguments.
-    let firebaseApp;
-    try {
-      // Attempt to initialize via Firebase App Hosting environment variables
-      firebaseApp = initializeApp();
-    } catch (e) {
-      // Only warn in production because it's normal to use the firebaseConfig to initialize
-      // during development
-      if (process.env.NODE_ENV === "production") {
-        console.warn('Automatic initialization failed. Falling back to firebase config object.', e);
-      }
-      firebaseApp = initializeApp(firebaseConfig);
-    }
-
-    return getSdks(firebaseApp);
+  if (getApps().length) {
+    return getSdks(getApp());
   }
 
-  // If already initialized, return the SDKs with the already initialized App
-  return getSdks(getApp());
+  let firebaseApp;
+  
+  // In a production environment (like Firebase App Hosting), try to initialize automatically.
+  // In development, use the explicit config from `.env.local`.
+  if (process.env.NODE_ENV === 'production') {
+    try {
+      firebaseApp = initializeApp();
+    } catch (e) {
+      console.warn("Automatic Firebase initialization failed in production. Falling back to explicit config.", e);
+      firebaseApp = initializeApp(firebaseConfig);
+    }
+  } else {
+    // Development environment
+    if (!firebaseConfig.apiKey) {
+        console.error(
+          'Firebase API Key is missing. Please make sure your .env.local file is set up correctly with the NEXT_PUBLIC_FIREBASE_API_KEY variable. You may need to restart your development server after creating or updating the .env.local file.'
+        );
+    }
+    firebaseApp = initializeApp(firebaseConfig);
+  }
+
+  return getSdks(firebaseApp);
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
