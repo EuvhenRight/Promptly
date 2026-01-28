@@ -36,7 +36,9 @@ export type Prompt = {
     count: number;
   };
   tags: string[];
-  categories?: string[];
+  categories: string[];
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
 };
 
 export type PromptPrivateContent = {
