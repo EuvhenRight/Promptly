@@ -34,7 +34,7 @@ import {
 import { doc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 
-/* Google Icon */
+
 const GoogleIcon = () => (
   <svg viewBox="0 0 48 48" className="h-5 w-5">
     <path
