@@ -1,3 +1,46 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-banner",
+      "description": "Abstract swirling colors representing AI creativity",
+      "imageUrl": "https://images.unsplash.com/photo-1602464729960-f95937746b68?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxhYnN0cmFjdCUyMGFydHxlbnwwfHx8fDE3Njk2MDIyMDF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract art"
+    },
+    {
+      "id": "prompt-1-img",
+      "description": "A futuristic city with flying cars and neon signs",
+      "imageUrl": "https://images.unsplash.com/photo-1514439827219-9137a0b99245?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxjeWJlcnB1bmslMjBjaXR5fGVufDB8fHx8MTc2OTU1Nzg0MHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "cyberpunk city"
+    },
+    {
+      "id": "prompt-2-img",
+      "description": "A mystical creature in a glowing forest",
+      "imageUrl": "https://images.unsplash.com/photo-1764555719692-df3cf8541928?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxmYW50YXN5JTIwY3JlYXR1cmV8ZW58MHx8fHwxNzY5NTk4MzUzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fantasy creature"
+    },
+    {
+      "id": "prompt-3-img",
+      "description": "A close-up, highly detailed portrait of a person",
+      "imageUrl": "https://images.unsplash.com/photo-1767714874677-4953b04b0537?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxyZWFsaXN0aWMlMjBwb3J0cmFpdHxlbnwwfHx8fDE3Njk2MDQ5Mzd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "realistic portrait"
+    },
+    {
+      "id": "prompt-4-img",
+      "description": "A character drawn in a 90s anime style",
+      "imageUrl": "https://images.unsplash.com/photo-1741512612511-b6d99b3e8b17?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxyZXRybyUyMGFuaW1lfGVufDB8fHx8MTc2OTYwNDkzNnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "retro anime"
+    },
+    {
+      "id": "prompt-5-img",
+      "description": "Colorful smoke and liquid in an abstract pattern",
+      "imageUrl": "https://images.unsplash.com/photo-1759269151262-8022a57dace8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxhYnN0cmFjdCUyMHNtb2tlfGVufDB8fHx8MTc2OTYwNDkzNnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract smoke"
+    },
+    {
+      "id": "prompt-6-img",
+      "description": "A complex machine made of brass and gears",
+      "imageUrl": "https://images.unsplash.com/photo-1673552885883-ce265976f8bf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxzdGVhbXB1bmslMjBtYWNoaW5lfGVufDB8fHx8MTc2OTYwNDkzN3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "steampunk machine"
+    }
+  ]
 }
