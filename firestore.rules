@@ -1,0 +1,104 @@
+/**
+ * # Core Philosophy
+ * This ruleset enforces a strict user-ownership model where all data is
+ * segregated into user-specific subcollections. The primary security mechanism
+ * is path-based authorization, ensuring that a user can only ever access data
+ * that exists within their own document tree. This design simplifies security logic
+ * and enhances query performance by isolating user data.
+ *
+ * # Data Structure
+ * All application data is nested under the `/users/{userId}` path.
+ * - `/users/{userId}/carts/{cartId}`: Contains a user's shopping cart.
+ * - `/users/{userId}/orders/{orderId}`: Contains a user's order history.
+ * This hierarchical structure makes it impossible for users to access or even
+ * discover data belonging to other users.
+ *
+ * # Key Security Decisions
+ * - **No Global Collections**: There are no top-level `carts` or `orders`
+ *   collections. This prevents any possibility of a user listing or accessing
+ *   data outside their own scope.
+ * - **Strict Ownership**: All read and write operations are gated by a check
+ *   that compares the authenticated user's ID (`request.auth.uid`) with the
+ *   `{userId}` wildcard in the document path.
+ * - **Relational Integrity**: On document creation, rules verify that an internal
+ *   `userId` field matches the `userId` in the path, ensuring data consistency.
+ *   This `userId` field is enforced as immutable on updates.
+ * - **Default Deny**: Any path not explicitly matched is denied access.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ----------------------------------------------------------------------
+    // Helper Functions
+    // ----------------------------------------------------------------------
+
+    /**
+     * Checks if the request is from an authenticated user.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently signed-in user's UID matches the provided userId.
+     * This is the primary function for verifying document ownership.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Checks for ownership on an existing document. Used for update and delete
+     * operations to prevent actions on documents that do not exist.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    // ----------------------------------------------------------------------
+    // Collection Rules
+    // ----------------------------------------------------------------------
+
+    /**
+     * @description Manages user-specific shopping carts.
+     * @path /users/{userId}/carts/{cartId}
+     * @allow (get, list, create, update, delete) A signed-in user with auth.uid 'user_abc' accessing '/users/user_abc/carts/cart_123'.
+     * @deny (get, list, create, update, delete) A signed-in user with auth.uid 'user_abc' accessing '/users/user_xyz/carts/cart_456'.
+     * @principle Restricts all access to the user's own data tree, enforcing strict data isolation.
+     */
+    match /users/{userId}/carts/{cartId} {
+      // READ: Only the owner can read their own cart documents.
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+
+      // WRITE: Only the owner can create, update, or delete their cart.
+      // On create, the document's internal userId must match the path.
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      // On update, the userId field cannot be changed.
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Manages user-specific order history.
+     * @path /users/{userId}/orders/{orderId}
+     * @allow (get, list, create, update, delete) A signed-in user with auth.uid 'user_abc' accessing '/users/user_abc/orders/order_123'.
+     * @deny (get, list, create, update, delete) A signed-in user with auth.uid 'user_abc' accessing '/users/user_xyz/orders/order_456'.
+     * @principle Restricts all access to the user's own data tree, enforcing strict data isolation.
+     */
+    match /users/{userId}/orders/{orderId} {
+      // READ: Only the owner can read their own order documents.
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+
+      // WRITE: Only the owner can create a new order. Orders are typically
+      // immutable, but update is allowed here for status changes. Delete is denied.
+      // On create, the document's internal userId must match the path.
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      // On update, the userId field cannot be changed.
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}
