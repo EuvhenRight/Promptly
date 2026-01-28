@@ -149,21 +149,21 @@ export default function Header() {
                 <DropdownMenuSeparator />
                 {userProfile?.role === 'admin' && (
                   <DropdownMenuItem onSelect={() => router.push('/admin')}>
-                    <ShieldCheck className="mr-2" />
+                    <ShieldCheck className="mr-2 h-4 w-4" />
                     <span>Admin Panel</span>
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem>
-                  <User className="mr-2" />
+                  <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
-                  <CreditCard className="mr-2" />
+                  <CreditCard className="mr-2 h-4 w-4" />
                   <span>Billing</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={signOutUser}>
-                  <LogOut className="mr-2" />
+                  <LogOut className="mr-2 h-4 w-4" />
                   <span>Sign out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
