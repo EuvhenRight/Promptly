@@ -148,6 +148,21 @@ export const DUMMY_FILTERS = {
   ],
 };
 
+export const DUMMY_MODELS_AND_STYLES = [
+  { id: 'video', name: 'Video' },
+  { id: 'chatgpt-image', name: 'ChatGPT Image' },
+  { id: 'midjourney', name: 'Midjourney' },
+  { id: 'flux', name: 'FLUX' },
+  { id: 'sora', name: 'Sora' },
+  { id: 'stable-diffusion', name: 'Stable Diffusion' },
+  { id: 'portraits', name: 'Portraits' },
+  { id: 'photography', name: 'Photography' },
+  { id: 'anime', name: 'Anime' },
+  { id: 'logo', name: 'Logo' },
+  { id: 'character-design', name: 'Character Design' },
+];
+
+
 // This is a helper to find placeholder images from the JSON file
 // We are re-exporting it from here for convenience in components
 import { PlaceHolderImages } from './placeholder-images';

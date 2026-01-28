@@ -33,6 +33,7 @@ import {
 } from '../ui/dropdown-menu';
 import { doc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
+import SubHeader from '@/components/home/sub-header';
 
 
 const GoogleIcon = () => (
@@ -69,16 +70,17 @@ export default function Header() {
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 items-center px-4 sm:px-6 lg:px-8">
         
-        {/* Left: Title and Mobile Nav */}
         <div className="flex flex-shrink-0 items-center gap-2">
           <Link href="/" className="flex items-center gap-2">
             <Bot className="h-6 w-6 text-primary" />
             <span className="font-headline text-xl font-bold">Promptly</span>
           </Link>
-          <div className="md:hidden">
+        </div>
+
+        <div className="md:hidden ml-2">
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
@@ -98,11 +100,10 @@ export default function Header() {
                   </SheetTitle>
                 </SheetHeader>
                 <div className="mt-8 flex flex-col gap-4">
-                  <div className="relative w-full">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search prompts..." className="pl-10" />
-                  </div>
                   <nav className="mt-4 flex flex-col gap-2">
+                    <Button variant="ghost" asChild className="justify-start">
+                      <Link href="#">Academy</Link>
+                    </Button>
                     <Button variant="ghost" asChild className="justify-start">
                       <Link href="#">Pricing</Link>
                     </Button>
@@ -114,27 +115,17 @@ export default function Header() {
               </SheetContent>
             </Sheet>
           </div>
-        </div>
 
-        {/* Spacer */}
-        <div className="hidden flex-1 md:block" />
-
-        {/* Center: Desktop Nav & Search */}
-        <div className="hidden md:flex items-center gap-6">
+        <div className="hidden md:flex items-center gap-6 ml-10">
            <nav className="flex items-center gap-6 text-sm">
-             <Link href="#" className="transition-colors hover:text-foreground/80 text-foreground/60">Pricing</Link>
-             <Link href="#" className="transition-colors hover:text-foreground/80 text-foreground/60">Community</Link>
+             <Link href="#" className="transition-colors hover:text-foreground/80 text-foreground/60 font-medium">Academy</Link>
+             <Link href="#" className="transition-colors hover:text-foreground/80 text-foreground/60 font-medium">Pricing</Link>
+             <Link href="#" className="transition-colors hover:text-foreground/80 text-foreground/60 font-medium">Community</Link>
            </nav>
-           <div className="relative w-full max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search prompts..." className="pl-10" />
-          </div>
         </div>
 
-        {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Right: Cart & Auth */}
         <div className="flex flex-shrink-0 items-center gap-2">
           <Link href="/cart" className="hidden md:block">
             <Button variant="ghost" size="icon">
@@ -178,20 +169,21 @@ export default function Header() {
                   <span>Billing</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={signOutUser}>
+                <DropdownMenuItem onClick={() => signOutUser()}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Sign out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button onClick={signInWithGoogle}>
+            <Button onClick={() => signInWithGoogle()}>
               <GoogleIcon />
               Sign In
             </Button>
           )}
         </div>
       </div>
+      <SubHeader />
     </header>
   );
 }
