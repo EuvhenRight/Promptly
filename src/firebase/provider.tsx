@@ -6,6 +6,8 @@ import { Firestore, doc, getDoc, setDoc } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import type { UserProfile } from '@/lib/types';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 
 interface FirebaseProviderProps {
@@ -97,9 +99,17 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
               purchasedPrompts: [],
             };
             
-            // Non-blocking write. Errors are logged to console.
+            // Non-blocking write. Errors are now properly emitted.
             setDoc(userDocRef, newUserProfile).catch(error => {
-                console.error("Failed to create user profile in Firestore:", error);
+                // This will surface any permission errors to the developer overlay.
+                errorEmitter.emit(
+                    'permission-error',
+                    new FirestorePermissionError({
+                        path: userDocRef.path,
+                        operation: 'create',
+                        requestResourceData: newUserProfile,
+                    })
+                );
             });
           }
         }
