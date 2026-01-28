@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Bot,
   Menu,
@@ -8,6 +9,7 @@ import {
   User,
   LogOut,
   CreditCard,
+  ShieldCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +20,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { signInWithGoogle, signOutUser } from '@/firebase/auth';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import {
@@ -29,6 +31,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
+import { doc } from 'firebase/firestore';
+import type { UserProfile } from '@/lib/types';
+
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 48 48" className="h-5 w-5">
@@ -54,6 +59,14 @@ const GoogleIcon = () => (
 
 export default function Header() {
   const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+  const router = useRouter();
+
+  const userProfileRef = useMemoFirebase(
+    () => (user ? doc(firestore, 'users', user.uid) : null),
+    [firestore, user]
+  );
+  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -134,6 +147,12 @@ export default function Header() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                {userProfile?.role === 'admin' && (
+                  <DropdownMenuItem onSelect={() => router.push('/admin')}>
+                    <ShieldCheck className="mr-2" />
+                    <span>Admin Panel</span>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem>
                   <User className="mr-2" />
                   <span>Profile</span>

@@ -7,22 +7,17 @@
  * and enhances query performance by isolating user data.
  *
  * # Data Structure
- * All application data is nested under the `/users/{userId}` path.
+ * - `/users/{userId}`: Stores user profile data, including their role.
  * - `/users/{userId}/carts/{cartId}`: Contains a user's shopping cart.
  * - `/users/{userId}/orders/{orderId}`: Contains a user's order history.
- * This hierarchical structure makes it impossible for users to access or even
- * discover data belonging to other users.
+ * - `/prompts/{promptId}`: Public data for a prompt.
  *
  * # Key Security Decisions
- * - **No Global Collections**: There are no top-level `carts` or `orders`
- *   collections. This prevents any possibility of a user listing or accessing
- *   data outside their own scope.
- * - **Strict Ownership**: All read and write operations are gated by a check
- *   that compares the authenticated user's ID (`request.auth.uid`) with the
- *   `{userId}` wildcard in the document path.
- * - **Relational Integrity**: On document creation, rules verify that an internal
- *   `userId` field matches the `userId` in the path, ensuring data consistency.
- *   This `userId` field is enforced as immutable on updates.
+ * - **Admin Role**: A custom `isAdmin()` function checks a user's role from their
+ *   profile document (`/users/{uid}`). This grants privileged access for
+ *   managing prompts and users.
+ * - **Strict Ownership**: Most operations are gated by `isOwner()`, comparing
+ *   `request.auth.uid` with the `{userId}` in the document path.
  * - **Default Deny**: Any path not explicitly matched is denied access.
  */
 rules_version = '2';
@@ -56,49 +51,100 @@ service cloud.firestore {
       return isOwner(userId) && resource != null;
     }
 
+    /**
+     * Checks if the requesting user has an 'admin' role.
+     * This requires reading the user's own profile document.
+     */
+    function isAdmin() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    /**
+     * Checks if a user has purchased a specific prompt.
+     * This function is not yet fully implemented in the app logic but the rule is ready.
+     */
+    function hasPurchased(promptId) {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.purchasedPrompts.hasAny([promptId]);
+    }
+
+
     // ----------------------------------------------------------------------
     // Collection Rules
     // ----------------------------------------------------------------------
 
     /**
+     * @description Manages user profiles and roles.
+     */
+    match /users/{userId} {
+      // READ: Users can read their own profile. Admins can read anyone's.
+      allow get: if isOwner(userId) || isAdmin();
+      // Admins can list all users. Regular users cannot.
+      allow list: if isAdmin();
+
+      // WRITE:
+      // A user can create their own profile document.
+      allow create: if isOwner(userId);
+      // A user can update their own profile, but cannot change their role.
+      // An admin can update any user's profile, including changing their role.
+      allow update: if (isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin();
+      // Deleting user documents is restricted to admins.
+      allow delete: if isAdmin();
+    }
+
+    /**
      * @description Manages user-specific shopping carts.
-     * @path /users/{userId}/carts/{cartId}
-     * @allow (get, list, create, update, delete) A signed-in user with auth.uid 'user_abc' accessing '/users/user_abc/carts/cart_123'.
-     * @deny (get, list, create, update, delete) A signed-in user with auth.uid 'user_abc' accessing '/users/user_xyz/carts/cart_456'.
-     * @principle Restricts all access to the user's own data tree, enforcing strict data isolation.
      */
     match /users/{userId}/carts/{cartId} {
-      // READ: Only the owner can read their own cart documents.
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-
-      // WRITE: Only the owner can create, update, or delete their cart.
-      // On create, the document's internal userId must match the path.
+      allow get, list: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      // On update, the userId field cannot be changed.
       allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
       allow delete: if isExistingOwner(userId);
     }
 
     /**
      * @description Manages user-specific order history.
-     * @path /users/{userId}/orders/{orderId}
-     * @allow (get, list, create, update, delete) A signed-in user with auth.uid 'user_abc' accessing '/users/user_abc/orders/order_123'.
-     * @deny (get, list, create, update, delete) A signed-in user with auth.uid 'user_abc' accessing '/users/user_xyz/orders/order_456'.
-     * @principle Restricts all access to the user's own data tree, enforcing strict data isolation.
      */
     match /users/{userId}/orders/{orderId} {
-      // READ: Only the owner can read their own order documents.
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-
-      // WRITE: Only the owner can create a new order. Orders are typically
-      // immutable, but update is allowed here for status changes. Delete is denied.
-      // On create, the document's internal userId must match the path.
+      allow get, list: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      // On update, the userId field cannot be changed.
       allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
       allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Manages public prompt data and private content.
+     */
+    match /prompts/{promptId} {
+      // READ: Anyone can view public prompt listings.
+      allow get, list: if true;
+
+      // WRITE: Only admins can create, update, or delete prompts.
+      allow create, update, delete: if isAdmin();
+
+      /**
+       * @description Private prompt content, accessible only to purchasers or admins.
+       */
+      match /private/{docId} {
+        // Allow access only to the 'content' document.
+        // Users can read if they are an admin or have purchased the prompt.
+        allow get: if docId == 'content' && (isAdmin() || hasPurchased(promptId));
+        // Nobody can write directly to the private content. It's set during creation.
+        allow write: if false;
+      }
+
+      /**
+       * @description Comments and ratings for a prompt.
+       */
+      match /comments/{commentId} {
+        // READ: Anyone can read comments.
+        allow get, list: if true;
+
+        // WRITE:
+        // Only users who have purchased the prompt can create a comment.
+        allow create: if hasPurchased(promptId);
+        // Users can only update or delete their own comments.
+        allow update, delete: if isOwner(resource.data.userId);
+      }
     }
   }
 }

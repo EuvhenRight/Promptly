@@ -1,5 +1,122 @@
 {
   "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "type": "object",
+      "description": "Stores public and private profile information for a user.",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The unique identifier for the user, matching the Firebase Auth UID."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The user's public display name."
+        },
+        "photoURL": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL of the user's profile picture."
+        },
+        "role": {
+          "type": "string",
+          "description": "The user's role in the application.",
+          "enum": [
+            "user",
+            "admin"
+          ]
+        },
+        "purchasedPrompts": {
+          "type": "array",
+          "description": "An array of prompt IDs that the user has purchased.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "uid",
+        "email",
+        "displayName",
+        "photoURL",
+        "role"
+      ]
+    },
+    "Prompt": {
+      "title": "Prompt",
+      "type": "object",
+      "description": "Represents a single AI prompt listing in the marketplace.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "authorId": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "price": {
+          "type": "number"
+        },
+        "images": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "categories": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rating": {
+          "type": "object",
+          "properties": {
+            "average": {
+              "type": "number"
+            },
+            "count": {
+              "type": "number"
+            }
+          }
+        }
+      },
+      "required": [
+        "authorId",
+        "title",
+        "description",
+        "price"
+      ]
+    },
+    "PromptPrivateContent": {
+      "title": "Prompt Private Content",
+      "type": "object",
+      "description": "The actual, protected content of the prompt.",
+      "properties": {
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ]
+    },
     "Cart": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Cart",
@@ -105,6 +222,22 @@
   "firestore": {
     "structure": [
       {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores user profile information, including roles and purchases.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user."
+            }
+          ]
+        }
+      },
+      {
         "path": "/users/{userId}/carts/{cartId}",
         "definition": {
           "entityName": "Cart",
@@ -142,6 +275,26 @@
               "description": "The ID of the order."
             }
           ]
+        }
+      },
+      {
+        "path": "/prompts/{promptId}",
+        "definition": {
+          "entityName": "Prompt",
+          "schema": {
+            "$ref": "#/backend/entities/Prompt"
+          },
+          "description": "Publicly accessible data for a prompt listing."
+        }
+      },
+      {
+        "path": "/prompts/{promptId}/private/content",
+        "definition": {
+          "entityName": "PromptPrivateContent",
+          "schema": {
+            "$ref": "#/backend/entities/PromptPrivateContent"
+          },
+          "description": "Private content of a prompt, accessible only after purchase or by admins."
         }
       }
     ],

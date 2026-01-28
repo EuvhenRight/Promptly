@@ -6,4 +6,47 @@ export type Cart = {
     promptIds: string[];
     createdAt: Timestamp;
     updatedAt: Timestamp;
-}
+};
+
+export type UserProfile = {
+    uid: string;
+    email: string;
+    displayName: string;
+    photoURL: string;
+    role: 'user' | 'admin';
+    purchasedPrompts?: string[];
+    isSeller?: boolean;
+    stats?: {
+        totalSales: number;
+        monthlySales: number;
+        weeklySales: number;
+        reputation: number;
+    };
+};
+
+export type Prompt = {
+  id: string;
+  authorId: string;
+  title: string;
+  description: string;
+  price: number;
+  images: string[]; // URLs to images in Firebase Storage
+  rating: {
+    average: number;
+    count: number;
+  };
+  tags: string[];
+  categories?: string[];
+};
+
+export type PromptPrivateContent = {
+    text: string;
+};
+
+export type PromptComment = {
+    id:string;
+    text: string;
+    rating: number;
+    userId: string;
+    timestamp: Timestamp;
+};
