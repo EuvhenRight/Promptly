@@ -26,30 +26,50 @@ Install the project dependencies using npm:
 npm install
 ```
 
-### 3. Set Up Firebase
+### 3. Set Up a Shared Firebase Project
 
-This project uses Firebase for authentication and database services. Each team member should use their own Firebase project for development to avoid conflicts.
+This project uses a single, shared Firebase project for the entire team to ensure everyone is working with the same data and authentication setup.
 
-1.  **Create a Firebase Project:** Go to the [Firebase Console](https://console.firebase.google.com/) and create a new project.
-2.  **Add a Web App:** Inside your project, click the "Web" icon (`</>`) to add a new web application.
-3.  **Get Config:** After creating the app, Firebase will provide you with a `firebaseConfig` object. Keep this page open.
-4.  **Create Environment File:** In the root of your local project, copy the `.env` file to a new file named `.env.local`:
+#### For the Project Owner (One-Time Setup)
+
+If you are the one who created the Firebase project, you need to add your teammates as members.
+
+1.  Go to your [Firebase Console](https://console.firebase.google.com/).
+2.  Select your project.
+3.  Click the gear icon next to "Project Overview" and select **Users and permissions**.
+4.  Click **Add member** and enter the Google account email addresses of your teammates.
+5.  Assign them the **Editor** role. This gives them the necessary permissions to manage Firebase services.
+
+#### For All Team Members (Including the Owner)
+
+Once you have access to the shared project, follow these steps to get your local environment running.
+
+1.  **Select the Project:** Go to the [Firebase Console](https://console.firebase.google.com/). You should see the shared project on your list. Select it.
+2.  **Get Firebase Config:**
+    *   Click the gear icon next to "Project Overview" and select **Project settings**.
+    *   In the "Your apps" card, select the web app for this project.
+    *   In the "Firebase SDK snippet" section, choose the **Config** option. This will show you the `firebaseConfig` object.
+3.  **Create Environment File:** In the root of your local project, if you don't already have one, copy the `.env` file to a new file named `.env.local`:
 
     ```bash
     cp .env .env.local
     ```
 
-5.  **Add Your Config:** Open `.env.local` and replace the placeholder values with the actual values from your Firebase project's `firebaseConfig` object.
+4.  **Add Shared Config:** Open `.env.local` and replace the placeholder values with the actual values from the shared project's `firebaseConfig` object. **Everyone on the team will use the same values.**
 
     ```env
     # .env.local
-    NEXT_PUBLIC_FIREBASE_API_KEY="your-actual-api-key"
-    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="your-actual-auth-domain"
+    NEXT_PUBLIC_FIREBASE_API_KEY="your-shared-api-key"
+    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="your-shared-auth-domain"
     # ...and so on for all the keys.
     ```
 
-6.  **Enable Google Authentication:** In the Firebase Console, go to **Authentication** > **Sign-in method** and enable the **Google** provider.
-7.  **Set Up Firestore:** In the Firebase Console, go to **Firestore Database** and create a new database. Start in **test mode** for now. The necessary security rules are already in the project (`firestore.rules`).
+#### First-Time Project Configuration (If Not Already Done)
+
+The following steps only need to be done once for the entire project. Confirm with your team if this is already completed.
+
+1.  **Enable Google Authentication:** In the shared project's Firebase Console, go to **Authentication** > **Sign-in method** and enable the **Google** provider.
+2.  **Set Up Firestore:** In the shared project's Firebase Console, go to **Firestore Database** and create a new database. Start in **test mode** for now. The necessary security rules are already in the project (`firestore.rules`).
 
 ### 4. Run the Development Server
 
