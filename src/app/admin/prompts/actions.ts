@@ -61,18 +61,19 @@ export async function scrapePromptHero(
       }
     }
 
-    // --- Fallback Method: Use Cheerio Selectors if primary method fails ---
+    // --- Fallback Method: Use new advanced Cheerio selectors ---
     if (!title || !privateContent || !originalImageUrl) {
-        console.log('__NEXT_DATA__ not found or incomplete. Using fallback scraping method.');
+        console.log('__NEXT_DATA__ not found or incomplete. Using new fallback scraping method.');
 
-        // Fallback for title
+        // Fallback for title (standard and reliable)
         if (!title) {
           title = $('h1').first().text().trim();
         }
 
-        // Fallback for private content
+        // Fallback for private content using a reliable container selector
         if (!privateContent) {
-           // PromptHero often uses this class for the prompt text block
+           // This robustly finds the main prompt block and extracts its full text content,
+           // preventing data loss from partial selectors.
            privateContent = $('div.text-white.break-words').first().text().trim();
         }
 
@@ -81,12 +82,71 @@ export async function scrapePromptHero(
           categories = $('a[href^="/model/"]').first().text().trim() || 'Unknown';
         }
 
-        // Fallback for image URL (very important)
+        // New, improved image parsing logic
         if (!originalImageUrl) {
-          // The og:image meta tag is a reliable source
-          originalImageUrl = $('meta[property="og:image"]').attr('content');
+            let imageUrl: string | undefined;
+
+            // 1. Prioritize a specific, often-used structure for the main image
+            const mainImage = $('div[data-testid="prompt-image-0"]').find('img').first();
+            
+            if (mainImage.length) {
+                 const srcset = mainImage.attr('srcset');
+                 if (srcset) {
+                    const sources = srcset.split(',').map(s => s.trim().split(' ')[0]);
+                    imageUrl = sources[sources.length - 1]; // Get highest resolution
+                 } else {
+                    imageUrl = mainImage.attr('src');
+                 }
+            }
+
+            // 2. If not found, fall back to a broader search in main/article
+            if (!imageUrl) {
+                 $('main img, article img').each((i, el) => {
+                    const srcset = $(el).attr('srcset');
+                    if (srcset) {
+                        const sources = srcset.split(',').map(s => s.trim().split(' ')[0]);
+                        imageUrl = sources[sources.length - 1];
+                        return false; // Found one, break the loop
+                    }
+                });
+            }
+            
+            // 3. Final fallback to og:image meta tag
+            if (!imageUrl) {
+                imageUrl = $('meta[property="og:image"]').attr('content');
+            }
+
+            // Process the found URL
+            if (imageUrl) {
+                if (imageUrl.includes('_next/image?url=')) {
+                    try {
+                        // Use original URL as base to handle relative paths correctly
+                        const urlObj = new URL(imageUrl, url);
+                        const encodedUrl = urlObj.searchParams.get('url');
+                        if (encodedUrl) {
+                            originalImageUrl = decodeURIComponent(encodedUrl);
+                        } else {
+                             originalImageUrl = imageUrl;
+                        }
+                    } catch (e) {
+                       originalImageUrl = imageUrl;
+                    }
+                } else {
+                    originalImageUrl = imageUrl;
+                }
+            }
+            
+            // Ensure URL is absolute
+            if (originalImageUrl && originalImageUrl.startsWith('/')) {
+                try {
+                    originalImageUrl = new URL(originalImageUrl, new URL(url).origin).href;
+                } catch (e) {
+                    // Ignore if it's not a valid relative URL
+                }
+            }
         }
     }
+
 
     // --- Final Validation ---
     if (!title || !privateContent || !originalImageUrl) {
