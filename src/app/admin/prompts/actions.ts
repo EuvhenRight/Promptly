@@ -2,9 +2,8 @@
 'use server';
 
 import * as cheerio from 'cheerio';
-import { uploadImageFromBuffer } from '@/firebase/prompts';
 import { z } from 'zod';
-import { initializeFirebase } from '@/firebase/init';
+import { adminStorage } from '@/firebase/admin';
 
 const ScrapeResultSchema = z.object({
   title: z.string(),
@@ -15,10 +14,31 @@ const ScrapeResultSchema = z.object({
 
 export type ScrapeResult = z.infer<typeof ScrapeResultSchema>;
 
+async function uploadImageToAdminStorage(buffer: Buffer, fileName: string): Promise<string> {
+    if (!adminStorage) {
+        throw new Error('Firebase Admin Storage is not initialized. Check server logs for details. Ensure service-account.json is present.');
+    }
+    const bucket = adminStorage.bucket();
+    const filePath = `prompts/${Date.now()}-${fileName}`;
+    const file = bucket.file(filePath);
+
+    await file.save(buffer, {
+        metadata: {
+            contentType: 'image/jpeg', // Assuming jpeg, could be more dynamic
+        },
+    });
+
+    // Make the file publicly readable
+    await file.makePublic();
+
+    // Return the public URL
+    return file.publicUrl();
+}
+
+
 export async function scrapePromptHero(
   url: string
 ): Promise<ScrapeResult | { error: string }> {
-  initializeFirebase(); // Ensure Firebase is initialized for this server action.
 
   if (!url || !url.includes('prompthero.com')) {
     return { error: 'Invalid URL. Please provide a valid PromptHero URL.' };
@@ -162,7 +182,7 @@ export async function scrapePromptHero(
     const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
     const originalFilename = originalImageUrl.split('/').pop()?.split('?')[0] || 'image.jpg';
 
-    const finalImageUrl = await uploadImageFromBuffer(imageBuffer, originalFilename);
+    const finalImageUrl = await uploadImageToAdminStorage(imageBuffer, originalFilename);
 
     return {
       title,
