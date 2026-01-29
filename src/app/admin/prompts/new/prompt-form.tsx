@@ -21,14 +21,18 @@ import { useRouter } from 'next/navigation';
 
 const promptFormSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters long.'),
-  description: z.string().min(10, 'Description must be at least 10 characters long.'),
+  description: z.string().optional(),
   price: z.coerce
     .number({ invalid_type_error: 'Price must be a number.' })
     .min(0, 'Price cannot be negative.')
     .default(0),
   categories: z.string().min(1, 'Please add at least one category.'),
-  tags: z.string().min(1, 'Please add at least one tag.'),
+  tags: z.string().optional(),
   privateContent: z.string().min(10, 'The private prompt content is required.'),
+  image: z
+    .instanceof(File, { message: 'Image is required.' })
+    .refine((file) => file.size < 4 * 1024 * 1024, 'Max file size is 4MB.')
+    .optional(),
 });
 
 export type PromptFormValues = z.infer<typeof promptFormSchema>;
@@ -40,17 +44,23 @@ interface PromptFormProps {
   isSubmitting?: boolean;
 }
 
-export function PromptForm({ onSubmit, initialData, isEditing = false, isSubmitting = false }: PromptFormProps) {
+export function PromptForm({
+  onSubmit,
+  initialData,
+  isEditing = false,
+  isSubmitting = false,
+}: PromptFormProps) {
   const router = useRouter();
   const form = useForm<PromptFormValues>({
     resolver: zodResolver(promptFormSchema),
-    defaultValues: initialData || {
-      title: '',
-      description: '',
-      price: 0,
-      categories: '',
-      tags: '',
-      privateContent: '',
+    defaultValues: {
+      ...initialData,
+      title: initialData?.title || '',
+      description: initialData?.description || '',
+      price: initialData?.price || 0,
+      categories: initialData?.categories || '',
+      tags: initialData?.tags || '',
+      privateContent: initialData?.privateContent || '',
     },
   });
 
@@ -60,7 +70,10 @@ export function PromptForm({ onSubmit, initialData, isEditing = false, isSubmitt
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-8 mt-6">
+      <form
+        onSubmit={form.handleSubmit(handleFormSubmit)}
+        className="space-y-8 mt-6"
+      >
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             <Card>
@@ -75,7 +88,10 @@ export function PromptForm({ onSubmit, initialData, isEditing = false, isSubmitt
                     <FormItem>
                       <FormLabel>Title</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., Cyberpunk Cityscape" {...field} />
+                        <Input
+                          placeholder="e.g., Cyberpunk Cityscape"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -98,7 +114,7 @@ export function PromptForm({ onSubmit, initialData, isEditing = false, isSubmitt
                     </FormItem>
                   )}
                 />
-                 <FormField
+                <FormField
                   control={form.control}
                   name="privateContent"
                   render={({ field }) => (
@@ -111,7 +127,7 @@ export function PromptForm({ onSubmit, initialData, isEditing = false, isSubmitt
                           {...field}
                         />
                       </FormControl>
-                       <FormDescription>
+                      <FormDescription>
                         This content is hidden until a user purchases the prompt.
                       </FormDescription>
                       <FormMessage />
@@ -123,21 +139,26 @@ export function PromptForm({ onSubmit, initialData, isEditing = false, isSubmitt
           </div>
 
           <div className="space-y-6">
-             <Card>
+            <Card>
               <CardHeader>
                 <CardTitle>Metadata & Pricing</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                 <FormField
+                <FormField
                   control={form.control}
                   name="price"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Price ($)</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.01" placeholder="4.99" {...field} />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="4.99"
+                          {...field}
+                        />
                       </FormControl>
-                       <FormDescription>
+                      <FormDescription>
                         Enter 0 for a free prompt.
                       </FormDescription>
                       <FormMessage />
@@ -151,11 +172,12 @@ export function PromptForm({ onSubmit, initialData, isEditing = false, isSubmitt
                     <FormItem>
                       <FormLabel>Categories</FormLabel>
                       <FormControl>
-                        <Input placeholder="Characters, Environments" {...field} />
+                        <Input
+                          placeholder="Characters, Environments"
+                          {...field}
+                        />
                       </FormControl>
-                      <FormDescription>
-                        Comma-separated values.
-                      </FormDescription>
+                      <FormDescription>Comma-separated values.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -167,7 +189,10 @@ export function PromptForm({ onSubmit, initialData, isEditing = false, isSubmitt
                     <FormItem>
                       <FormLabel>Tags</FormLabel>
                       <FormControl>
-                        <Input placeholder="photorealistic, 8k, high detail" {...field} />
+                        <Input
+                          placeholder="photorealistic, 8k, high detail"
+                          {...field}
+                        />
                       </FormControl>
                       <FormDescription>
                         Comma-separated values. Helps with search.
@@ -179,27 +204,54 @@ export function PromptForm({ onSubmit, initialData, isEditing = false, isSubmitt
               </CardContent>
             </Card>
 
-             <Card>
+            <Card>
               <CardHeader>
-                <CardTitle>Image Uploader</CardTitle>
+                <CardTitle>Display Image</CardTitle>
               </CardHeader>
               <CardContent>
-                 <div className="p-4 border-2 border-dashed border-muted-foreground/30 rounded-lg text-center">
-                    <p className="text-sm text-muted-foreground">Image uploader coming soon.</p>
-                </div>
+                <FormField
+                  control={form.control}
+                  name="image"
+                  render={({ field: { value, onChange, ...fieldProps } }) => (
+                    <FormItem>
+                      <FormLabel>Image</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...fieldProps}
+                          type="file"
+                          accept="image/png, image/jpeg, image/gif, image/webp"
+                          onChange={(event) =>
+                            onChange(
+                              event.target.files && event.target.files[0]
+                            )
+                          }
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Upload an example image generated by this prompt.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </CardContent>
             </Card>
           </div>
         </div>
 
         <div className="flex justify-end gap-4">
-           <Button type="button" variant="outline" onClick={() => router.back()}>
-              Cancel
-           </Button>
-           <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEditing ? 'Save Changes' : 'Create Prompt'}
-           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.back()}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isEditing ? 'Save Changes' : 'Create Prompt'}
+          </Button>
         </div>
       </form>
     </Form>

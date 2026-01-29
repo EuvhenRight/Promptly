@@ -4,7 +4,11 @@ import { useRouter } from 'next/navigation';
 import { useUser, useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { PromptForm, type PromptFormValues } from './prompt-form';
-import { createPrompt } from '@/firebase/prompts';
+import {
+  createPrompt,
+  uploadPromptImage,
+  type CreatePromptData,
+} from '@/firebase/prompts';
 import { useState } from 'react';
 
 export default function NewPromptPage() {
@@ -25,21 +29,48 @@ export default function NewPromptPage() {
     }
 
     setIsSubmitting(true);
-    const result = await createPrompt(firestore, user.uid, data);
-    setIsSubmitting(false);
 
-    if (result.success) {
-      toast({
-        title: 'Prompt Created',
-        description: 'Your new prompt has been successfully created.',
-      });
-      router.push('/admin/prompts');
-    } else {
+    try {
+      let imageUrl: string | undefined = undefined;
+
+      if (data.image) {
+        toast({ title: 'Uploading image...', description: 'Please wait.' });
+        imageUrl = await uploadPromptImage(data.image);
+      }
+
+      const promptData: CreatePromptData = {
+        title: data.title,
+        description: data.description,
+        price: data.price,
+        categories: data.categories,
+        tags: data.tags,
+        privateContent: data.privateContent,
+        imageUrl: imageUrl,
+      };
+      
+      toast({ title: 'Saving prompt...', description: 'Just a moment.' });
+      const result = await createPrompt(firestore, user.uid, promptData);
+
+      if (result.success) {
+        toast({
+          title: 'Prompt Created',
+          description: 'Your new prompt has been successfully created.',
+        });
+        router.push('/admin/prompts');
+      } else {
+        throw new Error(
+          result.error || 'An unknown error occurred while saving the prompt.'
+        );
+      }
+    } catch (error: any) {
+      console.error('Failed to create prompt:', error);
       toast({
         variant: 'destructive',
         title: 'Error Creating Prompt',
-        description: result.error || 'An unknown error occurred.',
+        description: error.message || 'An unknown error occurred.',
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
