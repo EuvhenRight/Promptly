@@ -4,6 +4,7 @@
 import * as cheerio from 'cheerio';
 import { uploadImageFromBuffer } from '@/firebase/prompts';
 import { z } from 'zod';
+import { initializeFirebase } from '@/firebase/init';
 
 const ScrapeResultSchema = z.object({
   title: z.string(),
@@ -17,6 +18,8 @@ export type ScrapeResult = z.infer<typeof ScrapeResultSchema>;
 export async function scrapePromptHero(
   url: string
 ): Promise<ScrapeResult | { error: string }> {
+  initializeFirebase(); // Ensure Firebase is initialized for this server action.
+
   if (!url || !url.includes('prompthero.com')) {
     return { error: 'Invalid URL. Please provide a valid PromptHero URL.' };
   }
