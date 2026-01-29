@@ -1,9 +1,11 @@
+
 'use server';
 
 import * as cheerio from 'cheerio';
 import { z } from 'zod';
 import { adminStorage, adminDb } from '@/firebase/admin';
 import type { ScrapeResult } from '@/lib/types';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 const ScrapeResultSchema = z.object({
   title: z.string(),
@@ -142,6 +144,13 @@ export async function scrapePromptHero(
         if (!title) missing.push('title');
         if (!privateContent) missing.push('prompt content');
         if (!originalImageUrl) missing.push('image URL');
+        
+        if (missing.includes('prompt content')) {
+            const bodyHtml = $('body').html() || '';
+            const snippet = bodyHtml.replace(/\s\s+/g, ' ').substring(0, 500);
+            return { error: `Scraping failed. Could not extract: prompt content. HTML snippet received: ${snippet}...` };
+        }
+
         return { error: `Scraping failed. Could not extract: ${missing.join(', ')}.` };
     }
 
@@ -176,3 +185,4 @@ export async function scrapePromptHero(
     };
   }
 }
+
