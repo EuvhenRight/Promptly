@@ -1,13 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import SearchBar from '@/components/home/search-bar';
 import PromptFeed from '@/components/home/prompt-feed';
 import SubHeader from '@/components/home/sub-header';
 import { usePromptsFeed } from '@/hooks/use-prompts-feed';
-import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -25,6 +24,27 @@ const FeedSkeleton = () => (
 export default function Home() {
   const [activeFilter, setActiveFilter] = useState('Featured');
   const { prompts, loading, error, hasMore, loadMore } = usePromptsFeed();
+  
+  const observer = useRef<IntersectionObserver>();
+
+  // A callback ref to attach to the sentinel element.
+  // This pattern is useful for re-creating the observer when dependencies change.
+  const loadMoreRef = useCallback((node: HTMLDivElement) => {
+    if (loading) return; // Don't set up observer while loading
+    if (observer.current) observer.current.disconnect(); // Disconnect previous observer
+    
+    // Create a new observer with the latest `hasMore` and `loadMore`
+    observer.current = new IntersectionObserver(entries => {
+      // If the sentinel is in view and there's more to load, call loadMore
+      if (entries[0].isIntersecting && hasMore) {
+        loadMore();
+      }
+    });
+
+    // If the node exists, start observing it
+    if (node) observer.current.observe(node);
+  }, [loading, hasMore, loadMore]);
+
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -36,22 +56,25 @@ export default function Home() {
           {error && <p className="text-destructive text-center">Error: {error.message}</p>}
           
           <PromptFeed prompts={prompts} />
+          
+          {/* 
+            This invisible div is the "sentinel". The IntersectionObserver watches it.
+            When it scrolls into view, more content is loaded.
+          */}
+          <div ref={loadMoreRef} />
 
+          {/* Loading indicator: show skeleton on initial load, spinner on subsequent loads */}
           {loading && (
-             <div className="mt-8">
-                <FeedSkeleton />
+             <div className="mt-8 text-center">
+                {prompts.length === 0 ? (
+                    <FeedSkeleton />
+                ) : (
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                )}
              </div>
           )}
 
-          {!loading && hasMore && (
-            <div className="mt-8 text-center">
-              <Button onClick={loadMore} disabled={loading}>
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Load More
-              </Button>
-            </div>
-          )}
-
+          {/* End of content message: shown when there are no more prompts to load */}
           {!hasMore && !loading && prompts.length > 0 && (
              <p className="mt-8 text-center text-muted-foreground">You've reached the end!</p>
           )}
