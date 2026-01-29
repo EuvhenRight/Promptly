@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -14,6 +15,7 @@ import {
 import Link from 'next/link';
 import { PlusCircle, Loader2 } from 'lucide-react';
 import { PromptsTable } from './prompts-table';
+import { Scraper } from './scraper';
 
 export default function AdminPromptsPage() {
   const firestore = useFirestore();
@@ -49,7 +51,7 @@ export default function AdminPromptsPage() {
   };
 
   return (
-    <>
+    <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-lg font-semibold md:text-2xl">Prompt Manager</h1>
         <Button asChild>
@@ -59,7 +61,10 @@ export default function AdminPromptsPage() {
           </Link>
         </Button>
       </div>
-      <Card className="mt-6">
+
+      <Scraper />
+      
+      <Card>
         <CardHeader>
           <CardTitle>All Prompts</CardTitle>
           <CardDescription>
@@ -69,6 +74,6 @@ export default function AdminPromptsPage() {
         </CardHeader>
         <CardContent>{renderContent()}</CardContent>
       </Card>
-    </>
+    </div>
   );
 }

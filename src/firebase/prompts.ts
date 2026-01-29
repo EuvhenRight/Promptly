@@ -1,3 +1,4 @@
+
 import {
   Firestore,
   collection,
@@ -6,6 +7,7 @@ import {
   serverTimestamp,
   getDoc,
   updateDoc,
+  deleteDoc as deleteDocFirestore,
 } from 'firebase/firestore';
 import {
   getStorage,
@@ -13,12 +15,13 @@ import {
   uploadBytes,
   getDownloadURL,
   deleteObject,
+  uploadBytesResumable,
 } from 'firebase/storage';
 import type { PromptFormValues } from '@/app/admin/prompts/new/prompt-form';
 import type { Prompt, PromptPrivateContent } from '@/lib/types';
 
 /**
- * Uploads an image to Firebase Storage and returns the download URL.
+ * Uploads an image from a client-side File object to Firebase Storage.
  * @param file The image file to upload.
  * @returns A promise that resolves with the public URL of the uploaded image.
  */
@@ -34,6 +37,27 @@ export async function uploadPromptImage(file: File): Promise<string> {
 
   return downloadURL;
 }
+
+/**
+ * Uploads an image from a server-side Buffer to Firebase Storage.
+ * @param buffer The image data as a Buffer.
+ * @param fileName The desired file name for the image in storage.
+ * @returns A promise that resolves with the public URL of the uploaded image.
+ */
+export async function uploadImageFromBuffer(buffer: Buffer, fileName: string): Promise<string> {
+    const storage = getStorage();
+    const storageRef = ref(storage, `prompts/${Date.now()}-${fileName}`);
+
+    // Metadata can be important, especially for web clients to render correctly
+    const metadata = {
+        contentType: 'image/jpeg', // Adjust based on actual image type if known, e.g., image/png
+    };
+
+    const snapshot = await uploadBytes(storageRef, buffer, metadata);
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    return downloadURL;
+}
+
 
 export type CreatePromptData = Omit<PromptFormValues, 'image'> & {
   imageUrl?: string;

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -18,6 +19,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 const promptFormSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters long.'),
@@ -39,7 +42,7 @@ export type PromptFormValues = z.infer<typeof promptFormSchema>;
 
 interface PromptFormProps {
   onSubmit: (values: PromptFormValues) => Promise<void>;
-  initialData?: Partial<PromptFormValues>;
+  initialData?: Partial<PromptFormValues & { imageUrl?: string }>;
   isEditing?: boolean;
   isSubmitting?: boolean;
 }
@@ -54,15 +57,33 @@ export function PromptForm({
   const form = useForm<PromptFormValues>({
     resolver: zodResolver(promptFormSchema),
     defaultValues: {
+      title: '',
+      description: '',
+      price: 0,
+      categories: '',
+      tags: '',
+      privateContent: '',
       ...initialData,
-      title: initialData?.title || '',
-      description: initialData?.description || '',
-      price: initialData?.price || 0,
-      categories: initialData?.categories || '',
-      tags: initialData?.tags || '',
-      privateContent: initialData?.privateContent || '',
     },
   });
+
+  const [imagePreview, setImagePreview] = useState<string | undefined>(initialData?.imageUrl);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (initialData) {
+      // Use reset to update the entire form state when initialData changes
+      form.reset({
+        title: initialData.title || '',
+        description: initialData.description || '',
+        price: initialData.price || 0,
+        categories: initialData.categories || '',
+        tags: initialData.tags || '',
+        privateContent: initialData.privateContent || '',
+      });
+      setImagePreview(initialData.imageUrl);
+    }
+  }, [initialData, form]);
 
   const handleFormSubmit = async (values: PromptFormValues) => {
     await onSubmit(values);
@@ -91,6 +112,7 @@ export function PromptForm({
                         <Input
                           placeholder="e.g., Cyberpunk Cityscape"
                           {...field}
+                          disabled={isSubmitting}
                         />
                       </FormControl>
                       <FormMessage />
@@ -108,6 +130,7 @@ export function PromptForm({
                           placeholder="A detailed description of what this prompt generates."
                           className="min-h-[120px]"
                           {...field}
+                          disabled={isSubmitting}
                         />
                       </FormControl>
                       <FormMessage />
@@ -125,6 +148,7 @@ export function PromptForm({
                           placeholder="The actual prompt text that users will purchase."
                           className="min-h-[150px] font-mono"
                           {...field}
+                          disabled={isSubmitting}
                         />
                       </FormControl>
                       <FormDescription>
@@ -156,6 +180,7 @@ export function PromptForm({
                           step="0.01"
                           placeholder="4.99"
                           {...field}
+                          disabled={isSubmitting}
                         />
                       </FormControl>
                       <FormDescription>
@@ -175,6 +200,7 @@ export function PromptForm({
                         <Input
                           placeholder="Characters, Environments"
                           {...field}
+                          disabled={isSubmitting}
                         />
                       </FormControl>
                       <FormDescription>Comma-separated values.</FormDescription>
@@ -192,6 +218,7 @@ export function PromptForm({
                         <Input
                           placeholder="photorealistic, 8k, high detail"
                           {...field}
+                          disabled={isSubmitting}
                         />
                       </FormControl>
                       <FormDescription>
@@ -208,27 +235,41 @@ export function PromptForm({
               <CardHeader>
                 <CardTitle>Display Image</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                 {imagePreview && (
+                   <div className="relative w-full aspect-video rounded-md overflow-hidden border">
+                      <Image 
+                        src={imagePreview}
+                        alt="Current image preview"
+                        fill
+                        className="object-contain"
+                      />
+                   </div>
+                 )}
                 <FormField
                   control={form.control}
                   name="image"
                   render={({ field: { value, onChange, ...fieldProps } }) => (
                     <FormItem>
-                      <FormLabel>Image</FormLabel>
+                      <FormLabel>{imagePreview ? 'Replace Image' : 'Image'}</FormLabel>
                       <FormControl>
                         <Input
                           {...fieldProps}
+                          ref={fileInputRef}
                           type="file"
                           accept="image/png, image/jpeg, image/gif, image/webp"
-                          onChange={(event) =>
-                            onChange(
-                              event.target.files && event.target.files[0]
-                            )
-                          }
+                          disabled={isSubmitting}
+                          onChange={(event) => {
+                             const file = event.target.files?.[0];
+                             onChange(file);
+                             if (file) {
+                               setImagePreview(URL.createObjectURL(file));
+                             }
+                          }}
                         />
                       </FormControl>
                       <FormDescription>
-                        Upload an example image generated by this prompt.
+                        Upload an example image. Max 4MB.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useUser, useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { PromptForm, type PromptFormValues } from './prompt-form';
@@ -9,14 +10,24 @@ import {
   uploadPromptImage,
   type CreatePromptData,
 } from '@/firebase/prompts';
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 
-export default function NewPromptPage() {
+function NewPromptContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Read data from URL query parameters for pre-filling the form
+  const initialData = {
+    title: searchParams.get('title') || '',
+    privateContent: searchParams.get('privateContent') || '',
+    categories: searchParams.get('categories') || '',
+    imageUrl: searchParams.get('imageUrl') || undefined,
+  };
+
 
   const handleSubmit = async (data: PromptFormValues) => {
     if (!user || !firestore) {
@@ -31,8 +42,9 @@ export default function NewPromptPage() {
     setIsSubmitting(true);
 
     try {
-      let imageUrl: string | undefined = undefined;
+      let imageUrl = initialData.imageUrl; // Use scraped image URL by default
 
+      // If user uploaded a new image, it takes precedence
       if (data.image) {
         toast({ title: 'Uploading image...', description: 'Please wait.' });
         imageUrl = await uploadPromptImage(data.image);
@@ -79,7 +91,20 @@ export default function NewPromptPage() {
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-lg font-semibold md:text-2xl">Create New Prompt</h1>
       </div>
-      <PromptForm onSubmit={handleSubmit} isSubmitting={isSubmitting} />
+      <PromptForm 
+        onSubmit={handleSubmit} 
+        isSubmitting={isSubmitting}
+        initialData={initialData}
+      />
     </>
   );
+}
+
+// Wrap with Suspense because useSearchParams can suspend
+export default function NewPromptPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <NewPromptContent />
+    </Suspense>
+  )
 }
