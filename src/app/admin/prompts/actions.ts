@@ -35,35 +35,77 @@ export async function scrapePromptHero(
 
     const html = await response.text();
     const $ = cheerio.load(html);
+
+    let title: string | undefined;
+    let privateContent: string | undefined;
+    let categories: string | undefined;
+    let originalImageUrl: string | undefined;
+
     const nextDataScript = $('#__NEXT_DATA__').html();
 
-    if (!nextDataScript) {
-      return { error: 'Could not find __NEXT_DATA__ script in the page.' };
+    if (nextDataScript) {
+      // --- Primary Method: Use __NEXT_DATA__ ---
+      try {
+        const data = JSON.parse(nextDataScript);
+        const promptData = data?.props?.pageProps?.prompt;
+
+        if (promptData) {
+          title = promptData.displayName;
+          privateContent = promptData.prompt;
+          categories = promptData.model;
+          originalImageUrl = promptData.images?.[0]?.url;
+        }
+      } catch (e) {
+        // JSON parsing failed, ignore and fall back to manual scraping
+        console.warn('Could not parse __NEXT_DATA__ JSON. Falling back to manual scraping.');
+      }
     }
 
-    const data = JSON.parse(nextDataScript);
-    const promptData = data?.props?.pageProps?.prompt;
+    // --- Fallback Method: Use Cheerio Selectors if primary method fails ---
+    if (!title || !privateContent || !originalImageUrl) {
+        console.log('__NEXT_DATA__ not found or incomplete. Using fallback scraping method.');
 
-    if (!promptData) {
-      return { error: 'Could not find prompt data in the JSON payload.' };
+        // Fallback for title
+        if (!title) {
+          title = $('h1').first().text().trim();
+        }
+
+        // Fallback for private content
+        if (!privateContent) {
+           // PromptHero often uses this class for the prompt text block
+           privateContent = $('div.text-white.break-words').first().text().trim();
+        }
+
+        // Fallback for categories
+        if (!categories) {
+          categories = $('a[href^="/model/"]').first().text().trim() || 'Unknown';
+        }
+
+        // Fallback for image URL (very important)
+        if (!originalImageUrl) {
+          // The og:image meta tag is a reliable source
+          originalImageUrl = $('meta[property="og:image"]').attr('content');
+        }
     }
 
-    const title = promptData.displayName || 'Untitled';
-    const privateContent = promptData.prompt || '';
-    const categories = promptData.model || 'Unknown';
-    const originalImageUrl = promptData.images?.[0]?.url;
-
-    if (!originalImageUrl) {
-      return { error: 'Could not find an image URL for the prompt.' };
+    // --- Final Validation ---
+    if (!title || !privateContent || !originalImageUrl) {
+        let missing = [];
+        if (!title) missing.push('title');
+        if (!privateContent) missing.push('prompt content');
+        if (!originalImageUrl) missing.push('image URL');
+        return { error: `Scraping failed. Could not extract: ${missing.join(', ')}. The website structure may have changed.` };
     }
 
+
+    // --- Image Processing ---
     // Download the image
     const imageResponse = await fetch(originalImageUrl);
     if (!imageResponse.ok) {
       return { error: 'Failed to download the prompt image.' };
     }
     const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
-    const originalFilename = originalImageUrl.split('/').pop() || 'image.jpg';
+    const originalFilename = originalImageUrl.split('/').pop()?.split('?')[0] || 'image.jpg';
 
     // Upload the image to our Firebase Storage
     const imageUrl = await uploadImageFromBuffer(imageBuffer, originalFilename);
@@ -71,7 +113,7 @@ export async function scrapePromptHero(
     return {
       title,
       privateContent,
-      categories,
+      categories: categories || 'Unknown',
       imageUrl,
     };
   } catch (error: any) {
