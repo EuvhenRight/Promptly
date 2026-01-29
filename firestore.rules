@@ -146,5 +146,13 @@ service cloud.firestore {
         allow update, delete: if isOwner(resource.data.userId);
       }
     }
+    
+    /**
+     * @description Tracks prompts scraped from external sources to prevent duplicates.
+     */
+    match /scraped_prompts/{sourceId} {
+      // Only admins can read or write to this collection.
+      allow read, write: if isAdmin();
+    }
   }
 }

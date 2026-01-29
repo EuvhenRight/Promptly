@@ -10,6 +10,8 @@ const ScrapeResultSchema = z.object({
   privateContent: z.string(),
   categories: z.string(),
   imageUrl: z.string(),
+  tags: z.string(),
+  sourceId: z.string(),
 });
 
 async function uploadImageToAdminStorage(buffer: Buffer, fileName: string): Promise<string> {
@@ -17,7 +19,7 @@ async function uploadImageToAdminStorage(buffer: Buffer, fileName: string): Prom
         throw new Error('Firebase Admin Storage is not initialized. Check server logs for details. Ensure service-account.json is present.');
     }
     const bucket = adminStorage.bucket();
-    const filePath = `prompts/${Date.now()}-${fileName}`;
+    const filePath = `prompts/${fileName}`;
     const file = bucket.file(filePath);
 
     await file.save(buffer, {
@@ -41,8 +43,34 @@ export async function scrapePromptHero(
   if (!url || !url.includes('prompthero.com')) {
     return { error: 'Invalid URL. Please provide a valid PromptHero URL.' };
   }
+  
+  // Extract sourceId from URL for duplicate checking and file naming
+  const urlParts = url.split('/prompt/');
+  if (urlParts.length < 2) {
+    return { error: 'Invalid PromptHero URL format. Could not find prompt ID.' };
+  }
+  const promptSlug = urlParts[1];
+  const sourceId = promptSlug.split('-')[0];
+  if (!sourceId) {
+    return { error: 'Could not extract a unique ID from the URL.' };
+  }
+
 
   try {
+    // --- New Duplicate Check using sourceId ---
+    if (adminDb) {
+      const scrapedRef = adminDb.collection('scraped_prompts').doc(sourceId);
+      const docSnap = await scrapedRef.get();
+      if (docSnap.exists) {
+        return { 
+          error: 'This prompt has already been scraped.',
+          duplicate: true 
+        };
+      }
+    } else {
+      console.warn("Admin DB not initialized, skipping duplicate check.");
+    }
+    
     const response = await fetch(url, {
       headers: {
         'User-Agent':
@@ -59,43 +87,17 @@ export async function scrapePromptHero(
 
     let title: string | undefined;
     let privateContent: string | undefined;
-    let categories: string | undefined;
     let originalImageUrl: string | undefined;
 
     // --- Title Parsing ---
     title = $('h1').first().text().trim();
     
     // --- Private Content Parsing ---
-    // Method 1: Robust selector (Primary)
     privateContent = $('div.text-white.break-words').first().text().trim();
-    
-    // Method 2: User's provided logic (Fallback)
-    if (!privateContent) {
-        const elements = $('.font-semibold');
-        const promptParts: string[] = [];
-        
-        elements.each((i, el) => {
-            const element = $(el);
-            if (element.is('div') && element.find('a').length > 0 && !element.closest('h2, h3, h4').length) {
-                element.find('a').each((j, a) => {
-                    const text = $(a).text().trim();
-                    if (text) promptParts.push(text);
-                });
-                if (promptParts.length > 0) {
-                    privateContent = promptParts.join(' ');
-                    return false; // Break the loop
-                }
-            }
-        });
-    }
-    
-    // --- Category Parsing ---
-    categories = $('a[href^="/model/"]').first().text().trim() || 'Unknown';
     
     // --- Image Parsing ---
     let imageUrl: string | undefined;
     
-    // 1. Prioritize a specific structure
     const mainImage = $('div[data-testid="prompt-image-0"]').find('img').first();
     if (mainImage.length) {
         const srcset = mainImage.attr('srcset');
@@ -107,31 +109,10 @@ export async function scrapePromptHero(
         }
     }
     
-    // 2. Fallback to broad search in main/article
-    if (!imageUrl) {
-         $('main img, article img').each((i, el) => {
-            const img = $(el);
-            const width = parseInt(img.attr('width') || '0', 10);
-            const height = parseInt(img.attr('height') || '0', 10);
-            
-            // Heuristic to ignore small icons/avatars
-            if (width > 200 || height > 200) {
-               const srcset = img.attr('srcset');
-               if (srcset) {
-                   const sources = srcset.split(',').map(s => s.trim().split(' ')[0]);
-                   imageUrl = sources[sources.length - 1];
-                   return false; // Found one, break loop
-               }
-            }
-        });
-    }
-    
-    // 3. Final fallback to og:image meta tag
     if (!imageUrl) {
         imageUrl = $('meta[property="og:image"]').attr('content');
     }
     
-    // Process the found URL
     if (imageUrl) {
         if (imageUrl.includes('_next/image?url=')) {
             try {
@@ -156,37 +137,12 @@ export async function scrapePromptHero(
         } catch (e) { /* ignore */ }
     }
     
-    // --- Final Validation, Duplicate Check & Debugging ---
-    if (!title) {
-        return { error: 'Scraping failed. Could not extract title.' };
-    }
-
-    // --- Duplicate Check ---
-    if (adminDb) {
-      const promptsRef = adminDb.collection('prompts');
-      const snapshot = await promptsRef.where('title', '==', title).limit(1).get();
-      if (!snapshot.empty) {
-        return { 
-          error: 'A prompt with this title already exists in the database.',
-          duplicate: true 
-        };
-      }
-    } else {
-      console.warn("Admin DB not initialized, skipping duplicate check.");
-    }
-    
-    if (!privateContent || !originalImageUrl) {
+    if (!title || !privateContent || !originalImageUrl) {
         let missing = [];
+        if (!title) missing.push('title');
         if (!privateContent) missing.push('prompt content');
         if (!originalImageUrl) missing.push('image URL');
-
-        // Add a snippet of the HTML to the error message for debugging
-        const bodyHtml = $('body').html() || 'Could not get body HTML.';
-        const debugHtml = bodyHtml.substring(0, 2000).replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-        return { 
-            error: `Scraping failed. Could not extract: ${missing.join(', ')}. The website structure may have changed. \n\n--- DEBUG: Start of HTML received by server ---\n\n${debugHtml}\n\n--- END OF DEBUG ---` 
-        };
+        return { error: `Scraping failed. Could not extract: ${missing.join(', ')}.` };
     }
 
     // --- Image Processing ---
@@ -195,18 +151,21 @@ export async function scrapePromptHero(
       return { error: 'Failed to download the prompt image.' };
     }
     const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
-    const originalFilename = originalImageUrl.split('/').pop()?.split('?')[0] || 'image.jpg';
+    const fileExtension = originalImageUrl.split('.').pop()?.split('?')[0] || 'jpg';
+    const newFileName = `${sourceId}.${fileExtension}`;
 
-    const finalImageUrl = await uploadImageToAdminStorage(imageBuffer, originalFilename);
+
+    const finalImageUrl = await uploadImageToAdminStorage(imageBuffer, newFileName);
 
     const result: ScrapeResult = {
       title,
       privateContent,
-      categories: categories || 'Unknown',
+      categories: 'images',
+      tags: title.split(' ')[0] || '',
       imageUrl: finalImageUrl,
+      sourceId: sourceId,
     };
     
-    // Validate with Zod before returning
     ScrapeResultSchema.parse(result);
 
     return result;

@@ -25,8 +25,10 @@ function NewPromptContent() {
     title: searchParams.get('title') || '',
     privateContent: searchParams.get('privateContent') || '',
     categories: searchParams.get('categories') || '',
+    tags: searchParams.get('tags') || '',
     imageUrl: searchParams.get('imageUrl') || undefined,
   };
+  const sourceId = searchParams.get('sourceId');
 
 
   const handleSubmit = async (data: PromptFormValues) => {
@@ -58,6 +60,7 @@ function NewPromptContent() {
         tags: data.tags,
         privateContent: data.privateContent,
         imageUrl: imageUrl,
+        sourceId: sourceId,
       };
       
       toast({ title: 'Saving prompt...', description: 'Just a moment.' });

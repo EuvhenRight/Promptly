@@ -63,4 +63,6 @@ export type ScrapeResult = {
   privateContent: string;
   categories: string;
   imageUrl: string;
+  sourceId: string;
+  tags: string;
 };

@@ -61,6 +61,7 @@ export async function uploadImageFromBuffer(buffer: Buffer, fileName: string): P
 
 export type CreatePromptData = Omit<PromptFormValues, 'image'> & {
   imageUrl?: string;
+  sourceId?: string | null;
 };
 
 export async function createPrompt(
@@ -107,6 +108,16 @@ export async function createPrompt(
 
     batch.set(newPromptRef, publicData);
     batch.set(privateContentRef, privateData);
+
+    // Add tracking doc for scraped prompts
+    if (data.sourceId) {
+      const scrapedPromptRef = doc(firestore, 'scraped_prompts', data.sourceId);
+      batch.set(scrapedPromptRef, {
+        promptId: newPromptRef.id,
+        createdAt: serverTimestamp(),
+      });
+    }
+
 
     await batch.commit();
 
