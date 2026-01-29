@@ -18,7 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 const PromptDetailSkeleton = () => (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
       <div className="space-y-4">
-        <Skeleton className="aspect-video w-full rounded-lg" />
+        <Skeleton className="aspect-[4/3] w-full rounded-lg" />
       </div>
       <div className="space-y-6">
         <div className="space-y-3">
@@ -92,14 +92,15 @@ export default function PromptDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
         {/* Left Column: Image Gallery */}
         <div className="space-y-4">
-          <div className="aspect-video w-full overflow-hidden rounded-lg border bg-muted">
+          <div className="w-full overflow-hidden rounded-lg border bg-muted">
             {promptImage && (
               <Image
                 src={promptImage}
                 alt={prompt.title}
-                width={600}
-                height={400}
-                className="object-cover w-full h-full"
+                width={720}
+                height={1280}
+                className="w-full h-auto"
+                priority
               />
             )}
           </div>
@@ -144,7 +145,7 @@ export default function PromptDetailPage() {
                <h2 className="text-2xl font-bold">{prompt.price === 0 ? 'Free' : `$${prompt.price.toFixed(2)}`}</h2>
                <div className="flex flex-grow justify-end items-center gap-2 sm:flex-grow-0">
                  <Button size="lg" variant="outline" onClick={handleAddToCart} className="flex-1 sm:flex-initial" disabled={!user}>
-                    <ShoppingCart className="mr-2 h-5 w-5" />
+                    <ShoppingCart className="mr-2 h-4 w-4" />
                     Add to Cart
                  </Button>
                  <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 flex-1 sm:flex-initial">

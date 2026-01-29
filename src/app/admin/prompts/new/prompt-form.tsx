@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -237,12 +236,13 @@ export function PromptForm({
               </CardHeader>
               <CardContent className="space-y-4">
                  {imagePreview && (
-                   <div className="relative w-full aspect-video rounded-md overflow-hidden border">
+                   <div className="w-full overflow-hidden rounded-md border bg-muted">
                       <Image 
                         src={imagePreview}
                         alt="Current image preview"
-                        fill
-                        className="object-contain"
+                        width={720}
+                        height={1280}
+                        className="w-full h-auto object-contain"
                       />
                    </div>
                  )}
