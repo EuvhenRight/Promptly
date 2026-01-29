@@ -57,3 +57,10 @@ export type PromptComment = {
     userId: string;
     timestamp: Timestamp;
 };
+
+export type ScrapeResult = {
+  title: string;
+  privateContent: string;
+  categories: string;
+  imageUrl: string;
+};

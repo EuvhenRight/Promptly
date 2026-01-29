@@ -1,9 +1,9 @@
-
 'use server';
 
 import * as cheerio from 'cheerio';
 import { z } from 'zod';
 import { adminStorage } from '@/firebase/admin';
+import type { ScrapeResult } from '@/lib/types';
 
 const ScrapeResultSchema = z.object({
   title: z.string(),
@@ -11,8 +11,6 @@ const ScrapeResultSchema = z.object({
   categories: z.string(),
   imageUrl: z.string(),
 });
-
-export type ScrapeResult = z.infer<typeof ScrapeResultSchema>;
 
 async function uploadImageToAdminStorage(buffer: Buffer, fileName: string): Promise<string> {
     if (!adminStorage) {
@@ -184,12 +182,17 @@ export async function scrapePromptHero(
 
     const finalImageUrl = await uploadImageToAdminStorage(imageBuffer, originalFilename);
 
-    return {
+    const result: ScrapeResult = {
       title,
       privateContent,
       categories: categories || 'Unknown',
       imageUrl: finalImageUrl,
     };
+    
+    // Validate with Zod before returning
+    ScrapeResultSchema.parse(result);
+
+    return result;
   } catch (error: any) {
     console.error('Scraping failed:', error);
     return {
