@@ -2,10 +2,10 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { placeholderImages } from '@/lib/dummy-data';
 import type { Prompt } from '@/lib/types';
 import { Heart, Eye, ShoppingCart } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '../ui/skeleton';
 
 type PromptCardProps = {
   prompt: Prompt;
@@ -18,21 +18,22 @@ const formatStat = (num: number): string => {
 };
 
 export default function PromptCard({ prompt }: PromptCardProps) {
-  const promptImage = placeholderImages.find(p => p.id === prompt.images[0]);
+  const imageUrl = prompt.images?.[0];
   
   return (
     <div>
         <div className="group relative w-full overflow-hidden rounded-2xl bg-card">
             <Link href={`/prompt/${prompt.id}`} className="block cursor-pointer">
-                {promptImage && (
+                {imageUrl ? (
                     <Image
-                        src={promptImage.imageUrl}
+                        src={imageUrl}
                         alt={prompt.title}
-                        width={promptImage.width}
-                        height={promptImage.height}
+                        width={500}
+                        height={500}
                         className="w-full h-auto object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
-                        data-ai-hint={promptImage.imageHint}
                     />
+                ) : (
+                  <Skeleton className="w-full aspect-[4/5]" />
                 )}
             </Link>
 

@@ -1,8 +1,8 @@
 'use client';
 
 import Masonry from 'react-masonry-css';
-import { DUMMY_PROMPTS } from '@/lib/dummy-data';
 import PromptCard from './prompt-card';
+import type { Prompt } from '@/lib/types';
 
 const breakpointColumnsObj = {
   default: 5,   // For screens > 1280px
@@ -11,14 +11,22 @@ const breakpointColumnsObj = {
   767: 1,     // For screens <= 767px
 };
 
-export default function PromptFeed() {
+interface PromptFeedProps {
+  prompts: Prompt[];
+}
+
+export default function PromptFeed({ prompts }: PromptFeedProps) {
+  if (!prompts.length) {
+    return null; // Don't render anything if there are no prompts yet
+  }
+
   return (
     <Masonry
       breakpointCols={breakpointColumnsObj}
       className="prompt-feed-grid"
       columnClassName="prompt-feed-grid_column"
     >
-      {DUMMY_PROMPTS.map((prompt) => (
+      {prompts.map((prompt) => (
         <PromptCard key={prompt.id} prompt={prompt} />
       ))}
     </Masonry>
