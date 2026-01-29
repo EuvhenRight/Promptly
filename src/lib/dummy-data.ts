@@ -249,7 +249,19 @@ export const DUMMY_PROMPTS: Prompt[] = [
     tags: ['mockup', 'product', 'realistic'],
     categories: ['ChatGPT Image'],
     stats: { views: 9500, sales: 130, likes: 850 },
-  }
+  },
+  {
+    id: '21',
+    authorId: '1',
+    title: 'Midjourney prompt: giraffe in flowers by artist arne thun, in the style of...',
+    description: 'A Midjourney prompt for a giraffe in flowers, inspired by artist Arne Thun.',
+    price: 1,
+    images: ['prompt-21-img'],
+    rating: { average: 4.5, count: 0 },
+    tags: ['midjourney', 'giraffe', 'flowers', 'arne thun'],
+    categories: ['Midjourney'],
+    stats: { views: 0, sales: 0, likes: 0 },
+  },
 ];
 
 export const DUMMY_CREATORS: Creator[] = [
