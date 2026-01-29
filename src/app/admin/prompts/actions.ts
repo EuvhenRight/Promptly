@@ -2,7 +2,7 @@
 
 import * as cheerio from 'cheerio';
 import { z } from 'zod';
-import { adminStorage } from '@/firebase/admin';
+import { adminStorage, adminDb } from '@/firebase/admin';
 import type { ScrapeResult } from '@/lib/types';
 
 const ScrapeResultSchema = z.object({
@@ -36,7 +36,7 @@ async function uploadImageToAdminStorage(buffer: Buffer, fileName: string): Prom
 
 export async function scrapePromptHero(
   url: string
-): Promise<ScrapeResult | { error: string }> {
+): Promise<ScrapeResult | { error: string; duplicate?: boolean }> {
 
   if (!url || !url.includes('prompthero.com')) {
     return { error: 'Invalid URL. Please provide a valid PromptHero URL.' };
@@ -156,10 +156,27 @@ export async function scrapePromptHero(
         } catch (e) { /* ignore */ }
     }
     
-    // --- Final Validation & Debugging ---
-    if (!title || !privateContent || !originalImageUrl) {
+    // --- Final Validation, Duplicate Check & Debugging ---
+    if (!title) {
+        return { error: 'Scraping failed. Could not extract title.' };
+    }
+
+    // --- Duplicate Check ---
+    if (adminDb) {
+      const promptsRef = adminDb.collection('prompts');
+      const snapshot = await promptsRef.where('title', '==', title).limit(1).get();
+      if (!snapshot.empty) {
+        return { 
+          error: 'A prompt with this title already exists in the database.',
+          duplicate: true 
+        };
+      }
+    } else {
+      console.warn("Admin DB not initialized, skipping duplicate check.");
+    }
+    
+    if (!privateContent || !originalImageUrl) {
         let missing = [];
-        if (!title) missing.push('title');
         if (!privateContent) missing.push('prompt content');
         if (!originalImageUrl) missing.push('image URL');
 

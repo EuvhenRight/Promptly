@@ -32,18 +32,29 @@ export function Scraper() {
       const result = await scrapePromptHero(url);
 
       if ('error' in result) {
-        throw new Error(result.error);
+        if (result.duplicate) {
+          // Handle the specific "duplicate" case with a non-destructive toast
+          toast({
+            title: 'Prompt Already Exists',
+            description: result.error,
+          });
+        } else {
+          // For all other scraping errors, throw to be caught by the catch block
+          throw new Error(result.error);
+        }
+      } else {
+        // Success case
+        toast({
+          title: 'Scraping Successful!',
+          description: 'Redirecting to the new prompt form...',
+        });
+
+        const queryParams = new URLSearchParams(result as ScrapeResult).toString();
+        router.push(`/admin/prompts/new?${queryParams}`);
       }
 
-      toast({
-        title: 'Scraping Successful!',
-        description: 'Redirecting to the new prompt form...',
-      });
-
-      const queryParams = new URLSearchParams(result as ScrapeResult).toString();
-      router.push(`/admin/prompts/new?${queryParams}`);
-
     } catch (error: any) {
+      // Catches generic errors and non-duplicate scraping errors
       toast({
         variant: 'destructive',
         title: 'Scraping Failed',

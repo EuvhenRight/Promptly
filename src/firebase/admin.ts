@@ -33,8 +33,9 @@ try {
   }
 }
 
-// We check if the apps array is populated before trying to get storage.
+// We check if the apps array is populated before trying to get services.
 // If initialization failed, this will throw a more specific error later on.
 const adminStorage = getApps().length ? admin.storage() : null;
+const adminDb = getApps().length ? admin.firestore() : null;
 
-export { adminStorage };
+export { adminStorage, adminDb };
