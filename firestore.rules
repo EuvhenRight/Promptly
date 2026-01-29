@@ -125,11 +125,12 @@ service cloud.firestore {
        * @description Private prompt content, accessible only to purchasers or admins.
        */
       match /private/{docId} {
-        // Allow access only to the 'content' document.
-        // Users can read if they are an admin or have purchased the prompt.
+        // READ: Users can read if they are an admin or have purchased the prompt.
         allow get: if docId == 'content' && (isAdmin() || hasPurchased(promptId));
-        // Nobody can write directly to the private content. It's set during creation.
-        allow write: if false;
+        
+        // WRITE: Only admins can create, update, or delete the private content.
+        // This is necessary for the prompt management lifecycle.
+        allow write: if docId == 'content' && isAdmin();
       }
 
       /**
