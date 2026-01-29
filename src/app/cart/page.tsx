@@ -1,18 +1,57 @@
 'use client';
 
 import { useMemo } from 'react';
-import { doc } from 'firebase/firestore';
-import { useDoc, useUser, useFirestore, useMemoFirebase } from '@/firebase';
-import type { Cart } from '@/lib/types';
+import { doc, collection, query, where, documentId } from 'firebase/firestore';
+import { useDoc, useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import type { Cart, Prompt } from '@/lib/types';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
-import { DUMMY_PROMPTS } from '@/lib/dummy-data';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
-import { placeholderImages } from '@/lib/dummy-data';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Loader2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+
+function CartSkeleton() {
+    return (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-4">
+                <Card className="flex items-center p-4">
+                    <Skeleton className="w-24 h-24 rounded-md mr-4" />
+                    <div className="flex-grow space-y-2">
+                        <Skeleton className="h-5 w-3/4" />
+                        <Skeleton className="h-4 w-full" />
+                    </div>
+                </Card>
+                 <Card className="flex items-center p-4">
+                    <Skeleton className="w-24 h-24 rounded-md mr-4" />
+                    <div className="flex-grow space-y-2">
+                        <Skeleton className="h-5 w-2/3" />
+                        <Skeleton className="h-4 w-4/5" />
+                    </div>
+                </Card>
+            </div>
+            <div className="lg:col-span-1">
+                 <Card>
+                    <CardHeader>
+                        <Skeleton className="h-7 w-2/4" />
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <Skeleton className="h-5 w-full" />
+                        <Skeleton className="h-5 w-full" />
+                        <Separator />
+                        <Skeleton className="h-7 w-full" />
+                    </CardContent>
+                    <CardFooter>
+                        <Skeleton className="h-12 w-full" />
+                    </CardFooter>
+                </Card>
+            </div>
+        </div>
+    )
+}
+
 
 export default function CartPage() {
   const { user } = useUser();
@@ -22,15 +61,21 @@ export default function CartPage() {
     () => (user ? doc(firestore, 'users', user.uid, 'carts', 'active') : null),
     [firestore, user]
   );
+  const { data: cart, isLoading: isCartLoading } = useDoc<Cart>(cartRef);
 
-  const { data: cart, isLoading } = useDoc<Cart>(cartRef);
+  const promptsQuery = useMemoFirebase(() => {
+    if (!firestore || !cart?.promptIds || cart.promptIds.length === 0) {
+      return null;
+    }
+    return query(collection(firestore, 'prompts'), where(documentId(), 'in', cart.promptIds));
+  }, [firestore, cart?.promptIds]);
 
-  const cartItems = useMemo(() => {
-    if (!cart?.promptIds) return [];
-    return DUMMY_PROMPTS.filter((prompt) => cart.promptIds.includes(prompt.id));
-  }, [cart]);
+  const { data: cartItems, isLoading: areItemsLoading } = useCollection<Prompt>(promptsQuery);
+  
+  const isLoading = isCartLoading || (cart?.promptIds && cart.promptIds.length > 0 && areItemsLoading);
 
   const subtotal = useMemo(() => {
+    if (!cartItems) return 0;
     return cartItems.reduce((acc, item) => acc + item.price, 0);
   }, [cartItems]);
 
@@ -39,34 +84,41 @@ export default function CartPage() {
 
   const renderContent = () => {
     if (isLoading) {
-      return <p>Loading your cart...</p>;
+      return <CartSkeleton />;
     }
 
-    if (!cart || cartItems.length === 0) {
-      return <p>Your cart is empty.</p>;
+    if (!cart || !cartItems || cartItems.length === 0) {
+      return (
+        <div className="text-center py-16 bg-muted/50 rounded-lg">
+          <h2 className="text-2xl font-semibold">Your cart is empty.</h2>
+          <p className="text-muted-foreground mt-2">Looks like you haven't added any prompts yet.</p>
+          <Button asChild className="mt-6">
+              <a href="/">Explore Prompts</a>
+          </Button>
+        </div>
+      );
     }
 
     return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-4">
           {cartItems.map((item) => {
-            const itemImage = placeholderImages.find(p => p.id === item.images[0]);
+            const itemImage = item.images?.[0];
             return (
               <Card key={item.id} className="flex items-center p-4">
-                <div className="relative w-24 h-24 aspect-square overflow-hidden rounded-md mr-4">
+                <div className="relative w-24 h-24 aspect-square overflow-hidden rounded-md mr-4 bg-muted">
                   {itemImage && (
                      <Image
-                        src={itemImage.imageUrl}
+                        src={itemImage}
                         alt={item.title}
                         fill
                         className="object-cover"
-                        data-ai-hint={itemImage.imageHint}
                      />
                   )}
                 </div>
                 <div className="flex-grow">
                   <h3 className="font-semibold">{item.title}</h3>
-                  <p className="text-sm text-muted-foreground">{DUMMY_PROMPTS.find(p => p.id === item.id)?.description}</p>
+                  <p className="text-sm text-muted-foreground line-clamp-2">{item.description}</p>
                 </div>
                 <div className="flex items-center gap-4">
                    <p className="font-bold text-lg">{item.price === 0 ? 'Free' : `$${item.price.toFixed(2)}`}</p>
