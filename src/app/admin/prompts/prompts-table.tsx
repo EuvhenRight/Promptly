@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/table'
 import { useFirestore } from '@/firebase'
 import { deletePrompt } from '@/firebase/prompts'
+import { useCategories } from '@/hooks/use-categories'
 import { useToast } from '@/hooks/use-toast'
 import type { Prompt } from '@/lib/types'
 import { format } from 'date-fns'
@@ -44,6 +45,7 @@ interface PromptsTableProps {
 export function PromptsTable({ prompts }: PromptsTableProps) {
 	const { toast } = useToast()
 	const firestore = useFirestore()
+	const { getNames } = useCategories()
 	const [promptToDelete, setPromptToDelete] = useState<Prompt | null>(null)
 
 	const handleDelete = async () => {
@@ -107,7 +109,9 @@ export function PromptsTable({ prompts }: PromptsTableProps) {
 								<TableCell className='font-medium'>
 									<div className='font-medium'>{prompt.title}</div>
 									<div className='hidden text-sm text-muted-foreground md:inline'>
-										{prompt.categories.join(', ')}
+										{getNames(prompt.categoryId ?? prompt.categories?.[0]).join(
+											', ',
+										)}
 									</div>
 								</TableCell>
 								<TableCell>

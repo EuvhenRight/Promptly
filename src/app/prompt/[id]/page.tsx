@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
 import { addPromptToCart } from '@/firebase/cart'
+import { useCategories } from '@/hooks/use-categories'
 import { useToast } from '@/hooks/use-toast'
 import type { Prompt, UserProfile } from '@/lib/types'
 import { doc } from 'firebase/firestore'
@@ -63,6 +64,7 @@ export default function PromptDetailPage() {
 	)
 	const { data: author, isLoading: isAuthorLoading } =
 		useDoc<UserProfile>(authorRef)
+	const { getNames } = useCategories()
 
 	const handleAddToCart = () => {
 		if (!user || !firestore || !prompt) {
@@ -92,6 +94,8 @@ export default function PromptDetailPage() {
 		}
 
 		const promptImage = prompt.images?.[0]
+		const categoryId = prompt.categoryId ?? prompt.categories?.[0]
+		const categoryNames = getNames(categoryId)
 
 		return (
 			<div className='grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12'>
@@ -145,11 +149,17 @@ export default function PromptDetailPage() {
 					</div>
 
 					<div className='flex flex-wrap gap-2'>
-						{prompt.tags.map(tag => (
-							<Badge key={tag} variant='secondary'>
-								{tag}
+						{categoryNames.map(name => (
+							<Badge key={name} variant='secondary'>
+								{name}
 							</Badge>
 						))}
+						{Array.isArray(prompt.tags) &&
+							prompt.tags.map(tag => (
+								<Badge key={tag} variant='outline'>
+									{tag}
+								</Badge>
+							))}
 					</div>
 
 					<p className='text-muted-foreground'>{prompt.description}</p>

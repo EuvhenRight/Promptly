@@ -1,25 +1,6 @@
-/**
- * # Core Philosophy
- * This ruleset enforces a strict user-ownership model where all data is
- * segregated into user-specific subcollections. The primary security mechanism
- * is path-based authorization, ensuring that a user can only ever access data
- * that exists within their own document tree. This design simplifies security logic
- * and enhances query performance by isolating user data.
- *
- * # Data Structure
- * - `/users/{userId}`: Stores user profile data, including their role.
- * - `/users/{userId}/carts/{cartId}`: Contains a user's shopping cart.
- * - `/users/{userId}/orders/{orderId}`: Contains a user's order history.
- * - `/prompts/{promptId}`: Public data for a prompt.
- *
- * # Key Security Decisions
- * - **Admin Role**: A custom `isAdmin()` function checks a user's role from their
- *   profile document (`/users/{uid}`). This grants privileged access for
- *   managing prompts and users.
- * - **Strict Ownership**: Most operations are gated by `isOwner()`, comparing
- *   `request.auth.uid` with the `{userId}` in the document path.
- * - **Default Deny**: Any path not explicitly matched is denied access.
- */
+// Раніше було тимчасово: allow read, write для всіх авторизованих.
+// Нижче — повні правила для продакшену: користувачі, кошики, замовлення,
+// промпти, категорії, приватний контент, коментарі.
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -28,72 +9,38 @@ service cloud.firestore {
     // Helper Functions
     // ----------------------------------------------------------------------
 
-    /**
-     * Checks if the request is from an authenticated user.
-     */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * Checks if the currently signed-in user's UID matches the provided userId.
-     * This is the primary function for verifying document ownership.
-     */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    /**
-     * Checks for ownership on an existing document. Used for update and delete
-     * operations to prevent actions on documents that do not exist.
-     */
     function isExistingOwner(userId) {
       return isOwner(userId) && resource != null;
     }
 
-    /**
-     * Checks if the requesting user has an 'admin' role.
-     * This requires reading the user's own profile document.
-     */
     function isAdmin() {
       return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    /**
-     * Checks if a user has purchased a specific prompt.
-     * This function is not yet fully implemented in the app logic but the rule is ready.
-     */
     function hasPurchased(promptId) {
       return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.purchasedPrompts.hasAny([promptId]);
     }
 
-
     // ----------------------------------------------------------------------
-    // Collection Rules
+    // Collections
     // ----------------------------------------------------------------------
 
-    /**
-     * @description Manages user profiles and roles.
-     */
     match /users/{userId} {
-      // READ: Users can read their own profile. Admins can read anyone's.
       allow get: if isOwner(userId) || isAdmin();
-      // Admins can list all users. Regular users cannot.
       allow list: if isAdmin();
-
-      // WRITE:
-      // A user can create their own profile document.
       allow create: if isOwner(userId);
-      // A user can update their own profile, but cannot change their role.
-      // An admin can update any user's profile, including changing their role.
       allow update: if (isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin();
-      // Deleting user documents is restricted to admins.
       allow delete: if isAdmin();
     }
 
-    /**
-     * @description Manages user-specific shopping carts.
-     */
     match /users/{userId}/carts/{cartId} {
       allow get, list: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
@@ -101,9 +48,6 @@ service cloud.firestore {
       allow delete: if isExistingOwner(userId);
     }
 
-    /**
-     * @description Manages user-specific order history.
-     */
     match /users/{userId}/orders/{orderId} {
       allow get, list: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
@@ -111,48 +55,28 @@ service cloud.firestore {
       allow delete: if isExistingOwner(userId);
     }
 
-    /**
-     * @description Manages public prompt data and private content.
-     */
-    match /prompts/{promptId} {
-      // READ: Anyone can view public prompt listings.
+    match /categories/{categoryId} {
       allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
 
-      // WRITE: Only admins can create, update, or delete prompts.
+    match /prompts/{promptId} {
+      allow get, list: if true;
       allow create, update, delete: if isAdmin();
 
-      /**
-       * @description Private prompt content, accessible only to purchasers or admins.
-       */
       match /private/{docId} {
-        // READ: Users can read if they are an admin or have purchased the prompt.
         allow get: if docId == 'content' && (isAdmin() || hasPurchased(promptId));
-        
-        // WRITE: Only admins can create, update, or delete the private content.
-        // This is necessary for the prompt management lifecycle.
         allow write: if docId == 'content' && isAdmin();
       }
 
-      /**
-       * @description Comments and ratings for a prompt.
-       */
       match /comments/{commentId} {
-        // READ: Anyone can read comments.
         allow get, list: if true;
-
-        // WRITE:
-        // Only users who have purchased the prompt can create a comment.
         allow create: if hasPurchased(promptId);
-        // Users can only update or delete their own comments.
         allow update, delete: if isOwner(resource.data.userId);
       }
     }
-    
-    /**
-     * @description Tracks prompts scraped from external sources to prevent duplicates.
-     */
+
     match /scraped_prompts/{sourceId} {
-      // Only admins can read or write to this collection.
       allow read, write: if isAdmin();
     }
   }

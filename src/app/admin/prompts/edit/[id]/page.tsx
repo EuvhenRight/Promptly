@@ -73,7 +73,7 @@ export default function EditPromptPage() {
 				title: data.title,
 				description: data.description,
 				price: data.price,
-				categories: data.categories,
+				categoryId: data.categoryId,
 				tags: data.tags,
 				privateContent: data.privateContent,
 				imageUrl: newImageUrl, // Only pass if a new one was uploaded
@@ -112,16 +112,20 @@ export default function EditPromptPage() {
 		return null // Or a more explicit "not found" message
 	}
 
-	// Form expects string fields; Prompt may store categories/tags as string[] or string.
 	const toFormList = (v: string[] | string | undefined): string =>
 		Array.isArray(v) ? v.join(', ') : typeof v === 'string' ? v : ''
+
+	const initialCategoryId =
+		promptData.categoryId ??
+		(Array.isArray(promptData.categories) ? promptData.categories[0] : '') ??
+		''
 
 	const initialDataForForm: Partial<PromptFormValues & { imageUrl?: string }> =
 		{
 			title: promptData.title,
 			description: promptData.description,
 			price: promptData.price,
-			categories: toFormList(promptData.categories),
+			categoryId: initialCategoryId,
 			tags: toFormList(promptData.tags),
 			privateContent: promptData.privateContent,
 			imageUrl: promptData.images?.[0],

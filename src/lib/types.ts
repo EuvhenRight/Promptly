@@ -1,68 +1,71 @@
-import { Timestamp } from "firebase/firestore";
+import { Timestamp } from 'firebase/firestore'
 
 export type Cart = {
-    id: string;
-    userId: string;
-    promptIds: string[];
-    createdAt: Timestamp;
-    updatedAt: Timestamp;
-};
+	id: string
+	userId: string
+	promptIds: string[]
+	createdAt: Timestamp
+	updatedAt: Timestamp
+}
 
 export type UserProfile = {
-    uid: string;
-    email: string;
-    displayName: string;
-    photoURL: string;
-    role: 'user' | 'admin';
-    purchasedPrompts?: string[];
-    isSeller?: boolean;
-    stats?: {
-        totalSales: number;
-        monthlySales: number;
-        weeklySales: number;
-        reputation: number;
-    };
-};
+	uid: string
+	email: string
+	displayName: string
+	photoURL: string
+	role: 'user' | 'admin'
+	purchasedPrompts?: string[]
+	isSeller?: boolean
+	stats?: {
+		totalSales: number
+		monthlySales: number
+		weeklySales: number
+		reputation: number
+	}
+}
 
 export type Prompt = {
-  id: string;
-  authorId: string;
-  title: string;
-  description: string;
-  price: number;
-  images: string[]; // URLs to images in Firebase Storage
-  rating: {
-    average: number;
-    count: number;
-  };
-  tags: string[];
-  categories: string[];
-  stats?: {
-    views: number;
-    sales: number;
-    likes: number;
-  };
-  createdAt?: Timestamp;
-  updatedAt?: Timestamp;
-};
+	id: string
+	authorId: string
+	title: string
+	description: string
+	price: number
+	images: string[] // URLs to images in Firebase Storage
+	rating: {
+		average: number
+		count: number
+	}
+	tags: string[]
+	/** One category per prompt (one-to-many: category has many prompts). */
+	categoryId?: string
+	/** @deprecated Use categoryId. Kept for backward compat. */
+	categories?: string[]
+	stats?: {
+		views: number
+		sales: number
+		likes: number
+	}
+	createdAt?: Timestamp
+	updatedAt?: Timestamp
+}
 
 export type PromptPrivateContent = {
-    text: string;
-};
+	text: string
+}
 
 export type PromptComment = {
-    id:string;
-    text: string;
-    rating: number;
-    userId: string;
-    timestamp: Timestamp;
-};
+	id: string
+	text: string
+	rating: number
+	userId: string
+	timestamp: Timestamp
+}
 
 export type ScrapeResult = {
-  title: string;
-  privateContent: string;
-  categories: string;
-  imageUrl: string;
-  sourceId: string;
-  tags: string;
-};
+	title: string
+	privateContent: string
+	categories: string
+	imageUrl: string
+	sourceId: string
+	tags: string
+}

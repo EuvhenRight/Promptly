@@ -1,6 +1,7 @@
 'use client'
 
 import { Badge } from '@/components/ui/badge'
+import { useCategories } from '@/hooks/use-categories'
 import type { Prompt } from '@/lib/types'
 import { Eye, Heart, ShoppingCart } from 'lucide-react'
 import Image from 'next/image'
@@ -19,6 +20,9 @@ const formatStat = (num: number): string => {
 
 export default function PromptCard({ prompt }: PromptCardProps) {
 	const imageUrl = prompt.images?.[0]
+	const { getNames } = useCategories()
+	const categoryId = prompt.categoryId ?? prompt.categories?.[0]
+	const categoryNames = getNames(categoryId)
 
 	return (
 		<div>
@@ -55,12 +59,12 @@ export default function PromptCard({ prompt }: PromptCardProps) {
 										{formatStat(prompt.stats.sales)}
 									</span>
 								</div>
-								{prompt.categories?.[0] && (
+								{categoryNames[0] && (
 									<Badge
 										variant='secondary'
 										className='bg-white/20 text-white backdrop-blur-sm border-0 font-medium'
 									>
-										{prompt.categories[0]}
+										{categoryNames[0]}
 									</Badge>
 								)}
 							</div>

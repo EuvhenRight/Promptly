@@ -12,6 +12,13 @@ import {
 	FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Loader2 } from 'lucide-react'
@@ -28,7 +35,7 @@ const promptFormSchema = z.object({
 		.number({ invalid_type_error: 'Price must be a number.' })
 		.min(0, 'Price cannot be negative.')
 		.default(1),
-	categories: z.string().min(1, 'Please add at least one category.'),
+	categoryId: z.string().min(1, 'Please select a category.'),
 	tags: z.string().optional(),
 	privateContent: z.string().min(10, 'The private prompt content is required.'),
 	image: z
@@ -59,7 +66,7 @@ export function PromptForm({
 			title: '',
 			description: '',
 			price: 1,
-			categories: '',
+			categoryId: '',
 			tags: '',
 			privateContent: '',
 			...initialData,
@@ -69,7 +76,17 @@ export function PromptForm({
 	const [imagePreview, setImagePreview] = useState<string | undefined>(
 		initialData?.imageUrl,
 	)
+	const [categoryOptions, setCategoryOptions] = useState<
+		{ id: string; name: string }[]
+	>([])
 	const fileInputRef = React.useRef<HTMLInputElement>(null)
+
+	useEffect(() => {
+		fetch('/api/categories')
+			.then(res => (res.ok ? res.json() : []))
+			.then(data => setCategoryOptions(Array.isArray(data) ? data : []))
+			.catch(() => setCategoryOptions([]))
+	}, [])
 
 	useEffect(() => {
 		if (initialData) {
@@ -78,7 +95,7 @@ export function PromptForm({
 				title: initialData.title || '',
 				description: initialData.description || '',
 				price: initialData.price ?? 1,
-				categories: initialData.categories || '',
+				categoryId: initialData.categoryId || '',
 				tags: initialData.tags || '',
 				privateContent: initialData.privateContent || '',
 			})
@@ -194,18 +211,37 @@ export function PromptForm({
 								/>
 								<FormField
 									control={form.control}
-									name='categories'
+									name='categoryId'
 									render={({ field }) => (
 										<FormItem>
-											<FormLabel>Categories</FormLabel>
-											<FormControl>
-												<Input
-													placeholder='Characters, Environments'
-													{...field}
-													disabled={isSubmitting}
-												/>
-											</FormControl>
-											<FormDescription>Comma-separated values.</FormDescription>
+											<FormLabel>Category</FormLabel>
+											<Select
+												onValueChange={field.onChange}
+												value={field.value}
+												disabled={isSubmitting}
+											>
+												<FormControl>
+													<SelectTrigger>
+														<SelectValue placeholder='Select a category' />
+													</SelectTrigger>
+												</FormControl>
+												<SelectContent>
+													{categoryOptions.length === 0 ? (
+														<div className='py-2 text-center text-sm text-muted-foreground'>
+															Loading categories…
+														</div>
+													) : (
+														categoryOptions.map(cat => (
+															<SelectItem key={cat.id} value={cat.id}>
+																{cat.name}
+															</SelectItem>
+														))
+													)}
+												</SelectContent>
+											</Select>
+											<FormDescription>
+												One category per prompt (category has many prompts).
+											</FormDescription>
 											<FormMessage />
 										</FormItem>
 									)}
