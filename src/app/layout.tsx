@@ -1,6 +1,8 @@
 import { Toaster } from '@/components/ui/toaster'
 import { FirebaseClientProvider } from '@/firebase'
 import { CategoriesProvider } from '@/hooks/use-categories'
+import { TagsProvider } from '@/hooks/use-tags'
+import { TypesProvider } from '@/hooks/use-types'
 import { cn } from '@/lib/utils'
 import type { Metadata } from 'next'
 import { Inter, Space_Grotesk } from 'next/font/google'
@@ -37,8 +39,12 @@ export default function RootLayout({
 			>
 				<FirebaseClientProvider>
 					<CategoriesProvider>
-						{children}
-						<Toaster />
+						<TagsProvider>
+							<TypesProvider>
+								{children}
+								<Toaster />
+							</TypesProvider>
+						</TagsProvider>
 					</CategoriesProvider>
 				</FirebaseClientProvider>
 			</body>

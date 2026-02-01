@@ -92,6 +92,7 @@ export async function createPrompt(
 				: [],
 			categoryId: data.categoryId || '',
 			categories: data.categoryId ? [data.categoryId] : [],
+			typeId: data.typeId || '',
 			createdAt: serverTimestamp(),
 			updatedAt: serverTimestamp(),
 			stats: {
@@ -243,6 +244,7 @@ export async function updatePrompt(
 			: [],
 		categoryId: data.categoryId || '',
 		categories: data.categoryId ? [data.categoryId] : [],
+		typeId: data.typeId || '',
 		updatedAt: serverTimestamp(),
 	}
 

@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
 	Form,
 	FormControl,
@@ -36,7 +37,8 @@ const promptFormSchema = z.object({
 		.min(0, 'Price cannot be negative.')
 		.default(1),
 	categoryId: z.string().min(1, 'Please select a category.'),
-	tags: z.string().optional(),
+	typeId: z.string().optional(),
+	tags: z.string().optional(), // Comma-separated tag IDs from Tags collection
 	privateContent: z.string().min(10, 'The private prompt content is required.'),
 	image: z
 		.instanceof(File, { message: 'Image is required.' })
@@ -67,6 +69,7 @@ export function PromptForm({
 			description: '',
 			price: 1,
 			categoryId: '',
+			typeId: '',
 			tags: '',
 			privateContent: '',
 			...initialData,
@@ -79,6 +82,12 @@ export function PromptForm({
 	const [categoryOptions, setCategoryOptions] = useState<
 		{ id: string; name: string }[]
 	>([])
+	const [tagOptions, setTagOptions] = useState<{ id: string; name: string }[]>(
+		[],
+	)
+	const [typeOptions, setTypeOptions] = useState<
+		{ id: string; name: string }[]
+	>([])
 	const fileInputRef = React.useRef<HTMLInputElement>(null)
 
 	useEffect(() => {
@@ -89,6 +98,20 @@ export function PromptForm({
 	}, [])
 
 	useEffect(() => {
+		fetch('/api/tags')
+			.then(res => (res.ok ? res.json() : []))
+			.then(data => setTagOptions(Array.isArray(data) ? data : []))
+			.catch(() => setTagOptions([]))
+	}, [])
+
+	useEffect(() => {
+		fetch('/api/types')
+			.then(res => (res.ok ? res.json() : []))
+			.then(data => setTypeOptions(Array.isArray(data) ? data : []))
+			.catch(() => setTypeOptions([]))
+	}, [])
+
+	useEffect(() => {
 		if (initialData) {
 			// Use reset to update the entire form state when initialData changes
 			form.reset({
@@ -96,6 +119,7 @@ export function PromptForm({
 				description: initialData.description || '',
 				price: initialData.price ?? 1,
 				categoryId: initialData.categoryId || '',
+				typeId: initialData.typeId || '',
 				tags: initialData.tags || '',
 				privateContent: initialData.privateContent || '',
 			})
@@ -248,23 +272,99 @@ export function PromptForm({
 								/>
 								<FormField
 									control={form.control}
-									name='tags'
+									name='typeId'
 									render={({ field }) => (
 										<FormItem>
-											<FormLabel>Tags</FormLabel>
-											<FormControl>
-												<Input
-													placeholder='photorealistic, 8k, high detail'
-													{...field}
-													disabled={isSubmitting}
-												/>
-											</FormControl>
+											<FormLabel>Type</FormLabel>
+											<Select
+												onValueChange={v =>
+													field.onChange(v === '__none__' ? '' : v)
+												}
+												value={field.value || '__none__'}
+												disabled={isSubmitting}
+											>
+												<FormControl>
+													<SelectTrigger>
+														<SelectValue placeholder='Select a type' />
+													</SelectTrigger>
+												</FormControl>
+												<SelectContent>
+													<SelectItem value='__none__'>None</SelectItem>
+													{typeOptions.length === 0 ? (
+														<div className='py-2 text-center text-sm text-muted-foreground'>
+															Loading types…
+														</div>
+													) : (
+														typeOptions.map(t => (
+															<SelectItem key={t.id} value={t.id}>
+																{t.name}
+															</SelectItem>
+														))
+													)}
+												</SelectContent>
+											</Select>
 											<FormDescription>
-												Comma-separated values. Helps with search.
+												Content type (Video, Images, Audio).
 											</FormDescription>
 											<FormMessage />
 										</FormItem>
 									)}
+								/>
+								<FormField
+									control={form.control}
+									name='tags'
+									render={({ field }) => {
+										const selectedIds = field.value
+											? field.value
+													.split(',')
+													.map(s => s.trim())
+													.filter(Boolean)
+											: []
+										const toggleTag = (tagId: string) => {
+											const next = selectedIds.includes(tagId)
+												? selectedIds.filter(id => id !== tagId)
+												: [...selectedIds, tagId]
+											field.onChange(next.join(','))
+										}
+										return (
+											<FormItem>
+												<FormLabel>Tags</FormLabel>
+												<div className='space-y-2 rounded-md border p-3'>
+													{tagOptions.length === 0 ? (
+														<p className='text-sm text-muted-foreground'>
+															Loading tags…
+														</p>
+													) : (
+														<div className='flex flex-wrap gap-4'>
+															{tagOptions.map(tag => (
+																<div
+																	key={tag.id}
+																	className='flex items-center space-x-2'
+																>
+																	<Checkbox
+																		id={`tag-${tag.id}`}
+																		checked={selectedIds.includes(tag.id)}
+																		onCheckedChange={() => toggleTag(tag.id)}
+																		disabled={isSubmitting}
+																	/>
+																	<label
+																		htmlFor={`tag-${tag.id}`}
+																		className='text-sm font-normal cursor-pointer'
+																	>
+																		{tag.name}
+																	</label>
+																</div>
+															))}
+														</div>
+													)}
+												</div>
+												<FormDescription>
+													Select one or more tags from the list.
+												</FormDescription>
+												<FormMessage />
+											</FormItem>
+										)
+									}}
 								/>
 							</CardContent>
 						</Card>

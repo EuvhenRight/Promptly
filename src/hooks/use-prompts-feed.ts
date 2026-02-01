@@ -1,101 +1,100 @@
-'use client';
+'use client'
 
-import { useState, useEffect, useCallback } from 'react';
+import { useFirestore } from '@/firebase'
+import type { Prompt } from '@/lib/types'
 import {
-  collection,
-  query,
-  orderBy,
-  limit,
-  getDocs,
-  startAfter,
-  DocumentData,
-  QueryDocumentSnapshot,
-} from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
-import type { Prompt } from '@/lib/types';
+	collection,
+	DocumentData,
+	getDocs,
+	limit,
+	orderBy,
+	query,
+	QueryDocumentSnapshot,
+	startAfter,
+	where,
+} from 'firebase/firestore'
+import { useCallback, useEffect, useState } from 'react'
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 10
 
-export function usePromptsFeed() {
-  const firestore = useFirestore();
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-  const [lastVisible, setLastVisible] =
-    useState<QueryDocumentSnapshot<DocumentData> | null>(null);
-  const [hasMore, setHasMore] = useState(true);
+export function usePromptsFeed(categoryId: string | null = null) {
+	const firestore = useFirestore()
+	const [prompts, setPrompts] = useState<Prompt[]>([])
+	const [loading, setLoading] = useState(false)
+	const [error, setError] = useState<Error | null>(null)
+	const [lastVisible, setLastVisible] =
+		useState<QueryDocumentSnapshot<DocumentData> | null>(null)
+	const [hasMore, setHasMore] = useState(true)
 
-  const fetchPrompts = useCallback(
-    async (initialLoad = false) => {
-      if (loading) return;
-      setLoading(true);
-      setError(null);
+	const fetchPrompts = useCallback(
+		async (initialLoad = false) => {
+			if (loading && !initialLoad) return
+			setLoading(true)
+			setError(null)
 
-      try {
-        const promptsCollection = collection(firestore, 'prompts');
-        let q;
+			try {
+				const promptsCollection = collection(firestore, 'prompts')
+				const baseConstraints = [
+					...(categoryId ? [where('categoryId', '==', categoryId)] : []),
+					orderBy('createdAt', 'desc'),
+				]
 
-        if (initialLoad) {
-          q = query(
-            promptsCollection,
-            orderBy('createdAt', 'desc'),
-            limit(PAGE_SIZE)
-          );
-        } else if (lastVisible) {
-          q = query(
-            promptsCollection,
-            orderBy('createdAt', 'desc'),
-            startAfter(lastVisible),
-            limit(PAGE_SIZE)
-          );
-        } else {
-          // This case handles when loadMore is called but there's no lastVisible doc,
-          // which shouldn't happen if hasMore is false. We stop here.
-          setLoading(false);
-          setHasMore(false);
-          return;
-        }
+				let q
+				if (initialLoad) {
+					q = query(promptsCollection, ...baseConstraints, limit(PAGE_SIZE))
+				} else if (lastVisible) {
+					q = query(
+						promptsCollection,
+						...baseConstraints,
+						startAfter(lastVisible),
+						limit(PAGE_SIZE),
+					)
+				} else {
+					setLoading(false)
+					setHasMore(false)
+					return
+				}
 
-        const documentSnapshots = await getDocs(q);
+				const documentSnapshots = await getDocs(q)
 
-        const newPrompts = documentSnapshots.docs.map((doc) => {
-          // Make sure to include the ID and handle Timestamps correctly if needed by components.
-          return { id: doc.id, ...doc.data() } as Prompt;
-        });
+				const newPrompts = documentSnapshots.docs.map(doc => {
+					return { id: doc.id, ...doc.data() } as Prompt
+				})
 
-        const lastDoc =
-          documentSnapshots.docs[documentSnapshots.docs.length - 1];
-        setLastVisible(lastDoc || null);
+				const lastDoc =
+					documentSnapshots.docs[documentSnapshots.docs.length - 1]
+				setLastVisible(lastDoc || null)
 
-        if (documentSnapshots.docs.length < PAGE_SIZE) {
-          setHasMore(false);
-        }
+				if (documentSnapshots.docs.length < PAGE_SIZE) {
+					setHasMore(false)
+				}
 
-        setPrompts((prevPrompts) =>
-          initialLoad ? newPrompts : [...prevPrompts, ...newPrompts]
-        );
+				setPrompts(prevPrompts =>
+					initialLoad ? newPrompts : [...prevPrompts, ...newPrompts],
+				)
+			} catch (err: any) {
+				console.error('Error fetching prompts:', err)
+				setError(err)
+			} finally {
+				setLoading(false)
+			}
+		},
+		[firestore, loading, lastVisible, categoryId],
+	)
 
-      } catch (err: any) {
-        console.error('Error fetching prompts:', err);
-        setError(err);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [firestore, loading, lastVisible]
-  );
+	useEffect(() => {
+		setPrompts([])
+		setLastVisible(null)
+		setHasMore(true)
+		fetchPrompts(true)
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [firestore, categoryId])
 
-  // Initial load
-  useEffect(() => {
-    fetchPrompts(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [firestore]); // Only re-run if firestore instance changes
+	const loadMore = useCallback(() => {
+		if (hasMore && !loading) {
+			fetchPrompts(false)
+		}
+	}, [hasMore, loading, fetchPrompts])
 
-  const loadMore = () => {
-    if (hasMore && !loading) {
-      fetchPrompts(false);
-    }
-  };
-
-  return { prompts, loading, error, hasMore, loadMore };
+	return { prompts, loading, error, hasMore, loadMore }
 }

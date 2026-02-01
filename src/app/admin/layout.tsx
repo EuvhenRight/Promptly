@@ -13,7 +13,15 @@ import {
 import { useUser } from '@/firebase'
 import { signInWithGoogle, signOutUser } from '@/firebase/auth'
 import { cn } from '@/lib/utils'
-import { Bot, FileText, FolderOpen, Home, Users } from 'lucide-react'
+import {
+	Bot,
+	FileText,
+	FileType,
+	FolderOpen,
+	Home,
+	Tags,
+	Users,
+} from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 
@@ -99,6 +107,12 @@ export default function AdminLayout({
 							</AdminNavLink>
 							<AdminNavLink href='/admin/categories' icon={FolderOpen}>
 								Categories
+							</AdminNavLink>
+							<AdminNavLink href='/admin/tags' icon={Tags}>
+								Tags
+							</AdminNavLink>
+							<AdminNavLink href='/admin/types' icon={FileType}>
+								Types
 							</AdminNavLink>
 							<AdminNavLink href='/admin/users' icon={Users}>
 								Users
