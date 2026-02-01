@@ -12,12 +12,15 @@ import { signInWithGoogle, signOutUser } from '@/firebase/auth'
 import type { UserProfile } from '@/lib/types'
 import { doc } from 'firebase/firestore'
 import {
+	Bell,
 	Bot,
-	CreditCard,
 	LogOut,
 	Menu,
+	Settings,
 	ShieldCheck,
 	ShoppingCart,
+	Star,
+	Upload,
 	User,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -154,36 +157,69 @@ export default function Header() {
 									</Avatar>
 								</Button>
 							</DropdownMenuTrigger>
-							<DropdownMenuContent className='w-56' align='end' forceMount>
+							<DropdownMenuContent className='w-64' align='end' forceMount>
 								<DropdownMenuLabel className='font-normal'>
-									<div className='flex flex-col space-y-1'>
-										<p className='text-sm font-medium leading-none'>
-											{user.displayName}
-										</p>
-										<p className='text-xs leading-none text-muted-foreground'>
-											{user.email}
-										</p>
+									<div className='flex items-center gap-3'>
+										<Avatar className='h-10 w-10'>
+											<AvatarImage
+												src={userProfile?.photoURL ?? user.photoURL ?? ''}
+												alt={user.displayName ?? 'User'}
+											/>
+											<AvatarFallback>
+												{(
+													userProfile?.displayName ??
+													user.displayName ??
+													'U'
+												).charAt(0)}
+											</AvatarFallback>
+										</Avatar>
+										<div className='flex flex-col space-y-0.5'>
+											<p className='text-sm font-medium leading-none'>
+												{user.email}
+											</p>
+											<p className='text-xs leading-none text-muted-foreground'>
+												{userProfile?.displayName ?? user.displayName}
+											</p>
+										</div>
 									</div>
 								</DropdownMenuLabel>
 								<DropdownMenuSeparator />
-								{userProfile?.role === 'admin' && (
-									<DropdownMenuItem onSelect={() => router.push('/admin')}>
-										<ShieldCheck className='mr-2 h-4 w-4' />
-										<span>Admin Panel</span>
-									</DropdownMenuItem>
-								)}
+								<DropdownMenuItem onSelect={() => router.push('/account')}>
+									<Settings className='mr-2 h-4 w-4' />
+									<span>Account</span>
+								</DropdownMenuItem>
+								<DropdownMenuItem onSelect={() => router.push('/plans')}>
+									<Star className='mr-2 h-4 w-4' />
+									<span>Plans</span>
+								</DropdownMenuItem>
+								<DropdownMenuItem
+									onSelect={() => router.push('/notifications')}
+								>
+									<Bell className='mr-2 h-4 w-4' />
+									<span>Notifications</span>
+								</DropdownMenuItem>
 								<DropdownMenuItem onSelect={() => router.push('/profile')}>
 									<User className='mr-2 h-4 w-4' />
 									<span>Profile</span>
 								</DropdownMenuItem>
-								<DropdownMenuItem>
-									<CreditCard className='mr-2 h-4 w-4' />
-									<span>Billing</span>
-								</DropdownMenuItem>
+								{userProfile?.role === 'admin' && (
+									<>
+										<DropdownMenuItem
+											onSelect={() => router.push('/admin/prompts/new')}
+										>
+											<Upload className='mr-2 h-4 w-4' />
+											<span>Publish existing prompt</span>
+										</DropdownMenuItem>
+										<DropdownMenuItem onSelect={() => router.push('/admin')}>
+											<ShieldCheck className='mr-2 h-4 w-4' />
+											<span>Admin Panel</span>
+										</DropdownMenuItem>
+									</>
+								)}
 								<DropdownMenuSeparator />
 								<DropdownMenuItem onClick={() => signOutUser()}>
 									<LogOut className='mr-2 h-4 w-4' />
-									<span>Sign out</span>
+									<span>Log out</span>
 								</DropdownMenuItem>
 							</DropdownMenuContent>
 						</DropdownMenu>
