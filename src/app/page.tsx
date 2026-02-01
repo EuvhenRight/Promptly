@@ -25,9 +25,15 @@ const FeedSkeleton = () => (
 
 export default function Home() {
 	const [activeFilter, setActiveFilter] = useState('Featured')
+	const [activeFilterName, setActiveFilterName] = useState('Featured')
 	const selectedCategoryId = mainLinks.includes(activeFilter)
 		? null
 		: activeFilter
+
+	const handleFilterChange = (id: string, name?: string) => {
+		setActiveFilter(id)
+		setActiveFilterName(name || id)
+	}
 	const { prompts, loading, error, hasMore, loadMore } =
 		usePromptsFeed(selectedCategoryId)
 
@@ -59,11 +65,11 @@ export default function Home() {
 			<Header />
 			<SubHeader
 				activeFilter={activeFilter}
-				onFilterChange={setActiveFilter}
+				onFilterChange={handleFilterChange}
 				mainLinks={mainLinks}
 			/>
 			<main>
-				<SearchBar activeFilter={activeFilter} />
+				<SearchBar activeFilter={activeFilterName} />
 				<div className='container mx-auto px-4 py-8 sm:px-6 lg:px-8'>
 					{error && (
 						<p className='text-destructive text-center'>

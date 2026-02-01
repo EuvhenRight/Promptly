@@ -11,7 +11,7 @@ const mainLinks = ['Featured', 'Hot', 'New', 'Top']
 
 interface SubHeaderProps {
 	activeFilter: string
-	onFilterChange: (filter: string) => void
+	onFilterChange: (id: string, name?: string) => void
 	mainLinks: string[]
 }
 
@@ -33,7 +33,7 @@ export default function SubHeader({
 								href='#'
 								onClick={e => {
 									e.preventDefault()
-									onFilterChange(link)
+									onFilterChange(link, link)
 								}}
 								className={cn(
 									'py-3 px-2 text-sm font-semibold whitespace-nowrap',
@@ -57,7 +57,7 @@ export default function SubHeader({
 										key={cat.id}
 										variant='ghost'
 										size='sm'
-										onClick={() => onFilterChange(cat.id)}
+										onClick={() => onFilterChange(cat.id, cat.name)}
 										className={cn(
 											'rounded-full px-3 h-9 gap-2',
 											activeFilter === cat.id
