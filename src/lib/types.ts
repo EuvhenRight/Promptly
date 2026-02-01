@@ -13,7 +13,13 @@ export type UserProfile = {
 	email: string
 	displayName: string
 	photoURL: string
+	coverImageURL?: string
 	description?: string
+	headline?: string
+	aiTools?: string
+	xProfile?: string
+	instagramProfile?: string
+	facebookProfile?: string
 	role: 'user' | 'admin'
 	purchasedPrompts?: string[]
 	favoritePrompts?: string[]
