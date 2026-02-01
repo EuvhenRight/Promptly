@@ -13,9 +13,14 @@ export type UserProfile = {
 	email: string
 	displayName: string
 	photoURL: string
+	description?: string
 	role: 'user' | 'admin'
 	purchasedPrompts?: string[]
+	favoritePrompts?: string[]
 	isSeller?: boolean
+	followers?: number
+	following?: number
+	views?: number
 	stats?: {
 		totalSales: number
 		monthlySales: number

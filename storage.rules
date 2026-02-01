@@ -26,5 +26,11 @@ service firebase.storage {
       // Allow write (upload, update, delete) operations only if the user is an admin.
       allow write: if isAdmin();
     }
+
+    // Rules for user avatars - users can upload their own avatar
+    match /users/{userId}/avatar/{allPaths=**} {
+      allow read: if true;
+      allow write: if isSignedIn() && request.auth.uid == userId;
+    }
   }
 }
