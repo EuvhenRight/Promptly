@@ -14,7 +14,16 @@ import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
 
 export type UpdateUserData = Pick<
 	UserProfile,
-	'displayName' | 'role' | 'photoURL' | 'description'
+	| 'displayName'
+	| 'role'
+	| 'photoURL'
+	| 'coverImageURL'
+	| 'description'
+	| 'headline'
+	| 'aiTools'
+	| 'xProfile'
+	| 'instagramProfile'
+	| 'facebookProfile'
 >
 
 /**
@@ -42,6 +51,27 @@ export async function uploadAvatar(
 }
 
 /**
+ * Uploads a cover/banner image to Firebase Storage.
+ */
+export async function uploadCoverImage(
+	userId: string,
+	file: File,
+): Promise<string> {
+	if (!file) throw new Error('No file provided for upload.')
+	if (!/^image\//.test(file.type)) {
+		throw new Error('File must be an image (jpeg, png, gif, webp).')
+	}
+
+	const storage = getStorage()
+	const ext = file.name.split('.').pop() || 'jpg'
+	const storageRef = ref(storage, `users/${userId}/cover/cover.${ext}`)
+
+	const uploadResult = await uploadBytes(storageRef, file)
+	const downloadURL = await getDownloadURL(uploadResult.ref)
+	return downloadURL
+}
+
+/**
  * Updates a user's profile in Firestore and optionally Firebase Auth.
  */
 export async function updateUserProfile(
@@ -61,6 +91,15 @@ export async function updateUserProfile(
 		if (data.photoURL !== undefined) firestoreData.photoURL = data.photoURL
 		if (data.description !== undefined)
 			firestoreData.description = data.description
+		if (data.coverImageURL !== undefined)
+			firestoreData.coverImageURL = data.coverImageURL
+		if (data.headline !== undefined) firestoreData.headline = data.headline
+		if (data.aiTools !== undefined) firestoreData.aiTools = data.aiTools
+		if (data.xProfile !== undefined) firestoreData.xProfile = data.xProfile
+		if (data.instagramProfile !== undefined)
+			firestoreData.instagramProfile = data.instagramProfile
+		if (data.facebookProfile !== undefined)
+			firestoreData.facebookProfile = data.facebookProfile
 
 		if (Object.keys(firestoreData).length > 0) {
 			await updateDoc(userRef, firestoreData)

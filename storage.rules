@@ -23,12 +23,17 @@ service firebase.storage {
       // Allow anyone to read the images. This is required for the app to display them.
       allow read: if true;
       
-      // Allow write (upload, update, delete) operations only if the user is an admin.
-      allow write: if isAdmin();
+      // Allow authenticated users to upload images. Prompt creation is still protected
+      // by Firestore rules (admin-only). This allows admins and creators to add images.
+      allow write: if isSignedIn();
     }
 
-    // Rules for user avatars - users can upload their own avatar
+    // Rules for user avatars and cover images - users can upload their own
     match /users/{userId}/avatar/{allPaths=**} {
+      allow read: if true;
+      allow write: if isSignedIn() && request.auth.uid == userId;
+    }
+    match /users/{userId}/cover/{allPaths=**} {
       allow read: if true;
       allow write: if isSignedIn() && request.auth.uid == userId;
     }
