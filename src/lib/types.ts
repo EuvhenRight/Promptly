@@ -15,6 +15,11 @@ export type UserProfile = {
 	photoURL: string
 	coverImageURL?: string
 	description?: string
+	headline?: string
+	aiTools?: string
+	xProfile?: string
+	instagramProfile?: string
+	facebookProfile?: string
 	role: 'user' | 'admin'
 	purchasedPrompts?: string[]
 	favoritePrompts?: string[]

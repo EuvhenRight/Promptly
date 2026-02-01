@@ -14,7 +14,16 @@ import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
 
 export type UpdateUserData = Pick<
 	UserProfile,
-	'displayName' | 'role' | 'photoURL' | 'coverImageURL' | 'description'
+	| 'displayName'
+	| 'role'
+	| 'photoURL'
+	| 'coverImageURL'
+	| 'description'
+	| 'headline'
+	| 'aiTools'
+	| 'xProfile'
+	| 'instagramProfile'
+	| 'facebookProfile'
 >
 
 /**
@@ -84,6 +93,13 @@ export async function updateUserProfile(
 			firestoreData.description = data.description
 		if (data.coverImageURL !== undefined)
 			firestoreData.coverImageURL = data.coverImageURL
+		if (data.headline !== undefined) firestoreData.headline = data.headline
+		if (data.aiTools !== undefined) firestoreData.aiTools = data.aiTools
+		if (data.xProfile !== undefined) firestoreData.xProfile = data.xProfile
+		if (data.instagramProfile !== undefined)
+			firestoreData.instagramProfile = data.instagramProfile
+		if (data.facebookProfile !== undefined)
+			firestoreData.facebookProfile = data.facebookProfile
 
 		if (Object.keys(firestoreData).length > 0) {
 			await updateDoc(userRef, firestoreData)
