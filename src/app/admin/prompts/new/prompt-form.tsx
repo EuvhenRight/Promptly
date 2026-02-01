@@ -236,79 +236,95 @@ export function PromptForm({
 								<FormField
 									control={form.control}
 									name='categoryId'
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Category</FormLabel>
-											<Select
-												onValueChange={field.onChange}
-												value={field.value}
-												disabled={isSubmitting}
-											>
-												<FormControl>
-													<SelectTrigger>
-														<SelectValue placeholder='Select a category' />
-													</SelectTrigger>
-												</FormControl>
-												<SelectContent>
-													{categoryOptions.length === 0 ? (
-														<div className='py-2 text-center text-sm text-muted-foreground'>
-															Loading categories…
-														</div>
-													) : (
-														categoryOptions.map(cat => (
-															<SelectItem key={cat.id} value={cat.id}>
-																{cat.name}
-															</SelectItem>
-														))
-													)}
-												</SelectContent>
-											</Select>
-											<FormDescription>
-												One category per prompt (category has many prompts).
-											</FormDescription>
-											<FormMessage />
-										</FormItem>
-									)}
+									render={({ field }) => {
+										const selectedCategory = categoryOptions.find(
+											cat => cat.id === field.value,
+										)
+										return (
+											<FormItem>
+												<FormLabel>Category</FormLabel>
+												<Select
+													onValueChange={field.onChange}
+													value={field.value}
+													disabled={isSubmitting}
+												>
+													<FormControl>
+														<SelectTrigger>
+															<SelectValue placeholder='Select a category'>
+																{selectedCategory?.name || 'Select a category'}
+															</SelectValue>
+														</SelectTrigger>
+													</FormControl>
+													<SelectContent>
+														{categoryOptions.length === 0 ? (
+															<div className='py-2 text-center text-sm text-muted-foreground'>
+																Loading categories…
+															</div>
+														) : (
+															categoryOptions.map(cat => (
+																<SelectItem key={cat.id} value={cat.id}>
+																	{cat.name}
+																</SelectItem>
+															))
+														)}
+													</SelectContent>
+												</Select>
+												<FormDescription>
+													One category per prompt (category has many prompts).
+												</FormDescription>
+												<FormMessage />
+											</FormItem>
+										)
+									}}
 								/>
 								<FormField
 									control={form.control}
 									name='typeId'
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Type</FormLabel>
-											<Select
-												onValueChange={v =>
-													field.onChange(v === '__none__' ? '' : v)
-												}
-												value={field.value || '__none__'}
-												disabled={isSubmitting}
-											>
-												<FormControl>
-													<SelectTrigger>
-														<SelectValue placeholder='Select a type' />
-													</SelectTrigger>
-												</FormControl>
-												<SelectContent>
-													<SelectItem value='__none__'>None</SelectItem>
-													{typeOptions.length === 0 ? (
-														<div className='py-2 text-center text-sm text-muted-foreground'>
-															Loading types…
-														</div>
-													) : (
-														typeOptions.map(t => (
-															<SelectItem key={t.id} value={t.id}>
-																{t.name}
-															</SelectItem>
-														))
-													)}
-												</SelectContent>
-											</Select>
-											<FormDescription>
-												Content type (Video, Images, Audio).
-											</FormDescription>
-											<FormMessage />
-										</FormItem>
-									)}
+									render={({ field }) => {
+										const selectedType = typeOptions.find(
+											t => t.id === field.value,
+										)
+										return (
+											<FormItem>
+												<FormLabel>Type</FormLabel>
+												<Select
+													onValueChange={v =>
+														field.onChange(v === '__none__' ? '' : v)
+													}
+													value={field.value || '__none__'}
+													disabled={isSubmitting}
+												>
+													<FormControl>
+														<SelectTrigger>
+															<SelectValue placeholder='Select a type'>
+																{field.value
+																	? selectedType?.name || 'Select a type'
+																	: 'None'}
+															</SelectValue>
+														</SelectTrigger>
+													</FormControl>
+													<SelectContent>
+														<SelectItem value='__none__'>None</SelectItem>
+														{typeOptions.length === 0 ? (
+															<div className='py-2 text-center text-sm text-muted-foreground'>
+																Loading types…
+															</div>
+														) : (
+															typeOptions.map(t => (
+																<SelectItem key={t.id} value={t.id}>
+																	{t.name}
+																</SelectItem>
+															))
+														)}
+													</SelectContent>
+												</Select>
+												<FormDescription>
+													Content type (Video, Images, Audio).
+												</FormDescription>
+												<FormMessage />
+											</FormItem>
+										)
+									}}
 								/>
 								<FormField
 									control={form.control}
