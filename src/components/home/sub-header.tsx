@@ -2,30 +2,26 @@
 
 import { Button } from '@/components/ui/button'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
-import { DUMMY_MODELS_AND_STYLES } from '@/lib/dummy-data'
+import { useCategories } from '@/hooks/use-categories'
 import { cn } from '@/lib/utils'
-import { Bot, Image as ImageIcon, Sparkles, Video } from 'lucide-react' // Example icons
+import { FolderOpen } from 'lucide-react'
 import Link from 'next/link'
 
 const mainLinks = ['Featured', 'Hot', 'New', 'Top']
 
-// A simple mapping for demo icons
-const iconMap: { [key: string]: React.ElementType } = {
-	video: Video,
-	'chatgpt-image': ImageIcon,
-	midjourney: Sparkles,
-	default: Bot,
-}
-
 interface SubHeaderProps {
 	activeFilter: string
 	onFilterChange: (filter: string) => void
+	mainLinks: string[]
 }
 
 export default function SubHeader({
 	activeFilter,
 	onFilterChange,
+	mainLinks,
 }: SubHeaderProps) {
+	const { categories, isLoading } = useCategories()
+
 	return (
 		<div className='border-b bg-background/95'>
 			<div className='container mx-auto px-4 sm:px-6 lg:px-8'>
@@ -53,28 +49,27 @@ export default function SubHeader({
 					<div className='hidden sm:block h-6 border-l' />
 					<ScrollArea className='w-full whitespace-nowrap -mx-4 sm:mx-0'>
 						<div className='flex w-max items-center space-x-1 py-2 px-4 sm:px-0'>
-							{DUMMY_MODELS_AND_STYLES.map(item => {
-								const Icon = iconMap[item.id] || iconMap.default
-								return (
+							{isLoading ? (
+								<span className='text-sm text-muted-foreground'>Loading…</span>
+							) : (
+								categories.map(cat => (
 									<Button
-										key={item.id}
+										key={cat.id}
 										variant='ghost'
 										size='sm'
-										onClick={() => {
-											onFilterChange(item.name)
-										}}
+										onClick={() => onFilterChange(cat.id)}
 										className={cn(
 											'rounded-full px-3 h-9 gap-2',
-											activeFilter === item.name
+											activeFilter === cat.id
 												? 'bg-muted text-primary font-semibold'
 												: 'hover:bg-muted',
 										)}
 									>
-										<Icon className='h-4 w-4' />
-										{item.name}
+										<FolderOpen className='h-4 w-4' />
+										{cat.name}
 									</Button>
-								)
-							})}
+								))
+							)}
 						</div>
 						<ScrollBar orientation='horizontal' className='sm:hidden' />
 					</ScrollArea>

@@ -60,6 +60,16 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    match /tags/{tagId} {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /types/{typeId} {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
     match /prompts/{promptId} {
       allow get, list: if true;
       allow create, update, delete: if isAdmin();

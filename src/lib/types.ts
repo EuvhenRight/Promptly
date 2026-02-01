@@ -40,6 +40,8 @@ export type Prompt = {
 	categoryId?: string
 	/** @deprecated Use categoryId. Kept for backward compat. */
 	categories?: string[]
+	/** Content type (Video, Images, Audio) from Types collection. */
+	typeId?: string
 	stats?: {
 		views: number
 		sales: number
