@@ -19,6 +19,7 @@ import {
 	FileType,
 	FolderOpen,
 	Home,
+	Image,
 	Tags,
 	Users,
 } from 'lucide-react'
@@ -113,6 +114,9 @@ export default function AdminLayout({
 							</AdminNavLink>
 							<AdminNavLink href='/admin/types' icon={FileType}>
 								Types
+							</AdminNavLink>
+							<AdminNavLink href='/admin/search-bar-backgrounds' icon={Image}>
+								Search Bar Background
 							</AdminNavLink>
 							<AdminNavLink href='/admin/users' icon={Users}>
 								Users

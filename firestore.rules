@@ -90,5 +90,10 @@ service cloud.firestore {
     match /scraped_prompts/{sourceId} {
       allow read, write: if isAdmin();
     }
+
+    match /searchBarBackgrounds/{bgId} {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
   }
 }
