@@ -8,9 +8,9 @@ import { useDoc, useFirestore, useMemoFirebase } from '@/firebase'
 import type { Prompt } from '@/lib/types'
 import { doc } from 'firebase/firestore'
 import { useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 
-export default function CheckoutPage() {
+function CheckoutContent() {
 	const searchParams = useSearchParams()
 	const promptId = searchParams.get('promptId')
 	const firestore = useFirestore()
@@ -114,5 +114,23 @@ export default function CheckoutPage() {
 			</main>
 			<Footer />
 		</div>
+	)
+}
+
+export default function CheckoutPage() {
+	return (
+		<Suspense
+			fallback={
+				<div className='flex min-h-screen flex-col'>
+					<Header />
+					<main className='flex-grow container mx-auto px-4 py-8'>
+						<Skeleton className='h-[80vh] w-full rounded-lg' />
+					</main>
+					<Footer />
+				</div>
+			}
+		>
+			<CheckoutContent />
+		</Suspense>
 	)
 }

@@ -3,13 +3,14 @@
 import Footer from '@/components/layout/footer'
 import Header from '@/components/layout/header'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 
 type Status = 'loading' | 'complete' | 'open' | 'error'
 
-export default function CheckoutReturnPage() {
+function CheckoutReturnContent() {
 	const searchParams = useSearchParams()
 	const router = useRouter()
 	const sessionId = searchParams.get('session_id')
@@ -82,5 +83,23 @@ export default function CheckoutReturnPage() {
 			</main>
 			<Footer />
 		</div>
+	)
+}
+
+export default function CheckoutReturnPage() {
+	return (
+		<Suspense
+			fallback={
+				<div className='flex min-h-screen flex-col'>
+					<Header />
+					<main className='flex-grow container mx-auto px-4 py-8 max-w-lg'>
+						<Skeleton className='h-24 w-full rounded-lg' />
+					</main>
+					<Footer />
+				</div>
+			}
+		>
+			<CheckoutReturnContent />
+		</Suspense>
 	)
 }

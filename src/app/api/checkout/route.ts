@@ -2,7 +2,11 @@ import { adminDb } from '@/firebase/admin'
 import { NextRequest } from 'next/server'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+function getStripe(): Stripe {
+	const key = process.env.STRIPE_SECRET_KEY
+	if (!key) throw new Error('STRIPE_SECRET_KEY is not set')
+	return new Stripe(key)
+}
 
 /** Stripe currency (e.g. 'usd', 'eur'). Minimum charge is 0.50 in that currency. */
 const STRIPE_CURRENCY = (process.env.STRIPE_CURRENCY || 'usd').toLowerCase()
@@ -95,6 +99,7 @@ export async function POST(req: NextRequest) {
 		}
 
 		const origin = getOrigin(req)
+		const stripe = getStripe()
 		const session = await stripe.checkout.sessions.create({
 			ui_mode: 'embedded',
 			mode: 'payment',

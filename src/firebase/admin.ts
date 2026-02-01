@@ -1,11 +1,33 @@
 import admin from 'firebase-admin'
 import { getApps } from 'firebase-admin/app'
+import { existsSync, readFileSync } from 'fs'
+import { join } from 'path'
 
-const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+function getStorageBucket(): string | undefined {
+	if (process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET) {
+		return process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+	}
+	// Firebase App Hosting provides FIREBASE_CONFIG or FIREBASE_WEBAPP_CONFIG
+	const firebaseConfig =
+		process.env.FIREBASE_CONFIG || process.env.FIREBASE_WEBAPP_CONFIG
+	if (firebaseConfig) {
+		try {
+			const config = JSON.parse(firebaseConfig) as { storageBucket?: string }
+			return config.storageBucket
+		} catch {
+			// ignore
+		}
+	}
+	return undefined
+}
 
-function initFromServiceAccountFile() {
+const storageBucket = getStorageBucket()
+
+function initFromServiceAccountFile(): boolean {
 	try {
-		const serviceAccount = require('../../service-account.json')
+		const path = join(process.cwd(), 'service-account.json')
+		if (!existsSync(path)) return false
+		const serviceAccount = JSON.parse(readFileSync(path, 'utf-8'))
 		if (!getApps().length && storageBucket) {
 			admin.initializeApp({
 				credential: admin.credential.cert(serviceAccount),
@@ -13,20 +35,12 @@ function initFromServiceAccountFile() {
 			})
 		}
 		return true
-	} catch (err: unknown) {
-		if (
-			err &&
-			typeof err === 'object' &&
-			'code' in err &&
-			err.code === 'MODULE_NOT_FOUND'
-		) {
-			return false
-		}
-		throw err
+	} catch {
+		return false
 	}
 }
 
-function initFromEnv() {
+function initFromEnv(): boolean {
 	const projectId =
 		process.env.FIREBASE_PROJECT_ID ||
 		process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
@@ -46,17 +60,33 @@ function initFromEnv() {
 	return true
 }
 
+function initWithApplicationDefault(): boolean {
+	if (!storageBucket || getApps().length) return false
+	try {
+		admin.initializeApp({
+			credential: admin.credential.applicationDefault(),
+			storageBucket,
+		})
+		return true
+	} catch {
+		return false
+	}
+}
+
 try {
 	if (!storageBucket) {
-		throw new Error(
-			'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET is not set in your environment variables.',
-		)
-	}
-	const fromFile = initFromServiceAccountFile()
-	if (!fromFile && !initFromEnv()) {
 		console.error(
-			'Firebase Admin: add service-account.json in the project root, or set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY in .env',
+			'Firebase Admin: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET or FIREBASE_CONFIG storageBucket not set.',
 		)
+	} else {
+		const fromFile = initFromServiceAccountFile()
+		const fromEnv = !fromFile && initFromEnv()
+		const fromAdc = !fromFile && !fromEnv && initWithApplicationDefault()
+		if (!fromFile && !fromEnv && !fromAdc) {
+			console.error(
+				'Firebase Admin: add service-account.json, set FIREBASE_* env vars, or use Application Default Credentials.',
+			)
+		}
 	}
 } catch (error: unknown) {
 	const message = error instanceof Error ? error.message : String(error)
