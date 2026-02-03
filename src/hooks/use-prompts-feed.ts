@@ -9,6 +9,7 @@ import {
 	limit,
 	orderBy,
 	query,
+	QueryConstraint,
 	QueryDocumentSnapshot,
 	startAfter,
 	where,
@@ -17,7 +18,13 @@ import { useCallback, useEffect, useState } from 'react'
 
 const PAGE_SIZE = 10
 
-export function usePromptsFeed(categoryId: string | null = null) {
+export function usePromptsFeed({
+	categoryId,
+	typeId,
+}: {
+	categoryId: string | null
+	typeId: string | null
+}) {
 	const firestore = useFirestore()
 	const [prompts, setPrompts] = useState<Prompt[]>([])
 	const [loading, setLoading] = useState(false)
@@ -34,10 +41,14 @@ export function usePromptsFeed(categoryId: string | null = null) {
 
 			try {
 				const promptsCollection = collection(firestore, 'prompts')
-				const baseConstraints = [
-					...(categoryId ? [where('categoryId', '==', categoryId)] : []),
-					orderBy('createdAt', 'desc'),
-				]
+				const baseConstraints: QueryConstraint[] = [orderBy('createdAt', 'desc')]
+
+				if (categoryId) {
+					baseConstraints.push(where('categoryId', '==', categoryId))
+				}
+				if (typeId) {
+					baseConstraints.push(where('typeId', '==', typeId))
+				}
 
 				let q
 				if (initialLoad) {
@@ -79,7 +90,7 @@ export function usePromptsFeed(categoryId: string | null = null) {
 				setLoading(false)
 			}
 		},
-		[firestore, loading, lastVisible, categoryId],
+		[firestore, loading, lastVisible, categoryId, typeId],
 	)
 
 	useEffect(() => {
@@ -88,7 +99,7 @@ export function usePromptsFeed(categoryId: string | null = null) {
 		setHasMore(true)
 		fetchPrompts(true)
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [firestore, categoryId])
+	}, [firestore, categoryId, typeId])
 
 	const loadMore = useCallback(() => {
 		if (hasMore && !loading) {

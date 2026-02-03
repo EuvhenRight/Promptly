@@ -7,8 +7,9 @@ import Footer from '@/components/layout/footer'
 import Header from '@/components/layout/header'
 import { Skeleton } from '@/components/ui/skeleton'
 import { usePromptsFeed } from '@/hooks/use-prompts-feed'
+import { useTypes } from '@/hooks/use-types'
 import { Loader2 } from 'lucide-react'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 const mainLinks = ['Featured', 'Hot', 'New', 'Top']
 
@@ -26,35 +27,51 @@ const FeedSkeleton = () => (
 export default function Home() {
 	const [activeFilter, setActiveFilter] = useState('Featured')
 	const [activeFilterName, setActiveFilterName] = useState('Featured')
+	const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null)
+	const [isInitialTypeSet, setIsInitialTypeSet] = useState(false)
+	const { types, isLoading: typesLoading } = useTypes()
+
 	const selectedCategoryId = mainLinks.includes(activeFilter)
 		? null
 		: activeFilter
+
+	useEffect(() => {
+		if (!typesLoading && types.length > 0 && !isInitialTypeSet) {
+			const imagesType = types.find(t => t.name === 'Images')
+			if (imagesType) {
+				setSelectedTypeId(imagesType.id)
+			}
+			setIsInitialTypeSet(true)
+		}
+	}, [types, typesLoading, isInitialTypeSet])
 
 	const handleFilterChange = (id: string, name?: string) => {
 		setActiveFilter(id)
 		setActiveFilterName(name || id)
 	}
-	const { prompts, loading, error, hasMore, loadMore } =
-		usePromptsFeed(selectedCategoryId)
+
+	const handleTypeChange = (typeId: string | null) => {
+		setSelectedTypeId(typeId)
+	}
+
+	const { prompts, loading, error, hasMore, loadMore } = usePromptsFeed({
+		categoryId: selectedCategoryId,
+		typeId: selectedTypeId,
+	})
 
 	const observer = useRef<IntersectionObserver | null>(null)
 
-	// A callback ref to attach to the sentinel element.
-	// This pattern is useful for re-creating the observer when dependencies change.
 	const loadMoreRef = useCallback(
 		(node: HTMLDivElement) => {
-			if (loading) return // Don't set up observer while loading
-			if (observer.current) observer.current.disconnect() // Disconnect previous observer
+			if (loading) return
+			if (observer.current) observer.current.disconnect()
 
-			// Create a new observer with the latest `hasMore` and `loadMore`
 			observer.current = new IntersectionObserver(entries => {
-				// If the sentinel is in view and there's more to load, call loadMore
 				if (entries[0].isIntersecting && hasMore) {
 					loadMore()
 				}
 			})
 
-			// If the node exists, start observing it
 			if (node) observer.current.observe(node)
 		},
 		[loading, hasMore, loadMore],
@@ -69,7 +86,11 @@ export default function Home() {
 				mainLinks={mainLinks}
 			/>
 			<main>
-				<SearchBar activeFilter={activeFilterName} />
+				<SearchBar
+					activeFilter={activeFilterName}
+					selectedTypeId={selectedTypeId}
+					onTypeChange={handleTypeChange}
+				/>
 				<div className='container mx-auto px-4 py-8 sm:px-6 lg:px-8'>
 					{error && (
 						<p className='text-destructive text-center'>
@@ -79,13 +100,8 @@ export default function Home() {
 
 					<PromptFeed prompts={prompts} />
 
-					{/* 
-            This invisible div is the "sentinel". The IntersectionObserver watches it.
-            When it scrolls into view, more content is loaded.
-          */}
 					<div ref={loadMoreRef} />
 
-					{/* Loading indicator: show skeleton on initial load, spinner on subsequent loads */}
 					{loading && (
 						<div className='mt-8 text-center'>
 							{prompts.length === 0 ? (
@@ -96,7 +112,6 @@ export default function Home() {
 						</div>
 					)}
 
-					{/* End of content message: shown when there are no more prompts to load */}
 					{!hasMore && !loading && prompts.length > 0 && (
 						<p className='mt-8 text-center text-muted-foreground'>
 							You've reached the end!

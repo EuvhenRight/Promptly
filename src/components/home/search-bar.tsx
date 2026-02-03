@@ -1,12 +1,24 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuLabel,
+	DropdownMenuRadioGroup,
+	DropdownMenuRadioItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
-import { Search } from 'lucide-react'
+import { useTypes } from '@/hooks/use-types'
+import { ChevronDown, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 interface SearchBarProps {
 	activeFilter: string
+	selectedTypeId: string | null
+	onTypeChange: (typeId: string | null) => void
 }
 
 const mockData: { [key: string]: { title: string; results: string } } = {
@@ -27,7 +39,11 @@ const mockData: { [key: string]: { title: string; results: string } } = {
 	'Character Design': { title: 'Character Design Prompts', results: '4.1k' },
 }
 
-export default function SearchBar({ activeFilter }: SearchBarProps) {
+export default function SearchBar({
+	activeFilter,
+	selectedTypeId,
+	onTypeChange,
+}: SearchBarProps) {
 	const currentData = mockData[activeFilter] || {
 		title: `${activeFilter} Prompts`,
 		results: '...',
@@ -35,6 +51,10 @@ export default function SearchBar({ activeFilter }: SearchBarProps) {
 	const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(
 		null,
 	)
+	const { types, isLoading: typesLoading } = useTypes()
+
+	const selectedTypeName =
+		types.find(t => t.id === selectedTypeId)?.name || 'Type'
 
 	const fetchBackground = () => {
 		fetch('/api/search-bar-backgrounds?active=true', { cache: 'no-store' })
@@ -99,9 +119,35 @@ export default function SearchBar({ activeFilter }: SearchBarProps) {
 				</div>
 
 				<div className='mt-6 flex justify-center items-center gap-3'>
-					<Button variant='outline' className='rounded-full border bg-card'>
-						+ Type
-					</Button>
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button
+								variant='outline'
+								className='rounded-full border bg-card'
+								disabled={typesLoading}
+							>
+								{selectedTypeId ? selectedTypeName : '+ Type'}
+								<ChevronDown className='ml-2 h-4 w-4' />
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent>
+							<DropdownMenuLabel>Filter by Type</DropdownMenuLabel>
+							<DropdownMenuSeparator />
+							<DropdownMenuRadioGroup
+								value={selectedTypeId ?? 'all'}
+								onValueChange={value => {
+									onTypeChange(value === 'all' ? null : value)
+								}}
+							>
+								<DropdownMenuRadioItem value='all'>All Types</DropdownMenuRadioItem>
+								{types.map(type => (
+									<DropdownMenuRadioItem key={type.id} value={type.id}>
+										{type.name}
+									</DropdownMenuRadioItem>
+								))}
+							</DropdownMenuRadioGroup>
+						</DropdownMenuContent>
+					</DropdownMenu>
 					<Button variant='outline' className='rounded-full border bg-card'>
 						+ Model
 					</Button>
