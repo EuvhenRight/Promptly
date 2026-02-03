@@ -29,11 +29,11 @@ export default function Home() {
 	const [activeFilterName, setActiveFilterName] = useState('Featured')
 	const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null)
 	const [isInitialTypeSet, setIsInitialTypeSet] = useState(false)
+	const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
+		null,
+	)
+	const [selectedTagId, setSelectedTagId] = useState<string | null>(null)
 	const { types, isLoading: typesLoading } = useTypes()
-
-	const selectedCategoryId = mainLinks.includes(activeFilter)
-		? null
-		: activeFilter
 
 	useEffect(() => {
 		if (!typesLoading && types.length > 0 && !isInitialTypeSet) {
@@ -45,19 +45,34 @@ export default function Home() {
 		}
 	}, [types, typesLoading, isInitialTypeSet])
 
-	const handleFilterChange = (id: string, name?: string) => {
+	const handleFilterChange = (
+		id: string,
+		name?: string,
+		type?: 'category' | 'tag' | 'main',
+	) => {
 		setActiveFilter(id)
 		setActiveFilterName(name || id)
+
+		setSelectedCategoryId(null)
+		setSelectedTagId(null)
+
+		if (type === 'category') {
+			setSelectedCategoryId(id)
+		} else if (type === 'tag') {
+			setSelectedTagId(id)
+		}
 	}
 
 	const handleTypeChange = (typeId: string | null) => {
 		setSelectedTypeId(typeId)
 	}
 
-	const { prompts, loading, error, hasMore, loadMore } = usePromptsFeed({
-		categoryId: selectedCategoryId,
-		typeId: selectedTypeId,
-	})
+	const { prompts, loading, error, hasMore, loadMore, totalCount } =
+		usePromptsFeed({
+			categoryId: selectedCategoryId,
+			typeId: selectedTypeId,
+			tagId: selectedTagId,
+		})
 
 	const observer = useRef<IntersectionObserver | null>(null)
 
@@ -90,6 +105,7 @@ export default function Home() {
 					activeFilter={activeFilterName}
 					selectedTypeId={selectedTypeId}
 					onTypeChange={handleTypeChange}
+					totalCount={totalCount}
 				/>
 				<div className='container mx-auto px-4 py-8 sm:px-6 lg:px-8'>
 					{error && (

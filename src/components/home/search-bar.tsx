@@ -19,39 +19,25 @@ interface SearchBarProps {
 	activeFilter: string
 	selectedTypeId: string | null
 	onTypeChange: (typeId: string | null) => void
-}
-
-const mockData: { [key: string]: { title: string; results: string } } = {
-	Featured: { title: 'Featured Prompts', results: '2.7k' },
-	Hot: { title: 'Hot Prompts', results: '15.1k' },
-	New: { title: 'New Prompts', results: '534k' },
-	Top: { title: 'Top Prompts', results: '1.2M' },
-	Video: { title: 'Video Prompts', results: '450' },
-	'ChatGPT Image': { title: 'ChatGPT Image Prompts', results: '1.2k' },
-	Midjourney: { title: 'Midjourney Prompts', results: '8.8k' },
-	FLUX: { title: 'FLUX Prompts', results: '180' },
-	Sora: { title: 'Sora Prompts', results: '99' },
-	'Stable Diffusion': { title: 'Stable Diffusion Prompts', results: '7.5k' },
-	Portraits: { title: 'Portrait Prompts', results: '3.1k' },
-	Photography: { title: 'Photography Prompts', results: '4.9k' },
-	Anime: { title: 'Anime Prompts', results: '6.4k' },
-	Logo: { title: 'Logo Prompts', results: '2.2k' },
-	'Character Design': { title: 'Character Design Prompts', results: '4.1k' },
+	totalCount: number | null
 }
 
 export default function SearchBar({
 	activeFilter,
 	selectedTypeId,
 	onTypeChange,
+	totalCount,
 }: SearchBarProps) {
-	const currentData = mockData[activeFilter] || {
-		title: `${activeFilter} Prompts`,
-		results: '...',
-	}
 	const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(
 		null,
 	)
 	const { types, isLoading: typesLoading } = useTypes()
+
+	const currentTitle = `${activeFilter} Prompts`
+	const resultsText =
+		totalCount !== null
+			? `About ${totalCount.toLocaleString()} results`
+			: 'Loading results...'
 
 	const selectedTypeName =
 		types.find(t => t.id === selectedTypeId)?.name || 'Type'
@@ -92,11 +78,9 @@ export default function SearchBar({
 		>
 			<div className='container relative z-10 mx-auto px-4 sm:px-6 lg:px-8'>
 				<h1 className='text-4xl md:text-5xl font-bold font-headline tracking-tight'>
-					{currentData.title}
+					{currentTitle}
 				</h1>
-				<p className='mt-3 text-lg text-muted-foreground'>
-					About {currentData.results} results
-				</p>
+				<p className='mt-3 text-lg text-muted-foreground'>{resultsText}</p>
 
 				<div className='mt-8 max-w-3xl mx-auto'>
 					<div className='relative'>

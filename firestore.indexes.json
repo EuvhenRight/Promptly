@@ -16,6 +16,14 @@
 				{ "fieldPath": "typeId", "order": "ASCENDING" },
 				{ "fieldPath": "createdAt", "order": "DESCENDING" }
 			]
+		},
+		{
+			"collectionGroup": "prompts",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "tags", "arrayConfig": "CONTAINS" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
 		}
 	],
 	"fieldOverrides": []

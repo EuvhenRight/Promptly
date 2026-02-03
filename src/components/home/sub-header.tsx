@@ -3,15 +3,18 @@
 import { Button } from '@/components/ui/button'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useCategories } from '@/hooks/use-categories'
+import { useTags } from '@/hooks/use-tags'
 import { cn } from '@/lib/utils'
-import { FolderOpen } from 'lucide-react'
+import { FolderOpen, Tag } from 'lucide-react'
 import Link from 'next/link'
-
-const mainLinks = ['Featured', 'Hot', 'New', 'Top']
 
 interface SubHeaderProps {
 	activeFilter: string
-	onFilterChange: (id: string, name?: string) => void
+	onFilterChange: (
+		id: string,
+		name?: string,
+		type?: 'category' | 'tag' | 'main',
+	) => void
 	mainLinks: string[]
 }
 
@@ -20,7 +23,10 @@ export default function SubHeader({
 	onFilterChange,
 	mainLinks,
 }: SubHeaderProps) {
-	const { categories, isLoading } = useCategories()
+	const { categories, isLoading: categoriesLoading } = useCategories()
+	const { tags, isLoading: tagsLoading } = useTags()
+
+	const isLoading = categoriesLoading || tagsLoading
 
 	return (
 		<div className='border-b bg-background/95'>
@@ -33,7 +39,7 @@ export default function SubHeader({
 								href='#'
 								onClick={e => {
 									e.preventDefault()
-									onFilterChange(link, link)
+									onFilterChange(link, link, 'main')
 								}}
 								className={cn(
 									'py-3 px-2 text-sm font-semibold whitespace-nowrap',
@@ -52,23 +58,43 @@ export default function SubHeader({
 							{isLoading ? (
 								<span className='text-sm text-muted-foreground'>Loading…</span>
 							) : (
-								categories.map(cat => (
-									<Button
-										key={cat.id}
-										variant='ghost'
-										size='sm'
-										onClick={() => onFilterChange(cat.id, cat.name)}
-										className={cn(
-											'rounded-full px-3 h-9 gap-2',
-											activeFilter === cat.id
-												? 'bg-muted text-primary font-semibold'
-												: 'hover:bg-muted',
-										)}
-									>
-										<FolderOpen className='h-4 w-4' />
-										{cat.name}
-									</Button>
-								))
+								<>
+									{categories.map(cat => (
+										<Button
+											key={cat.id}
+											variant='ghost'
+											size='sm'
+											onClick={() => onFilterChange(cat.id, cat.name, 'category')}
+											className={cn(
+												'rounded-full px-3 h-9 gap-2',
+												activeFilter === cat.id
+													? 'bg-muted text-primary font-semibold'
+													: 'hover:bg-muted',
+											)}
+										>
+											<FolderOpen className='h-4 w-4' />
+											{cat.name}
+										</Button>
+									))}
+									<div className='h-6 border-l mx-2' />
+									{tags.map(tag => (
+										<Button
+											key={tag.id}
+											variant='ghost'
+											size='sm'
+											onClick={() => onFilterChange(tag.id, tag.name, 'tag')}
+											className={cn(
+												'rounded-full px-3 h-9 gap-2',
+												activeFilter === tag.id
+													? 'bg-muted text-primary font-semibold'
+													: 'hover:bg-muted',
+											)}
+										>
+											<Tag className='h-4 w-4' />
+											{tag.name}
+										</Button>
+									))}
+								</>
 							)}
 						</div>
 						<ScrollBar orientation='horizontal' className='sm:hidden' />

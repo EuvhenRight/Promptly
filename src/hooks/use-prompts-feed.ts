@@ -13,6 +13,7 @@ import {
 	QueryDocumentSnapshot,
 	startAfter,
 	where,
+	getCountFromServer,
 } from 'firebase/firestore'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -21,9 +22,11 @@ const PAGE_SIZE = 10
 export function usePromptsFeed({
 	categoryId,
 	typeId,
+	tagId,
 }: {
 	categoryId: string | null
 	typeId: string | null
+	tagId: string | null
 }) {
 	const firestore = useFirestore()
 	const [prompts, setPrompts] = useState<Prompt[]>([])
@@ -32,6 +35,7 @@ export function usePromptsFeed({
 	const [lastVisible, setLastVisible] =
 		useState<QueryDocumentSnapshot<DocumentData> | null>(null)
 	const [hasMore, setHasMore] = useState(true)
+	const [totalCount, setTotalCount] = useState<number | null>(null)
 
 	const fetchPrompts = useCallback(
 		async (initialLoad = false) => {
@@ -41,22 +45,43 @@ export function usePromptsFeed({
 
 			try {
 				const promptsCollection = collection(firestore, 'prompts')
-				const baseConstraints: QueryConstraint[] = [orderBy('createdAt', 'desc')]
+				const queryConstraints: QueryConstraint[] = []
+				const countConstraints: QueryConstraint[] = []
 
 				if (categoryId) {
-					baseConstraints.push(where('categoryId', '==', categoryId))
+					const constraint = where('categoryId', '==', categoryId)
+					queryConstraints.push(constraint)
+					countConstraints.push(constraint)
+				}
+				if (tagId) {
+					const constraint = where('tags', 'array-contains', tagId)
+					queryConstraints.push(constraint)
+					countConstraints.push(constraint)
 				}
 				if (typeId) {
-					baseConstraints.push(where('typeId', '==', typeId))
+					const constraint = where('typeId', '==', typeId)
+					queryConstraints.push(constraint)
+					countConstraints.push(constraint)
 				}
+
+				if (initialLoad) {
+					const countQuery = query(promptsCollection, ...countConstraints)
+					const snapshot = await getCountFromServer(countQuery)
+					setTotalCount(snapshot.data().count)
+				}
+
+				const finalConstraints = [
+					...queryConstraints,
+					orderBy('createdAt', 'desc'),
+				]
 
 				let q
 				if (initialLoad) {
-					q = query(promptsCollection, ...baseConstraints, limit(PAGE_SIZE))
+					q = query(promptsCollection, ...finalConstraints, limit(PAGE_SIZE))
 				} else if (lastVisible) {
 					q = query(
 						promptsCollection,
-						...baseConstraints,
+						...finalConstraints,
 						startAfter(lastVisible),
 						limit(PAGE_SIZE),
 					)
@@ -90,16 +115,17 @@ export function usePromptsFeed({
 				setLoading(false)
 			}
 		},
-		[firestore, loading, lastVisible, categoryId, typeId],
+		[firestore, loading, lastVisible, categoryId, typeId, tagId],
 	)
 
 	useEffect(() => {
 		setPrompts([])
 		setLastVisible(null)
 		setHasMore(true)
+		setTotalCount(null)
 		fetchPrompts(true)
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [firestore, categoryId, typeId])
+	}, [firestore, categoryId, typeId, tagId])
 
 	const loadMore = useCallback(() => {
 		if (hasMore && !loading) {
@@ -107,5 +133,5 @@ export function usePromptsFeed({
 		}
 	}, [hasMore, loading, fetchPrompts])
 
-	return { prompts, loading, error, hasMore, loadMore }
+	return { prompts, loading, error, hasMore, loadMore, totalCount }
 }
