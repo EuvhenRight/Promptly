@@ -8,11 +8,13 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
 import { addPromptToCart } from '@/firebase/cart'
+import { toggleFavoritePrompt } from '@/firebase/users'
 import { useCategories } from '@/hooks/use-categories'
 import { useToast } from '@/hooks/use-toast'
-import type { Prompt } from '@/lib/types'
+import type { Prompt, UserProfile } from '@/lib/types'
+import { cn } from '@/lib/utils'
 import { doc } from 'firebase/firestore'
-import { ShoppingCart, Star } from 'lucide-react'
+import { Heart, ShoppingCart, Star } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
@@ -55,7 +57,16 @@ export default function PromptDetailPage() {
 	)
 	const { data: prompt, isLoading: isPromptLoading } = useDoc<Prompt>(promptRef)
 
+	const userProfileRef = useMemoFirebase(
+		() => (user ? doc(firestore, 'users', user.uid) : null),
+		[firestore, user],
+	)
+	const { data: userProfile } = useDoc<UserProfile>(userProfileRef)
+
 	const { getNames } = useCategories()
+
+	const isFavorite =
+		userProfile?.favoritePrompts?.includes(params.id as string) ?? false
 
 	const handleAddToCart = () => {
 		if (!user || !firestore || !prompt) {
@@ -70,6 +81,21 @@ export default function PromptDetailPage() {
 		toast({
 			title: 'Success!',
 			description: `"${prompt.title}" has been added to your cart.`,
+		})
+	}
+
+	const handleToggleFavorite = () => {
+		if (!user || !firestore || !prompt) {
+			toast({
+				variant: 'destructive',
+				title: 'Please sign in',
+				description: 'You need to be signed in to favorite prompts.',
+			})
+			return
+		}
+		toggleFavoritePrompt(firestore, user.uid, prompt.id, isFavorite)
+		toast({
+			title: isFavorite ? 'Removed from favorites' : 'Added to favorites',
 		})
 	}
 
@@ -136,6 +162,23 @@ export default function PromptDetailPage() {
 								({prompt.rating.count} ratings)
 							</span>
 						</div>
+						{user && (
+							<Button
+								variant='ghost'
+								size='icon'
+								onClick={handleToggleFavorite}
+								aria-label='Toggle Favorite'
+							>
+								<Heart
+									className={cn(
+										'h-6 w-6 transition-colors',
+										isFavorite
+											? 'fill-red-500 text-red-500'
+											: 'text-muted-foreground',
+									)}
+								/>
+							</Button>
+						)}
 					</div>
 
 					<div className='flex flex-wrap gap-2'>

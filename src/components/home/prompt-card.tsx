@@ -2,11 +2,17 @@
 
 import { Badge } from '@/components/ui/badge'
 import { useCategories } from '@/hooks/use-categories'
-import type { Prompt } from '@/lib/types'
+import type { Prompt, UserProfile } from '@/lib/types'
 import { Eye, Heart, ShoppingCart } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Skeleton } from '../ui/skeleton'
+import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
+import { toggleFavoritePrompt } from '@/firebase/users'
+import { useToast } from '@/hooks/use-toast'
+import { cn } from '@/lib/utils'
+import { doc } from 'firebase/firestore'
+import React from 'react'
 
 type PromptCardProps = {
 	prompt: Prompt
@@ -23,6 +29,38 @@ export default function PromptCard({ prompt }: PromptCardProps) {
 	const { getNames } = useCategories()
 	const categoryId = prompt.categoryId ?? prompt.categories?.[0]
 	const categoryNames = getNames(categoryId)
+
+	const { user } = useUser()
+	const firestore = useFirestore()
+	const { toast } = useToast()
+
+	const userProfileRef = useMemoFirebase(
+		() => (user ? doc(firestore, 'users', user.uid) : null),
+		[firestore, user],
+	)
+	const { data: userProfile } = useDoc<UserProfile>(userProfileRef)
+
+	const isFavorite = userProfile?.favoritePrompts?.includes(prompt.id) ?? false
+
+	const handleToggleFavorite = (e: React.MouseEvent) => {
+		e.preventDefault()
+		e.stopPropagation()
+
+		if (!user || !firestore) {
+			toast({
+				variant: 'destructive',
+				title: 'Please sign in',
+				description: 'You need to be signed in to favorite prompts.',
+			})
+			return
+		}
+
+		toggleFavoritePrompt(firestore, user.uid, prompt.id, isFavorite)
+
+		toast({
+			title: isFavorite ? 'Removed from favorites' : 'Added to favorites',
+		})
+	}
 
 	return (
 		<div>
@@ -72,12 +110,20 @@ export default function PromptCard({ prompt }: PromptCardProps) {
 					</div>
 				</div>
 
-				<button
-					className='absolute top-3 right-3 z-10 rounded-full bg-black/30 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/50 opacity-0 group-hover:opacity-100'
-					aria-label='Like prompt'
-				>
-					<Heart className='h-5 w-5' />
-				</button>
+				{user && (
+					<button
+						onClick={handleToggleFavorite}
+						className='absolute top-3 right-3 z-10 rounded-full bg-black/30 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/50 opacity-0 group-hover:opacity-100'
+						aria-label='Like prompt'
+					>
+						<Heart
+							className={cn(
+								'h-5 w-5',
+								isFavorite && 'fill-red-500 text-red-500',
+							)}
+						/>
+					</button>
+				)}
 			</div>
 		</div>
 	)
