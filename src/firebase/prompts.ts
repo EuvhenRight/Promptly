@@ -1,5 +1,5 @@
 import type { PromptFormValues } from '@/app/admin/prompts/new/prompt-form'
-import type { Prompt, PromptPrivateContent } from '@/lib/types'
+import type { Prompt, PromptPrivateContent, UserProfile } from '@/lib/types'
 import {
 	Firestore,
 	collection,
@@ -73,9 +73,18 @@ export async function createPrompt(
 	const batch = writeBatch(firestore)
 
 	try {
+		const authorRef = doc(firestore, 'users', adminId)
+		const authorSnap = await getDoc(authorRef)
+		if (!authorSnap.exists()) {
+			throw new Error('Could not create prompt: author profile not found.')
+		}
+		const authorData = authorSnap.data() as UserProfile
+
 		const publicData = {
 			id: newPromptRef.id,
 			authorId: adminId,
+			authorDisplayName: authorData.displayName,
+			authorPhotoURL: authorData.photoURL,
 			title: data.title,
 			description: data.description || '',
 			price: data.price,

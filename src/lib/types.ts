@@ -38,6 +38,8 @@ export type UserProfile = {
 export type Prompt = {
 	id: string
 	authorId: string
+	authorDisplayName?: string
+	authorPhotoURL?: string
 	title: string
 	description: string
 	price: number

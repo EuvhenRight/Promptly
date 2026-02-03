@@ -10,7 +10,7 @@ import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
 import { addPromptToCart } from '@/firebase/cart'
 import { useCategories } from '@/hooks/use-categories'
 import { useToast } from '@/hooks/use-toast'
-import type { Prompt, UserProfile } from '@/lib/types'
+import type { Prompt } from '@/lib/types'
 import { doc } from 'firebase/firestore'
 import { ShoppingCart, Star } from 'lucide-react'
 import Image from 'next/image'
@@ -55,15 +55,6 @@ export default function PromptDetailPage() {
 	)
 	const { data: prompt, isLoading: isPromptLoading } = useDoc<Prompt>(promptRef)
 
-	const authorRef = useMemoFirebase(
-		() =>
-			firestore && prompt?.authorId
-				? doc(firestore, 'users', prompt.authorId)
-				: null,
-		[firestore, prompt?.authorId],
-	)
-	const { data: author, isLoading: isAuthorLoading } =
-		useDoc<UserProfile>(authorRef)
 	const { getNames } = useCategories()
 
 	const handleAddToCart = () => {
@@ -82,7 +73,7 @@ export default function PromptDetailPage() {
 		})
 	}
 
-	const isLoading = isPromptLoading || (prompt && !author && isAuthorLoading)
+	const isLoading = isPromptLoading
 
 	const renderContent = () => {
 		if (isLoading) {
@@ -93,6 +84,9 @@ export default function PromptDetailPage() {
 			return <p>Prompt not found.</p>
 		}
 
+		const authorDisplayName = prompt.authorDisplayName ?? 'Anonymous'
+		const authorPhotoURL = prompt.authorPhotoURL ?? ''
+		const authorInitial = authorDisplayName.charAt(0)
 		const promptImage = prompt.images?.[0]
 		const categoryId = prompt.categoryId ?? prompt.categories?.[0]
 		const categoryNames = getNames(categoryId)
@@ -108,7 +102,7 @@ export default function PromptDetailPage() {
 								alt={prompt.title}
 								width={720}
 								height={1280}
-								className='w-full h-auto'
+								className='w-full h-auto object-contain'
 								priority
 								unoptimized
 							/>
@@ -123,17 +117,13 @@ export default function PromptDetailPage() {
 						<h1 className='font-headline text-3xl md:text-4xl font-bold'>
 							{prompt.title}
 						</h1>
-						{author && (
-							<div className='flex items-center gap-4'>
-								<Avatar>
-									<AvatarImage src={author.photoURL} alt={author.displayName} />
-									<AvatarFallback>
-										{author.displayName.charAt(0)}
-									</AvatarFallback>
-								</Avatar>
-								<span className='font-semibold'>{author.displayName}</span>
-							</div>
-						)}
+						<div className='flex items-center gap-4'>
+							<Avatar>
+								<AvatarImage src={authorPhotoURL} alt={authorDisplayName} />
+								<AvatarFallback>{authorInitial}</AvatarFallback>
+							</Avatar>
+							<span className='font-semibold'>{authorDisplayName}</span>
+						</div>
 					</div>
 
 					<div className='flex items-center gap-4'>
