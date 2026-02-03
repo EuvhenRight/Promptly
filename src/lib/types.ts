@@ -73,6 +73,8 @@ export type PromptComment = {
 	text: string
 	rating: number
 	userId: string
+	authorDisplayName?: string
+	authorPhotoURL?: string
 	timestamp: Timestamp
 }
 

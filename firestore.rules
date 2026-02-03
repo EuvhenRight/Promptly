@@ -82,7 +82,7 @@ service cloud.firestore {
 
       match /comments/{commentId} {
         allow get, list: if true;
-        allow create: if hasPurchased(promptId);
+        allow create: if hasPurchased(promptId) || get(/databases/$(database)/documents/prompts/$(promptId)).data.price == 0;
         allow update, delete: if isOwner(resource.data.userId);
       }
     }
