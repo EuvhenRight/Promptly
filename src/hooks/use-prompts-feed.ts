@@ -19,14 +19,23 @@ import { useCallback, useEffect, useState } from 'react'
 
 const PAGE_SIZE = 10
 
+export type SortByOption =
+	| 'createdAt:desc'
+	| 'price:asc'
+	| 'price:desc'
+	| 'rating.average:desc'
+	| 'stats.views:desc'
+
 export function usePromptsFeed({
 	categoryId,
 	typeId,
 	tagId,
+	sortBy,
 }: {
 	categoryId: string | null
 	typeId: string | null
 	tagId: string | null
+	sortBy: SortByOption
 }) {
 	const firestore = useFirestore()
 	const [prompts, setPrompts] = useState<Prompt[]>([])
@@ -70,10 +79,19 @@ export function usePromptsFeed({
 					setTotalCount(snapshot.data().count)
 				}
 
+				const [sortField, sortDirection] = sortBy.split(':') as [
+					string,
+					'asc' | 'desc',
+				]
+
 				const finalConstraints = [
 					...queryConstraints,
-					orderBy('createdAt', 'desc'),
+					orderBy(sortField, sortDirection),
 				]
+
+				if (sortField !== 'createdAt') {
+					finalConstraints.push(orderBy('createdAt', 'desc'))
+				}
 
 				let q
 				if (initialLoad) {
@@ -115,7 +133,7 @@ export function usePromptsFeed({
 				setLoading(false)
 			}
 		},
-		[firestore, loading, lastVisible, categoryId, typeId, tagId],
+		[firestore, loading, lastVisible, categoryId, typeId, tagId, sortBy],
 	)
 
 	useEffect(() => {
@@ -125,7 +143,7 @@ export function usePromptsFeed({
 		setTotalCount(null)
 		fetchPrompts(true)
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [firestore, categoryId, typeId, tagId])
+	}, [firestore, categoryId, typeId, tagId, sortBy])
 
 	const loadMore = useCallback(() => {
 		if (hasMore && !loading) {
