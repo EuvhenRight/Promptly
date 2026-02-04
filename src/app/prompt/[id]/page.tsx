@@ -8,25 +8,69 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
+import {
+	useCollection,
+	useDoc,
+	useFirestore,
+	useMemoFirebase,
+	useUser,
+} from '@/firebase'
 import { addPromptToCart } from '@/firebase/cart'
-import { incrementPromptView } from '@/firebase/prompts'
+import {
+	addPromptCommentAndRating,
+	deletePromptComment,
+	incrementPromptView,
+	updatePromptComment,
+} from '@/firebase/prompts'
 import { toggleFavoritePrompt } from '@/firebase/users'
 import { useCategories } from '@/hooks/use-categories'
 import { useToast } from '@/hooks/use-toast'
-import type { Prompt, UserProfile } from '@/lib/types'
+import type {
+	Prompt,
+	PromptComment,
+	PromptPrivateContent,
+	UserProfile,
+} from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { doc } from 'firebase/firestore'
-import { Eye, Heart, ShoppingCart, Star } from 'lucide-react'
+import {
+	collection,
+	doc,
+	getDoc,
+	orderBy,
+	query,
+	type Firestore,
+} from 'firebase/firestore'
+import {
+	Copy,
+	Edit,
+	Eye,
+	Heart,
+	Loader2,
+	ShoppingCart,
+	Star,
+	Trash2,
+} from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Card } from '@/components/ui/card'
+import { formatDistanceToNow } from 'date-fns'
 
 const PromptDetailSkeleton = () => (
 	<div className='grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12'>
 		<div className='space-y-4'>
-			<Skeleton className='w-full object-contain' />
+			<Skeleton className='w-full aspect-[3/4]' />
 		</div>
 		<div className='space-y-6'>
 			<div className='space-y-3'>
@@ -61,6 +105,7 @@ export default function PromptDetailPage() {
 	const { toast } = useToast()
 	const viewIncremented = useRef(false)
 
+	// --- Data Fetching ---
 	const promptRef = useMemoFirebase(
 		() =>
 			firestore && params.id ? doc(firestore, 'prompts', params.id) : null,
@@ -74,6 +119,51 @@ export default function PromptDetailPage() {
 	)
 	const { data: userProfile } = useDoc<UserProfile>(userProfileRef)
 
+	const commentsQuery = useMemoFirebase(
+		() =>
+			firestore && params.id
+				? query(
+						collection(firestore, 'prompts', params.id, 'comments'),
+						orderBy('timestamp', 'desc'),
+					)
+				: null,
+		[firestore, params.id],
+	)
+	const { data: comments, isLoading: areCommentsLoading } =
+		useCollection<PromptComment>(commentsQuery)
+
+	// --- State Management ---
+	const [privateContent, setPrivateContent] = useState<string | null>(null)
+	const [isLoadingPrivateContent, setIsLoadingPrivateContent] = useState(false)
+	const [isEditingComment, setIsEditingComment] = useState(false)
+	const [isSubmittingComment, setIsSubmittingComment] = useState(false)
+	const [isDeletingComment, setIsDeletingComment] = useState(false)
+	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
+	// --- Memoized Derived State ---
+	const isFavorite = useMemo(
+		() => userProfile?.favoritePrompts?.includes(params.id as string) ?? false,
+		[userProfile, params.id],
+	)
+
+	const userComment = useMemo(
+		() => comments?.find(comment => comment.userId === user?.uid),
+		[comments, user],
+	)
+
+	const otherComments = useMemo(
+		() => comments?.filter(comment => comment.userId !== user?.uid) ?? [],
+		[comments, user],
+	)
+
+	const isPurchased =
+		userProfile?.purchasedPrompts?.includes(params.id as string) ?? false
+	const isFree = prompt?.price === 0
+	const isAdmin = userProfile?.role === 'admin'
+	const canViewContent = prompt && (isPurchased || isFree || isAdmin)
+	const canComment = canViewContent && user
+
+	// --- Effects ---
 	useEffect(() => {
 		if (params.id && firestore && !viewIncremented.current) {
 			incrementPromptView(firestore, params.id as string)
@@ -81,16 +171,29 @@ export default function PromptDetailPage() {
 		}
 	}, [params.id, firestore])
 
-	const { getNames } = useCategories()
+	useEffect(() => {
+		if (canViewContent && firestore && params.id && !privateContent) {
+			setIsLoadingPrivateContent(true)
+			const fetchPrivateContent = async (db: Firestore, promptId: string) => {
+				const contentRef = doc(db, 'prompts', promptId, 'private', 'content')
+				try {
+					const contentSnap = await getDoc(contentRef)
+					setPrivateContent(
+						contentSnap.exists()
+							? (contentSnap.data() as PromptPrivateContent).text
+							: 'Content not found.',
+					)
+				} catch (e) {
+					setPrivateContent('Could not load content due to an error.')
+				} finally {
+					setIsLoadingPrivateContent(false)
+				}
+			}
+			fetchPrivateContent(firestore, params.id as string)
+		}
+	}, [canViewContent, firestore, params.id, privateContent])
 
-	const isFavorite =
-		userProfile?.favoritePrompts?.includes(params.id as string) ?? false
-
-	const canComment =
-		user &&
-		prompt &&
-		(prompt.price === 0 || userProfile?.purchasedPrompts?.includes(prompt.id))
-
+	// --- Handlers ---
 	const handleAddToCart = () => {
 		if (!user || !firestore || !prompt) {
 			toast({
@@ -122,7 +225,181 @@ export default function PromptDetailPage() {
 		})
 	}
 
-	const isLoading = isPromptLoading
+	const handleCopy = () => {
+		if (!privateContent) return
+		navigator.clipboard.writeText(privateContent).then(() => {
+			toast({ title: 'Copied to clipboard!' })
+		})
+	}
+
+	const handleAddComment = async (data: {
+		rating: number
+		text: string
+	}) => {
+		if (!user || !firestore) return
+		setIsSubmittingComment(true)
+		try {
+			await addPromptCommentAndRating({
+				firestore,
+				promptId: params.id as string,
+				userId: user.uid,
+				...data,
+			})
+			toast({
+				title: 'Review submitted!',
+				description: 'Thank you for your feedback.',
+			})
+		} catch (error: any) {
+			toast({
+				variant: 'destructive',
+				title: 'Error submitting review',
+				description: error.message,
+			})
+		} finally {
+			setIsSubmittingComment(false)
+		}
+	}
+
+	const handleUpdateComment = async (data: {
+		rating: number
+		text: string
+	}) => {
+		if (!user || !firestore) return
+		setIsSubmittingComment(true)
+		try {
+			await updatePromptComment({
+				firestore,
+				promptId: params.id as string,
+				userId: user.uid,
+				...data,
+			})
+			toast({ title: 'Review updated!' })
+			setIsEditingComment(false)
+		} catch (error: any) {
+			toast({
+				variant: 'destructive',
+				title: 'Error updating review',
+				description: error.message,
+			})
+		} finally {
+			setIsSubmittingComment(false)
+		}
+	}
+
+	const handleDeleteComment = async () => {
+		if (!user || !firestore) return
+		setIsDeletingComment(true)
+		try {
+			await deletePromptComment({
+				firestore,
+				promptId: params.id as string,
+				userId: user.uid,
+			})
+			toast({ title: 'Review deleted' })
+		} catch (error: any) {
+			toast({
+				variant: 'destructive',
+				title: 'Error deleting review',
+				description: error.message,
+			})
+		} finally {
+			setIsDeletingComment(false)
+			setShowDeleteConfirm(false)
+		}
+	}
+
+	const { getNames } = useCategories()
+	const isLoading = isPromptLoading || areCommentsLoading
+
+	// --- Render Methods ---
+	const renderUserReviewSection = () => {
+		if (!canComment) return null
+
+		if (userComment) {
+			if (isEditingComment) {
+				return (
+					<AddCommentForm
+						key={`edit-${userComment.id}`}
+						promptId={params.id as string}
+						initialData={userComment}
+						isSubmitting={isSubmittingComment}
+						onSubmit={handleUpdateComment}
+						onCancel={() => setIsEditingComment(false)}
+						submitButtonText='Update Review'
+					/>
+				)
+			}
+			return (
+				<Card className='p-4 bg-muted/50'>
+					<h3 className='font-semibold mb-2'>Your Review</h3>
+					<div className='flex gap-4'>
+						<Avatar>
+							<AvatarImage
+								src={userComment.authorPhotoURL}
+								alt={userComment.authorDisplayName}
+							/>
+							<AvatarFallback>
+								{userComment.authorDisplayName?.charAt(0) ?? 'U'}
+							</AvatarFallback>
+						</Avatar>
+						<div className='flex-1'>
+							<div className='flex items-center justify-between'>
+								<span className='font-semibold'>
+									{userComment.authorDisplayName ?? 'Anonymous'}
+								</span>
+								<span className='text-xs text-muted-foreground'>
+									{userComment.timestamp
+										? formatDistanceToNow(userComment.timestamp.toDate(), {
+												addSuffix: true,
+											})
+										: ''}
+								</span>
+							</div>
+							<div className='flex items-center gap-1 my-1'>
+								{[1, 2, 3, 4, 5].map(star => (
+									<Star
+										key={star}
+										className={`h-4 w-4 ${
+											userComment.rating >= star
+												? 'text-yellow-500 fill-yellow-400'
+												: 'text-muted-foreground'
+										}`}
+									/>
+								))}
+							</div>
+							<p className='text-sm text-foreground/80'>{userComment.text}</p>
+							<div className='flex gap-2 mt-2'>
+								<Button
+									variant='outline'
+									size='sm'
+									onClick={() => setIsEditingComment(true)}
+								>
+									<Edit className='mr-2 h-3 w-3' /> Edit
+								</Button>
+								<Button
+									variant='destructive'
+									size='sm'
+									onClick={() => setShowDeleteConfirm(true)}
+								>
+									<Trash2 className='mr-2 h-3 w-3' /> Delete
+								</Button>
+							</div>
+						</div>
+					</div>
+				</Card>
+			)
+		}
+
+		return (
+			<AddCommentForm
+				key='add'
+				promptId={params.id as string}
+				isSubmitting={isSubmittingComment}
+				onSubmit={handleAddComment}
+				submitButtonText='Submit Review'
+			/>
+		)
+	}
 
 	const renderContent = () => {
 		if (isLoading) {
@@ -142,7 +419,6 @@ export default function PromptDetailPage() {
 
 		return (
 			<div className='grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12'>
-				{/* Left Column: Image Gallery */}
 				<div className='space-y-4'>
 					<div className='w-full overflow-hidden rounded-lg border bg-muted'>
 						{promptImage && (
@@ -157,10 +433,8 @@ export default function PromptDetailPage() {
 							/>
 						)}
 					</div>
-					{/* Thumbnail images could go here */}
 				</div>
 
-				{/* Right Column: Prompt Details */}
 				<div className='space-y-6'>
 					<div className='space-y-2'>
 						<h1 className='font-headline text-3xl md:text-4xl font-bold'>
@@ -226,47 +500,79 @@ export default function PromptDetailPage() {
 					<p className='text-muted-foreground'>{prompt.description}</p>
 
 					<div className='rounded-lg border bg-card text-card-foreground shadow-sm p-6 space-y-4'>
-						<div className='flex flex-wrap items-center justify-between gap-4'>
-							<h2 className='text-2xl font-bold'>
-								{prompt.price === 0
-									? 'Free'
-									: `€${(Number(prompt.price) ?? 0).toFixed(2)}`}
-							</h2>
-							<div className='flex flex-grow justify-end items-center gap-2 sm:flex-grow-0'>
-								<Button
-									size='lg'
-									variant='outline'
-									onClick={handleAddToCart}
-									className='flex-1 sm:flex-initial'
-									disabled={!user}
-								>
-									<ShoppingCart className='mr-2 h-4 w-4' />
-									Add to Cart
-								</Button>
-								<Button
-									size='lg'
-									className='bg-accent text-accent-foreground hover:bg-accent/90 flex-1 sm:flex-initial'
-									asChild
-								>
-									<Link href={`/checkout?promptId=${prompt.id}`}>Buy Now</Link>
-								</Button>
-							</div>
-						</div>
-						<div className='p-8 bg-muted rounded-lg text-center relative'>
-							<div className='absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center rounded-lg'>
-								<div className='text-center font-bold text-lg'>
-									Unlock to view prompt
+						{!canViewContent ? (
+							<>
+								<div className='flex flex-wrap items-center justify-between gap-4'>
+									<h2 className='text-2xl font-bold'>
+										{`€${(Number(prompt.price) ?? 0).toFixed(2)}`}
+									</h2>
+									<div className='flex flex-grow justify-end items-center gap-2 sm:flex-grow-0'>
+										<Button
+											size='lg'
+											variant='outline'
+											onClick={handleAddToCart}
+											className='flex-1 sm:flex-initial'
+											disabled={!user}
+										>
+											<ShoppingCart className='mr-2 h-4 w-4' />
+											Add to Cart
+										</Button>
+										<Button
+											size='lg'
+											className='bg-accent text-accent-foreground hover:bg-accent/90 flex-1 sm:flex-initial'
+											asChild
+										>
+											<Link href={`/checkout?promptId=${prompt.id}`}>
+												Buy Now
+											</Link>
+										</Button>
+									</div>
 								</div>
-							</div>
-							<p className='text-muted-foreground italic line-clamp-3'>
-								"A hyper-realistic 4K image of a majestic lion with a flowing
-								mane, set against a backdrop of a golden sunset on the African
-								savanna. The lighting should be dramatic, with long shadows and
-								a warm, orange glow. The lion's expression should be noble and
-								powerful. Use a shallow depth of field to isolate the lion from
-								the background. Shot on a Sony A7R IV with a 200mm f/2.8 lens."
-							</p>
-						</div>
+								<div className='p-8 bg-muted rounded-lg text-center relative'>
+									<div className='absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center rounded-lg'>
+										<div className='text-center font-bold text-lg'>
+											Unlock to view prompt
+										</div>
+									</div>
+									<p className='text-muted-foreground italic line-clamp-3'>
+										"A hyper-realistic 4K image of a majestic lion with a
+										flowing mane, set against a backdrop of a golden sunset on
+										the African savanna. The lighting should be dramatic, with
+										long shadows and a warm, orange glow. The lion's
+										expression should be noble and powerful. Use a shallow
+										depth of field to isolate the lion from the background.
+										Shot on a Sony A7R IV with a 200mm f/2.8 lens."
+									</p>
+								</div>
+							</>
+						) : (
+							<>
+								<div className='flex flex-wrap items-center justify-between gap-4'>
+									<h2 className='text-2xl font-bold'>
+										{prompt.price === 0 ? 'Free' : 'Purchased'}
+									</h2>
+									<Button
+										size='lg'
+										onClick={handleCopy}
+										disabled={isLoadingPrivateContent || !privateContent}
+									>
+										<Copy className='mr-2 h-4 w-4' />
+										{isLoadingPrivateContent ? 'Loading...' : 'Copy Prompt'}
+									</Button>
+								</div>
+								<div className='p-4 bg-muted rounded-lg relative min-h-[100px]'>
+									{isLoadingPrivateContent ? (
+										<div className='flex items-center justify-center h-full'>
+											<Loader2 className='h-6 w-6 animate-spin text-muted-foreground' />
+										</div>
+									) : (
+										<p className='text-sm text-foreground/90 whitespace-pre-wrap font-mono'>
+											{privateContent}
+										</p>
+									)}
+								</div>
+							</>
+						)}
 					</div>
 				</div>
 			</div>
@@ -279,16 +585,44 @@ export default function PromptDetailPage() {
 			<main className='flex-grow container mx-auto px-4 py-8'>
 				{renderContent()}
 
-				{/* Comments & Ratings Section */}
 				<div className='mt-12 pt-8 border-t'>
 					<h2 className='font-headline text-2xl font-bold mb-6'>Reviews</h2>
 					<div className='space-y-8'>
-						{canComment && <AddCommentForm promptId={params.id as string} />}
-						<CommentList promptId={params.id as string} />
+						{renderUserReviewSection()}
+						<CommentList comments={otherComments} isLoading={areCommentsLoading} />
 					</div>
 				</div>
 			</main>
 			<Footer />
+			<AlertDialog
+				open={showDeleteConfirm}
+				onOpenChange={setShowDeleteConfirm}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Delete your review?</AlertDialogTitle>
+						<AlertDialogDescription>
+							This action cannot be undone. Your review will be permanently
+							removed.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel disabled={isDeletingComment}>
+							Cancel
+						</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={handleDeleteComment}
+							disabled={isDeletingComment}
+							className='bg-destructive hover:bg-destructive/90'
+						>
+							{isDeletingComment && (
+								<Loader2 className='mr-2 h-4 w-4 animate-spin' />
+							)}
+							Delete
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</div>
 	)
 }

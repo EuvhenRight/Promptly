@@ -88,8 +88,12 @@ service cloud.firestore {
 
       match /comments/{commentId} {
         allow get, list: if true;
-        allow create: if hasPurchased(promptId) || get(/databases/$(database)/documents/prompts/$(promptId)).data.price == 0;
-        allow update, delete: if isOwner(resource.data.userId);
+        // User can create a comment if they have access and the comment ID is their own UID.
+        // `create` will fail if the doc already exists, enforcing one comment per user.
+        allow create: if (isAdmin() || hasPurchased(promptId) || get(/databases/$(database)/documents/prompts/$(promptId)).data.price == 0)
+                      && isOwner(commentId);
+        // Allow update/delete if user is admin or the owner of the comment.
+        allow update, delete: if isAdmin() || isOwner(resource.data.userId);
       }
     }
 

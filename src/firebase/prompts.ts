@@ -1,5 +1,10 @@
 import type { PromptFormValues } from '@/app/admin/prompts/new/prompt-form'
-import type { Prompt, PromptPrivateContent, UserProfile } from '@/lib/types'
+import type {
+	Prompt,
+	PromptComment,
+	PromptPrivateContent,
+	UserProfile,
+} from '@/lib/types'
 import {
 	Firestore,
 	collection,
@@ -288,7 +293,7 @@ export function incrementPromptView(firestore: Firestore, promptId: string) {
 	})
 }
 
-export type AddCommentData = {
+export type CommentSubmitData = {
 	firestore: Firestore
 	promptId: string
 	userId: string
@@ -298,6 +303,7 @@ export type AddCommentData = {
 
 /**
  * Adds a comment and updates the prompt's average rating in a transaction.
+ * A user can only add one comment per prompt.
  */
 export async function addPromptCommentAndRating({
 	firestore,
@@ -305,21 +311,25 @@ export async function addPromptCommentAndRating({
 	userId,
 	rating,
 	text,
-}: AddCommentData): Promise<void> {
+}: CommentSubmitData): Promise<void> {
 	if (rating < 1 || rating > 5) {
 		throw new Error('Rating must be between 1 and 5.')
 	}
 
 	const promptRef = doc(firestore, 'prompts', promptId)
-	const commentCollectionRef = collection(promptRef, 'comments')
+	const commentRef = doc(firestore, 'prompts', promptId, 'comments', userId) // Use userId as comment ID
 	const userRef = doc(firestore, 'users', userId)
 
 	await runTransaction(firestore, async transaction => {
-		const [promptDoc, userDoc] = await Promise.all([
+		const [promptDoc, userDoc, commentDoc] = await Promise.all([
 			transaction.get(promptRef),
 			transaction.get(userRef),
+			transaction.get(commentRef),
 		])
 
+		if (commentDoc.exists()) {
+			throw new Error('You have already submitted a review for this prompt.')
+		}
 		if (!promptDoc.exists()) {
 			throw new Error('Prompt does not exist.')
 		}
@@ -331,9 +341,8 @@ export async function addPromptCommentAndRating({
 		const userData = userDoc.data() as UserProfile
 
 		// 1. Create the new comment document
-		const newCommentRef = doc(commentCollectionRef) // Auto-generate ID
-		transaction.set(newCommentRef, {
-			id: newCommentRef.id,
+		transaction.set(commentRef, {
+			id: userId, // Use userId as the ID inside the doc as well
 			userId,
 			rating,
 			text,
@@ -354,5 +363,94 @@ export async function addPromptCommentAndRating({
 			'rating.count': newRatingCount,
 			'rating.average': newRatingAverage,
 		})
+	})
+}
+
+/**
+ * Updates an existing comment and recalculates the prompt's average rating.
+ */
+export async function updatePromptComment({
+	firestore,
+	promptId,
+	userId,
+	rating,
+	text,
+}: CommentSubmitData): Promise<void> {
+	if (rating < 1 || rating > 5) {
+		throw new Error('Rating must be between 1 and 5.')
+	}
+
+	const promptRef = doc(firestore, 'prompts', promptId)
+	const commentRef = doc(firestore, 'prompts', promptId, 'comments', userId)
+
+	await runTransaction(firestore, async transaction => {
+		const [promptDoc, commentDoc] = await Promise.all([
+			transaction.get(promptRef),
+			transaction.get(commentRef),
+		])
+
+		if (!promptDoc.exists()) throw new Error('Prompt does not exist.')
+		if (!commentDoc.exists())
+			throw new Error('Comment does not exist. Cannot update.')
+
+		const promptData = promptDoc.data() as Prompt
+		const oldCommentData = commentDoc.data() as PromptComment
+		const oldRating = oldCommentData.rating
+
+		// Recalculate average rating
+		const { count, average } = promptData.rating
+		const newAverage = (average * count - oldRating + rating) / count
+
+		// Update prompt rating
+		transaction.update(promptRef, { 'rating.average': newAverage })
+
+		// Update comment
+		transaction.update(commentRef, {
+			rating,
+			text,
+			timestamp: serverTimestamp(),
+		})
+	})
+}
+
+/**
+ * Deletes a user's comment and recalculates the prompt's average rating.
+ */
+export async function deletePromptComment({
+	firestore,
+	promptId,
+	userId,
+}: Pick<CommentSubmitData, 'firestore' | 'promptId' | 'userId'>): Promise<void> {
+	const promptRef = doc(firestore, 'prompts', promptId)
+	const commentRef = doc(firestore, 'prompts', promptId, 'comments', userId)
+
+	await runTransaction(firestore, async transaction => {
+		const [promptDoc, commentDoc] = await Promise.all([
+			transaction.get(promptRef),
+			transaction.get(commentRef),
+		])
+
+		if (!promptDoc.exists()) throw new Error('Prompt does not exist.')
+		// If comment doesn't exist, there's nothing to do.
+		if (!commentDoc.exists()) return
+
+		const promptData = promptDoc.data() as Prompt
+		const oldCommentData = commentDoc.data() as PromptComment
+		const oldRating = oldCommentData.rating
+
+		// Recalculate average rating
+		const { count, average } = promptData.rating
+		const newCount = count - 1
+		const newAverage =
+			newCount > 0 ? (average * count - oldRating) / newCount : 0
+
+		// Update prompt rating and count
+		transaction.update(promptRef, {
+			'rating.average': newAverage,
+			'rating.count': newCount,
+		})
+
+		// Delete comment
+		transaction.delete(commentRef)
 	})
 }
