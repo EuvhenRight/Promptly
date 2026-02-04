@@ -88,8 +88,8 @@ service cloud.firestore {
 
       match /comments/{commentId} {
         allow get, list: if true;
-        allow create: if hasPurchased(promptId) || get(/databases/$(database)/documents/prompts/$(promptId)).data.price == 0;
-        allow update, delete: if isOwner(resource.data.userId);
+        allow create: if isAdmin() || hasPurchased(promptId) || get(/databases/$(database)/documents/prompts/$(promptId)).data.price == 0;
+        allow update, delete: if isAdmin() || isOwner(resource.data.userId);
       }
     }
 
