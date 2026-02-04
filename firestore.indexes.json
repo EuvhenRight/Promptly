@@ -24,6 +24,146 @@
 				{ "fieldPath": "tags", "arrayConfig": "CONTAINS" },
 				{ "fieldPath": "createdAt", "order": "DESCENDING" }
 			]
+		},
+		{
+			"collectionGroup": "prompts",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "price", "order": "ASCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "prompts",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "price", "order": "DESCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "prompts",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "rating.average", "order": "DESCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "prompts",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "stats.views", "order": "DESCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "prompts",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "categoryId", "order": "ASCENDING" },
+				{ "fieldPath": "price", "order": "ASCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "prompts",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "categoryId", "order": "ASCENDING" },
+				{ "fieldPath": "price", "order": "DESCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "prompts",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "categoryId", "order": "ASCENDING" },
+				{ "fieldPath": "rating.average", "order": "DESCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "prompts",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "categoryId", "order": "ASCENDING" },
+				{ "fieldPath": "stats.views", "order": "DESCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "prompts",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "typeId", "order": "ASCENDING" },
+				{ "fieldPath": "price", "order": "ASCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "prompts",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "typeId", "order": "ASCENDING" },
+				{ "fieldPath": "price", "order": "DESCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "prompts",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "typeId", "order": "ASCENDING" },
+				{ "fieldPath": "rating.average", "order": "DESCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "prompts",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "typeId", "order": "ASCENDING" },
+				{ "fieldPath": "stats.views", "order": "DESCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "prompts",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "tags", "arrayConfig": "CONTAINS" },
+				{ "fieldPath": "price", "order": "ASCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "prompts",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "tags", "arrayConfig": "CONTAINS" },
+				{ "fieldPath": "price", "order": "DESCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "prompts",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "tags", "arrayConfig": "CONTAINS" },
+				{ "fieldPath": "rating.average", "order": "DESCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "prompts",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "tags", "arrayConfig": "CONTAINS" },
+				{ "fieldPath": "stats.views", "order": "DESCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
 		}
 	],
 	"fieldOverrides": []
