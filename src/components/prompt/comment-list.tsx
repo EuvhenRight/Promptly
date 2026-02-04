@@ -1,52 +1,29 @@
 'use client'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase'
 import type { PromptComment } from '@/lib/types'
-import { collection, orderBy, query } from 'firebase/firestore'
 import { formatDistanceToNow } from 'date-fns'
 import { Star } from 'lucide-react'
 
 interface CommentListProps {
-	promptId: string
+	comments: PromptComment[]
+	isLoading: boolean
 }
 
 const CommentSkeleton = () => (
-	<Card className='p-4'>
-		<div className='flex gap-4'>
-			<Skeleton className='h-10 w-10 rounded-full' />
-			<div className='flex-1 space-y-2'>
-				<Skeleton className='h-4 w-1/4' />
-				<Skeleton className='h-4 w-1/2' />
-				<Skeleton className='h-8 w-full' />
-			</div>
+	<div className='flex gap-4 p-4'>
+		<Skeleton className='h-10 w-10 rounded-full' />
+		<div className='flex-1 space-y-2'>
+			<Skeleton className='h-4 w-1/4' />
+			<Skeleton className='h-4 w-1/2' />
+			<Skeleton className='h-8 w-full' />
 		</div>
-	</Card>
+	</div>
 )
 
-export function CommentList({ promptId }: CommentListProps) {
-	const firestore = useFirestore()
-
-	const commentsQuery = useMemoFirebase(
-		() =>
-			firestore && promptId
-				? query(
-						collection(firestore, 'prompts', promptId, 'comments'),
-						orderBy('timestamp', 'desc'),
-					)
-				: null,
-		[firestore, promptId],
-	)
-
-	const {
-		data: comments,
-		isLoading,
-		error,
-	} = useCollection<PromptComment>(commentsQuery)
-
-	if (isLoading) {
+export function CommentList({ comments, isLoading }: CommentListProps) {
+	if (isLoading && comments.length === 0) {
 		return (
 			<div className='space-y-4'>
 				<CommentSkeleton />
@@ -55,16 +32,17 @@ export function CommentList({ promptId }: CommentListProps) {
 		)
 	}
 
-	if (error) {
-		return <p className='text-destructive'>Error loading reviews.</p>
-	}
-
-	if (!comments || comments.length === 0) {
-		return <p className='text-muted-foreground'>No reviews yet. Be the first!</p>
+	if (comments.length === 0) {
+		return (
+			<p className='text-muted-foreground text-center py-4'>
+				No other reviews yet.
+			</p>
+		)
 	}
 
 	return (
 		<div className='space-y-6'>
+			<h3 className='font-semibold'>All Reviews</h3>
 			{comments.map(comment => (
 				<div key={comment.id} className='flex gap-4'>
 					<Avatar>

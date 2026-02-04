@@ -2,66 +2,56 @@
 
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { useFirestore, useUser } from '@/firebase'
-import { addPromptCommentAndRating } from '@/firebase/prompts'
-import { useToast } from '@/hooks/use-toast'
+import type { PromptComment } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { Star } from 'lucide-react'
-import { useState } from 'react'
+import { Loader2, Star } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 interface AddCommentFormProps {
 	promptId: string
+	initialData?: PromptComment
+	isSubmitting: boolean
+	onSubmit: (data: { rating: number; text: string }) => Promise<void>
+	onCancel?: () => void
+	submitButtonText: string
 }
 
-export function AddCommentForm({ promptId }: AddCommentFormProps) {
-	const { user } = useUser()
-	const firestore = useFirestore()
-	const { toast } = useToast()
-	const [rating, setRating] = useState(0)
+export function AddCommentForm({
+	promptId,
+	initialData,
+	isSubmitting,
+	onSubmit,
+	onCancel,
+	submitButtonText,
+}: AddCommentFormProps) {
+	const [rating, setRating] = useState(initialData?.rating || 0)
 	const [hoverRating, setHoverRating] = useState(0)
-	const [text, setText] = useState('')
-	const [isSubmitting, setIsSubmitting] = useState(false)
+	const [text, setText] = useState(initialData?.text || '')
+	const [error, setError] = useState('')
+
+	useEffect(() => {
+		setRating(initialData?.rating || 0)
+		setText(initialData?.text || '')
+	}, [initialData])
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
-		if (!user || !firestore) {
-			toast({ variant: 'destructive', title: 'You must be signed in.' })
-			return
-		}
 		if (rating === 0) {
-			toast({ variant: 'destructive', title: 'Please select a rating.' })
+			setError('Please select a rating.')
 			return
 		}
-
-		setIsSubmitting(true)
-		try {
-			await addPromptCommentAndRating({
-				firestore,
-				promptId,
-				userId: user.uid,
-				rating,
-				text,
-			})
-			toast({
-				title: 'Review submitted!',
-				description: 'Thank you for your feedback.',
-			})
-			setRating(0)
-			setText('')
-		} catch (error: any) {
-			toast({
-				variant: 'destructive',
-				title: 'Error submitting review',
-				description: error.message,
-			})
-		} finally {
-			setIsSubmitting(false)
-		}
+		setError('')
+		await onSubmit({ rating, text })
 	}
 
 	return (
-		<form onSubmit={handleSubmit} className='space-y-4 rounded-lg border p-6'>
-			<h3 className='font-semibold'>Leave a Review</h3>
+		<form
+			onSubmit={handleSubmit}
+			className='space-y-4 rounded-lg border p-4 sm:p-6'
+		>
+			<h3 className='font-semibold'>
+				{initialData ? 'Edit Your Review' : 'Leave a Review'}
+			</h3>
 			<div>
 				<div className='flex items-center gap-1'>
 					{[1, 2, 3, 4, 5].map(star => (
@@ -73,13 +63,13 @@ export function AddCommentForm({ promptId }: AddCommentFormProps) {
 									? 'text-yellow-500 fill-yellow-400'
 									: 'text-muted-foreground',
 							)}
-							onClick={() => setRating(star)}
-							onMouseEnter={() => setHoverRating(star)}
+							onClick={() => !isSubmitting && setRating(star)}
+							onMouseEnter={() => !isSubmitting && setHoverRating(star)}
 							onMouseLeave={() => setHoverRating(0)}
 						/>
 					))}
 				</div>
-				<p className='text-xs text-muted-foreground mt-1'>Select your rating</p>
+				{error && <p className='text-xs text-destructive mt-1'>{error}</p>}
 			</div>
 			<Textarea
 				value={text}
@@ -88,9 +78,22 @@ export function AddCommentForm({ promptId }: AddCommentFormProps) {
 				rows={4}
 				disabled={isSubmitting}
 			/>
-			<Button type='submit' disabled={isSubmitting}>
-				{isSubmitting ? 'Submitting...' : 'Submit Review'}
-			</Button>
+			<div className='flex items-center gap-2'>
+				<Button type='submit' disabled={isSubmitting}>
+					{isSubmitting && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+					{submitButtonText}
+				</Button>
+				{onCancel && (
+					<Button
+						type='button'
+						variant='ghost'
+						onClick={onCancel}
+						disabled={isSubmitting}
+					>
+						Cancel
+					</Button>
+				)}
+			</div>
 		</form>
 	)
 }
