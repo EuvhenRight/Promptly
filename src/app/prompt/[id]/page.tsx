@@ -21,7 +21,7 @@ import { Eye, Heart, ShoppingCart, Star } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 const PromptDetailSkeleton = () => (
 	<div className='grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12'>
@@ -59,6 +59,7 @@ export default function PromptDetailPage() {
 	const { user } = useUser()
 	const firestore = useFirestore()
 	const { toast } = useToast()
+	const viewIncremented = useRef(false)
 
 	const promptRef = useMemoFirebase(
 		() =>
@@ -74,8 +75,9 @@ export default function PromptDetailPage() {
 	const { data: userProfile } = useDoc<UserProfile>(userProfileRef)
 
 	useEffect(() => {
-		if (params.id && firestore) {
+		if (params.id && firestore && !viewIncremented.current) {
 			incrementPromptView(firestore, params.id as string)
+			viewIncremented.current = true
 		}
 	}, [params.id, firestore])
 
