@@ -12,14 +12,25 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { useTypes } from '@/hooks/use-types'
-import { ChevronDown, Search } from 'lucide-react'
+import { type SortByOption } from '@/hooks/use-prompts-feed'
+import { ArrowDownUp, ChevronDown, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
+
+const sortOptions: { label: string; value: SortByOption }[] = [
+	{ label: 'Newest', value: 'createdAt:desc' },
+	{ label: 'Popularity', value: 'stats.views:desc' },
+	{ label: 'Top Rated', value: 'rating.average:desc' },
+	{ label: 'Price: Low to High', value: 'price:asc' },
+	{ label: 'Price: High to Low', value: 'price:desc' },
+]
 
 interface SearchBarProps {
 	activeFilter: string
 	selectedTypeId: string | null
 	onTypeChange: (typeId: string | null) => void
 	totalCount: number | null
+	sortBy: SortByOption
+	onSortChange: (sortBy: SortByOption) => void
 }
 
 export default function SearchBar({
@@ -27,6 +38,8 @@ export default function SearchBar({
 	selectedTypeId,
 	onTypeChange,
 	totalCount,
+	sortBy,
+	onSortChange,
 }: SearchBarProps) {
 	const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(
 		null,
@@ -41,6 +54,9 @@ export default function SearchBar({
 
 	const selectedTypeName =
 		types.find(t => t.id === selectedTypeId)?.name || 'Type'
+
+	const selectedSortLabel =
+		sortOptions.find(o => o.value === sortBy)?.label || 'Sort'
 
 	const fetchBackground = () => {
 		fetch('/api/search-bar-backgrounds?active=true', { cache: 'no-store' })
@@ -135,9 +151,28 @@ export default function SearchBar({
 					<Button variant='outline' className='rounded-full border bg-card'>
 						+ Model
 					</Button>
-					<Button variant='outline' className='rounded-full border bg-card'>
-						Sort ↑↓
-					</Button>
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button variant='outline' className='rounded-full border bg-card'>
+								{selectedSortLabel}
+								<ArrowDownUp className='ml-2 h-4 w-4' />
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent>
+							<DropdownMenuLabel>Sort by</DropdownMenuLabel>
+							<DropdownMenuSeparator />
+							<DropdownMenuRadioGroup
+								value={sortBy}
+								onValueChange={value => onSortChange(value as SortByOption)}
+							>
+								{sortOptions.map(option => (
+									<DropdownMenuRadioItem key={option.value} value={option.value}>
+										{option.label}
+									</DropdownMenuRadioItem>
+								))}
+							</DropdownMenuRadioGroup>
+						</DropdownMenuContent>
+					</DropdownMenu>
 				</div>
 			</div>
 		</section>

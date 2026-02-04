@@ -6,7 +6,7 @@ import SubHeader from '@/components/home/sub-header'
 import Footer from '@/components/layout/footer'
 import Header from '@/components/layout/header'
 import { Skeleton } from '@/components/ui/skeleton'
-import { usePromptsFeed } from '@/hooks/use-prompts-feed'
+import { usePromptsFeed, type SortByOption } from '@/hooks/use-prompts-feed'
 import { useTypes } from '@/hooks/use-types'
 import { Loader2 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -33,6 +33,7 @@ export default function Home() {
 		null,
 	)
 	const [selectedTagId, setSelectedTagId] = useState<string | null>(null)
+	const [sortBy, setSortBy] = useState<SortByOption>('createdAt:desc')
 	const { types, isLoading: typesLoading } = useTypes()
 
 	useEffect(() => {
@@ -67,11 +68,16 @@ export default function Home() {
 		setSelectedTypeId(typeId)
 	}
 
+	const handleSortChange = (newSortBy: SortByOption) => {
+		setSortBy(newSortBy)
+	}
+
 	const { prompts, loading, error, hasMore, loadMore, totalCount } =
 		usePromptsFeed({
 			categoryId: selectedCategoryId,
 			typeId: selectedTypeId,
 			tagId: selectedTagId,
+			sortBy,
 		})
 
 	const observer = useRef<IntersectionObserver | null>(null)
@@ -106,6 +112,8 @@ export default function Home() {
 					selectedTypeId={selectedTypeId}
 					onTypeChange={handleTypeChange}
 					totalCount={totalCount}
+					sortBy={sortBy}
+					onSortChange={handleSortChange}
 				/>
 				<div className='container mx-auto px-4 py-8 sm:px-6 lg:px-8'>
 					{error && (
