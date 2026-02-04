@@ -73,7 +73,13 @@ service cloud.firestore {
 
     match /prompts/{promptId} {
       allow get, list: if true;
-      allow create, update, delete: if isAdmin();
+      allow create, delete: if isAdmin();
+      // Allow admins to update anything.
+      // Allow users who can comment to update ONLY the rating field.
+      allow update: if isAdmin() || (
+        (hasPurchased(promptId) || get(/databases/$(database)/documents/prompts/$(promptId)).data.price == 0) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating'])
+      );
 
       match /private/{docId} {
         allow get: if docId == 'content' && (isAdmin() || hasPurchased(promptId));
@@ -82,7 +88,7 @@ service cloud.firestore {
 
       match /comments/{commentId} {
         allow get, list: if true;
-        allow create: if hasPurchased(promptId);
+        allow create: if hasPurchased(promptId) || get(/databases/$(database)/documents/prompts/$(promptId)).data.price == 0;
         allow update, delete: if isOwner(resource.data.userId);
       }
     }

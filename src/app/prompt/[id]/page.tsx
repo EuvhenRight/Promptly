@@ -1,5 +1,7 @@
 'use client'
 
+import { AddCommentForm } from '@/components/prompt/add-comment-form'
+import { CommentList } from '@/components/prompt/comment-list'
 import Footer from '@/components/layout/footer'
 import Header from '@/components/layout/header'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -8,21 +10,23 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
 import { addPromptToCart } from '@/firebase/cart'
+import { incrementPromptView } from '@/firebase/prompts'
 import { toggleFavoritePrompt } from '@/firebase/users'
 import { useCategories } from '@/hooks/use-categories'
 import { useToast } from '@/hooks/use-toast'
 import type { Prompt, UserProfile } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { doc } from 'firebase/firestore'
-import { Heart, ShoppingCart, Star } from 'lucide-react'
+import { Eye, Heart, ShoppingCart, Star } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { useEffect, useRef } from 'react'
 
 const PromptDetailSkeleton = () => (
 	<div className='grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12'>
 		<div className='space-y-4'>
-			<Skeleton className='aspect-[4/3] w-full rounded-lg' />
+			<Skeleton className='w-full object-contain' />
 		</div>
 		<div className='space-y-6'>
 			<div className='space-y-3'>
@@ -44,11 +48,18 @@ const PromptDetailSkeleton = () => (
 	</div>
 )
 
+const formatStat = (num: number): string => {
+	if (num >= 1000000) return `${(num / 1000000).toFixed(1)}m`
+	if (num >= 1000) return `${(num / 1000).toFixed(1)}k`
+	return num.toString()
+}
+
 export default function PromptDetailPage() {
 	const params = useParams<{ id: string }>()
 	const { user } = useUser()
 	const firestore = useFirestore()
 	const { toast } = useToast()
+	const viewIncremented = useRef(false)
 
 	const promptRef = useMemoFirebase(
 		() =>
@@ -63,10 +74,22 @@ export default function PromptDetailPage() {
 	)
 	const { data: userProfile } = useDoc<UserProfile>(userProfileRef)
 
+	useEffect(() => {
+		if (params.id && firestore && !viewIncremented.current) {
+			incrementPromptView(firestore, params.id as string)
+			viewIncremented.current = true
+		}
+	}, [params.id, firestore])
+
 	const { getNames } = useCategories()
 
 	const isFavorite =
 		userProfile?.favoritePrompts?.includes(params.id as string) ?? false
+
+	const canComment =
+		user &&
+		prompt &&
+		(prompt.price === 0 || userProfile?.purchasedPrompts?.includes(prompt.id))
 
 	const handleAddToCart = () => {
 		if (!user || !firestore || !prompt) {
@@ -152,15 +175,20 @@ export default function PromptDetailPage() {
 						</div>
 					</div>
 
-					<div className='flex items-center gap-4'>
+					<div className='flex items-center gap-4 text-sm text-muted-foreground'>
 						<div className='flex items-center gap-1'>
 							<Star className='h-5 w-5 fill-yellow-400 text-yellow-500' />
-							<span className='font-bold'>
+							<span className='font-bold text-foreground'>
 								{prompt.rating.average.toFixed(1)}
 							</span>
-							<span className='text-sm text-muted-foreground'>
-								({prompt.rating.count} ratings)
+							<span>({prompt.rating.count} ratings)</span>
+						</div>
+						<div className='flex items-center gap-1'>
+							<Eye className='h-5 w-5' />
+							<span className='font-bold text-foreground'>
+								{formatStat(prompt.stats?.views ?? 0)}
 							</span>
+							<span>views</span>
 						</div>
 						{user && (
 							<Button
@@ -254,9 +282,9 @@ export default function PromptDetailPage() {
 				{/* Comments & Ratings Section */}
 				<div className='mt-12 pt-8 border-t'>
 					<h2 className='font-headline text-2xl font-bold mb-6'>Reviews</h2>
-					{/* AddComment and CommentList components will go here */}
-					<div className='space-y-6'>
-						<p className='text-muted-foreground'>Comments coming soon.</p>
+					<div className='space-y-8'>
+						{canComment && <AddCommentForm promptId={params.id as string} />}
+						<CommentList promptId={params.id as string} />
 					</div>
 				</div>
 			</main>

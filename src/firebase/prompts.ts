@@ -5,7 +5,10 @@ import {
 	collection,
 	doc,
 	getDoc,
+	increment,
+	runTransaction,
 	serverTimestamp,
+	updateDoc,
 	writeBatch,
 } from 'firebase/firestore'
 import {
@@ -269,4 +272,87 @@ export async function updatePrompt(
 	batch.set(privateContentRef, privateDataToUpdate, { merge: true }) // Use set with merge to be safe
 
 	await batch.commit()
+}
+
+/**
+ * Increments the view count of a prompt.
+ * This is a non-blocking "fire and forget" operation.
+ */
+export function incrementPromptView(firestore: Firestore, promptId: string) {
+	const promptRef = doc(firestore, 'prompts', promptId)
+	updateDoc(promptRef, {
+		'stats.views': increment(1),
+	}).catch(err => {
+		// We don't want to bother the user if this fails. Log it for monitoring.
+		console.warn('Failed to increment prompt view count:', err)
+	})
+}
+
+export type AddCommentData = {
+	firestore: Firestore
+	promptId: string
+	userId: string
+	rating: number
+	text: string
+}
+
+/**
+ * Adds a comment and updates the prompt's average rating in a transaction.
+ */
+export async function addPromptCommentAndRating({
+	firestore,
+	promptId,
+	userId,
+	rating,
+	text,
+}: AddCommentData): Promise<void> {
+	if (rating < 1 || rating > 5) {
+		throw new Error('Rating must be between 1 and 5.')
+	}
+
+	const promptRef = doc(firestore, 'prompts', promptId)
+	const commentCollectionRef = collection(promptRef, 'comments')
+	const userRef = doc(firestore, 'users', userId)
+
+	await runTransaction(firestore, async transaction => {
+		const [promptDoc, userDoc] = await Promise.all([
+			transaction.get(promptRef),
+			transaction.get(userRef),
+		])
+
+		if (!promptDoc.exists()) {
+			throw new Error('Prompt does not exist.')
+		}
+		if (!userDoc.exists()) {
+			throw new Error('User profile not found.')
+		}
+
+		const promptData = promptDoc.data() as Prompt
+		const userData = userDoc.data() as UserProfile
+
+		// 1. Create the new comment document
+		const newCommentRef = doc(commentCollectionRef) // Auto-generate ID
+		transaction.set(newCommentRef, {
+			id: newCommentRef.id,
+			userId,
+			rating,
+			text,
+			authorDisplayName: userData.displayName,
+			authorPhotoURL: userData.photoURL,
+			timestamp: serverTimestamp(),
+		})
+
+		// 2. Calculate the new average rating
+		const oldRatingCount = promptData.rating.count || 0
+		const oldRatingAverage = promptData.rating.average || 0
+		const newRatingCount = oldRatingCount + 1
+		const newRatingAverage =
+			(oldRatingAverage * oldRatingCount + rating) / newRatingCount
+
+		// 3. Update the prompt document with the new rating
+		transaction.update(promptRef, {
+			'rating.count': newRatingCount,
+			'rating.average': newRatingAverage,
+		})
+	})
 }
