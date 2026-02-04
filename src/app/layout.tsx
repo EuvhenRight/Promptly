@@ -23,11 +23,30 @@ export const metadata: Metadata = {
 	description: 'A marketplace for the best AI prompts.',
 }
 
+function getFirebaseConfig() {
+  const rawConfig =
+    process.env.FIREBASE_CONFIG || process.env.FIREBASE_WEBAPP_CONFIG;
+  if (!rawConfig) {
+    console.error(
+      "Server-side Warning: FIREBASE_CONFIG or FIREBASE_WEBAPP_CONFIG environment variable not set. Client-side initialization will likely fail."
+    );
+    return {};
+  }
+  try {
+    return JSON.parse(rawConfig);
+  } catch (e) {
+    console.error("Server-side Error: Failed to parse Firebase config environment variable.", e);
+    return {};
+  }
+}
+
+
 export default function RootLayout({
 	children,
 }: Readonly<{
 	children: React.ReactNode
 }>) {
+	const firebaseConfig = getFirebaseConfig();
 	return (
 		<html lang='en' suppressHydrationWarning>
 			<body
@@ -37,7 +56,7 @@ export default function RootLayout({
 					fontSpaceGrotesk.variable,
 				)}
 			>
-				<FirebaseClientProvider>
+				<FirebaseClientProvider config={firebaseConfig}>
 					<CategoriesProvider>
 						<TagsProvider>
 							<TypesProvider>
