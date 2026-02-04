@@ -3,6 +3,7 @@
 import Masonry from 'react-masonry-css';
 import PromptCard from './prompt-card';
 import type { Prompt } from '@/lib/types';
+import { useEffect, useState } from 'react';
 
 const breakpointColumnsObj = {
   default: 5,   // For screens > 1280px
@@ -16,8 +17,14 @@ interface PromptFeedProps {
 }
 
 export default function PromptFeed({ prompts }: PromptFeedProps) {
-  if (!prompts.length) {
-    return null; // Don't render anything if there are no prompts yet
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  if (!isClient || !prompts.length) {
+    return null; // Don't render anything until mounted on client or if no prompts
   }
 
   return (
