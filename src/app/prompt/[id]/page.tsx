@@ -14,19 +14,19 @@ import { incrementPromptView } from '@/firebase/prompts'
 import { toggleFavoritePrompt } from '@/firebase/users'
 import { useCategories } from '@/hooks/use-categories'
 import { useToast } from '@/hooks/use-toast'
-import type { Prompt, UserProfile } from '@/lib/types'
+import type { Prompt, PromptPrivateContent, UserProfile } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { doc } from 'firebase/firestore'
-import { Eye, Heart, ShoppingCart, Star } from 'lucide-react'
+import { doc, getDoc, type Firestore } from 'firebase/firestore'
+import { Copy, Eye, Heart, Loader2, ShoppingCart, Star } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const PromptDetailSkeleton = () => (
 	<div className='grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12'>
 		<div className='space-y-4'>
-			<Skeleton className='w-full object-contain' />
+			<Skeleton className='w-full aspect-[3/4]' />
 		</div>
 		<div className='space-y-6'>
 			<div className='space-y-3'>
@@ -74,12 +74,50 @@ export default function PromptDetailPage() {
 	)
 	const { data: userProfile } = useDoc<UserProfile>(userProfileRef)
 
+	// State for private content
+	const [privateContent, setPrivateContent] = useState<string | null>(null)
+	const [isLoadingPrivateContent, setIsLoadingPrivateContent] = useState(false)
+
 	useEffect(() => {
 		if (params.id && firestore && !viewIncremented.current) {
 			incrementPromptView(firestore, params.id as string)
 			viewIncremented.current = true
 		}
 	}, [params.id, firestore])
+
+	// Determine if user can view the private content
+	const isPurchased =
+		userProfile?.purchasedPrompts?.includes(params.id as string) ?? false
+	const isFree = prompt?.price === 0
+	const isAdmin = userProfile?.role === 'admin'
+	const canViewContent = prompt && (isPurchased || isFree || isAdmin)
+
+	// Fetch private content if user has access
+	useEffect(() => {
+		if (canViewContent && firestore && params.id && !privateContent) {
+			setIsLoadingPrivateContent(true)
+			const fetchPrivateContent = async (db: Firestore, promptId: string) => {
+				const contentRef = doc(db, 'prompts', promptId, 'private', 'content')
+				try {
+					const contentSnap = await getDoc(contentRef)
+					if (contentSnap.exists()) {
+						setPrivateContent(
+							(contentSnap.data() as PromptPrivateContent).text,
+						)
+					} else {
+						setPrivateContent('Content not found.')
+					}
+				} catch (e) {
+					console.error('Failed to fetch private content', e)
+					setPrivateContent('Could not load content due to an error.')
+				} finally {
+					setIsLoadingPrivateContent(false)
+				}
+			}
+
+			fetchPrivateContent(firestore, params.id as string)
+		}
+	}, [canViewContent, firestore, params.id, privateContent])
 
 	const { getNames } = useCategories()
 
@@ -120,6 +158,25 @@ export default function PromptDetailPage() {
 		toast({
 			title: isFavorite ? 'Removed from favorites' : 'Added to favorites',
 		})
+	}
+
+	const handleCopy = () => {
+		if (!privateContent) return
+		navigator.clipboard
+			.writeText(privateContent)
+			.then(() => {
+				toast({
+					title: 'Copied to clipboard!',
+				})
+			})
+			.catch(err => {
+				console.error('Failed to copy text: ', err)
+				toast({
+					variant: 'destructive',
+					title: 'Failed to copy',
+					description: 'Could not copy prompt to clipboard.',
+				})
+			})
 	}
 
 	const isLoading = isPromptLoading
@@ -226,47 +283,81 @@ export default function PromptDetailPage() {
 					<p className='text-muted-foreground'>{prompt.description}</p>
 
 					<div className='rounded-lg border bg-card text-card-foreground shadow-sm p-6 space-y-4'>
-						<div className='flex flex-wrap items-center justify-between gap-4'>
-							<h2 className='text-2xl font-bold'>
-								{prompt.price === 0
-									? 'Free'
-									: `€${(Number(prompt.price) ?? 0).toFixed(2)}`}
-							</h2>
-							<div className='flex flex-grow justify-end items-center gap-2 sm:flex-grow-0'>
-								<Button
-									size='lg'
-									variant='outline'
-									onClick={handleAddToCart}
-									className='flex-1 sm:flex-initial'
-									disabled={!user}
-								>
-									<ShoppingCart className='mr-2 h-4 w-4' />
-									Add to Cart
-								</Button>
-								<Button
-									size='lg'
-									className='bg-accent text-accent-foreground hover:bg-accent/90 flex-1 sm:flex-initial'
-									asChild
-								>
-									<Link href={`/checkout?promptId=${prompt.id}`}>Buy Now</Link>
-								</Button>
-							</div>
-						</div>
-						<div className='p-8 bg-muted rounded-lg text-center relative'>
-							<div className='absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center rounded-lg'>
-								<div className='text-center font-bold text-lg'>
-									Unlock to view prompt
+						{!canViewContent ? (
+							<>
+								<div className='flex flex-wrap items-center justify-between gap-4'>
+									<h2 className='text-2xl font-bold'>
+										{`€${(Number(prompt.price) ?? 0).toFixed(2)}`}
+									</h2>
+									<div className='flex flex-grow justify-end items-center gap-2 sm:flex-grow-0'>
+										<Button
+											size='lg'
+											variant='outline'
+											onClick={handleAddToCart}
+											className='flex-1 sm:flex-initial'
+											disabled={!user}
+										>
+											<ShoppingCart className='mr-2 h-4 w-4' />
+											Add to Cart
+										</Button>
+										<Button
+											size='lg'
+											className='bg-accent text-accent-foreground hover:bg-accent/90 flex-1 sm:flex-initial'
+											asChild
+										>
+											<Link href={`/checkout?promptId=${prompt.id}`}>
+												Buy Now
+											</Link>
+										</Button>
+									</div>
 								</div>
-							</div>
-							<p className='text-muted-foreground italic line-clamp-3'>
-								"A hyper-realistic 4K image of a majestic lion with a flowing
-								mane, set against a backdrop of a golden sunset on the African
-								savanna. The lighting should be dramatic, with long shadows and
-								a warm, orange glow. The lion's expression should be noble and
-								powerful. Use a shallow depth of field to isolate the lion from
-								the background. Shot on a Sony A7R IV with a 200mm f/2.8 lens."
-							</p>
-						</div>
+								<div className='p-8 bg-muted rounded-lg text-center relative'>
+									<div className='absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center rounded-lg'>
+										<div className='text-center font-bold text-lg'>
+											Unlock to view prompt
+										</div>
+									</div>
+									<p className='text-muted-foreground italic line-clamp-3'>
+										"A hyper-realistic 4K image of a majestic lion with a
+										flowing mane, set against a backdrop of a golden sunset on
+										the African savanna. The lighting should be dramatic, with
+										long shadows and a warm, orange glow. The lion's
+										expression should be noble and powerful. Use a shallow
+										depth of field to isolate the lion from the background.
+										Shot on a Sony A7R IV with a 200mm f/2.8 lens."
+									</p>
+								</div>
+							</>
+						) : (
+							<>
+								<div className='flex flex-wrap items-center justify-between gap-4'>
+									<h2 className='text-2xl font-bold'>
+										{prompt.price === 0 ? 'Free' : 'Purchased'}
+									</h2>
+									<Button
+										size='lg'
+										onClick={handleCopy}
+										disabled={isLoadingPrivateContent || !privateContent}
+									>
+										<Copy className='mr-2 h-4 w-4' />
+										{isLoadingPrivateContent
+											? 'Loading...'
+											: 'Copy Prompt'}
+									</Button>
+								</div>
+								<div className='p-4 bg-muted rounded-lg relative min-h-[100px]'>
+									{isLoadingPrivateContent ? (
+										<div className='flex items-center justify-center h-full'>
+											<Loader2 className='h-6 w-6 animate-spin text-muted-foreground' />
+										</div>
+									) : (
+										<p className='text-sm text-foreground/90 whitespace-pre-wrap font-mono'>
+											{privateContent}
+										</p>
+									)}
+								</div>
+							</>
+						)}
 					</div>
 				</div>
 			</div>
