@@ -124,10 +124,7 @@ export default function PromptDetailPage() {
 	const isFavorite =
 		userProfile?.favoritePrompts?.includes(params.id as string) ?? false
 
-	const canComment =
-		user &&
-		prompt &&
-		(prompt.price === 0 || userProfile?.purchasedPrompts?.includes(prompt.id))
+	const canComment = user && canViewContent
 
 	const handleAddToCart = () => {
 		if (!user || !firestore || !prompt) {
