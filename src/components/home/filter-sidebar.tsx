@@ -6,6 +6,7 @@ import {
 	AccordionItem,
 	AccordionTrigger,
 } from '@/components/ui/accordion'
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
@@ -21,6 +22,7 @@ type FilterSidebarProps = {
 export default function FilterSidebar({ className }: FilterSidebarProps) {
 	const { categories, isLoading: categoriesLoading } = useCategories()
 	const { tags, isLoading: tagsLoading } = useTags()
+	// Hydrate the categories and tags
 
 	return (
 		<aside className={cn('space-y-6', className)}>
