@@ -53,14 +53,16 @@ function Calendar({
         day_hidden: "invisible",
         ...classNames,
       }}
-      components={{
-        Chevron: ({ orientation, className, ...props }) =>
-          orientation === "left" ? (
+      components={
+        {
+          IconLeft: ({ className, ...props }: React.SVGProps<SVGSVGElement>) => (
             <ChevronLeft className={cn("h-4 w-4", className)} {...props} />
-          ) : (
+          ),
+          IconRight: ({ className, ...props }: React.SVGProps<SVGSVGElement>) => (
             <ChevronRight className={cn("h-4 w-4", className)} {...props} />
           ),
-      }}
+        } as React.ComponentProps<typeof DayPicker>["components"]
+      }
       {...props}
     />
   )
