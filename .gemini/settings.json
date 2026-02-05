@@ -1,19 +1,27 @@
 {
   "mcpServers": {
-    "sequential-thinking": {
+    "playwright": {
       "command": "npx",
       "args": [
         "-y",
-        "@modelcontextprotocol/server-sequential-thinking"
+        "@executeautomation/playwright-mcp-server"
       ]
     },
-    "context7": {
+    "firebase": {
       "command": "npx",
       "args": [
         "-y",
-        "@upstash/context7-mcp",
-        "--api-key",
-        "YOUR_API_KEY"
+        "firebase-tools@latest",
+        "experimental:mcp",
+        "--only",
+        "auth,firestore"
+      ]
+    },
+    "fetch": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-fetch"
       ]
     },
     "filesystem": {
