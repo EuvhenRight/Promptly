@@ -45,6 +45,3 @@ firebase-debug.log
 firestore-debug.log
 
 service-account.json
-
-package-lock.json
-package.json
