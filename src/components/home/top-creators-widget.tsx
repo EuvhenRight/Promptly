@@ -9,9 +9,15 @@ type TopCreatorsWidgetProps = {
   className?: string;
 };
 
-const creatorsByWeek = [...DUMMY_CREATORS].sort((a, b) => b.stats.weeklySales - a.stats.weeklySales);
-const creatorsByMonth = [...DUMMY_CREATORS].sort((a, b) => b.stats.monthlySales - a.stats.monthlySales);
-const creatorsByAllTime = [...DUMMY_CREATORS].sort((a, b) => b.stats.totalSales - a.stats.totalSales);
+const creatorsByWeek = [...DUMMY_CREATORS].sort(
+  (a, b) => (b.stats?.weeklySales ?? 0) - (a.stats?.weeklySales ?? 0)
+);
+const creatorsByMonth = [...DUMMY_CREATORS].sort(
+  (a, b) => (b.stats?.monthlySales ?? 0) - (a.stats?.monthlySales ?? 0)
+);
+const creatorsByAllTime = [...DUMMY_CREATORS].sort(
+  (a, b) => (b.stats?.totalSales ?? 0) - (a.stats?.totalSales ?? 0)
+);
 
 
 const CreatorList = ({ creators, metric }: { creators: typeof DUMMY_CREATORS, metric: 'weekly' | 'monthly' | 'total' }) => (
@@ -20,15 +26,15 @@ const CreatorList = ({ creators, metric }: { creators: typeof DUMMY_CREATORS, me
       <div key={creator.uid} className="flex items-center gap-4">
         <span className="text-lg font-bold text-muted-foreground w-6 text-center">{index + 1}</span>
         <Avatar>
-          <AvatarImage src={creator.avatarUrl} alt={creator.displayName} />
+          <AvatarImage src={creator.photoURL} alt={creator.displayName} />
           <AvatarFallback>{creator.displayName.charAt(0)}</AvatarFallback>
         </Avatar>
         <div className="flex-grow">
           <p className="font-semibold truncate">{creator.displayName}</p>
           <p className="text-sm text-muted-foreground">
-            {metric === 'total' && `$${(creator.stats.totalSales / 1000).toFixed(1)}k sales`}
-            {metric === 'monthly' && `$${(creator.stats.monthlySales / 1000).toFixed(1)}k this month`}
-            {metric === 'weekly' && `$${creator.stats.weeklySales} this week`}
+            {metric === 'total' && `$${((creator.stats?.totalSales ?? 0) / 1000).toFixed(1)}k sales`}
+            {metric === 'monthly' && `$${((creator.stats?.monthlySales ?? 0) / 1000).toFixed(1)}k this month`}
+            {metric === 'weekly' && `$${creator.stats?.weeklySales ?? 0} this week`}
           </p>
         </div>
         {index === 0 && <Crown className="h-6 w-6 text-yellow-500" />}

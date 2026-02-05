@@ -217,16 +217,14 @@ export async function getPromptWithContent(
 	const privateContent =
 		(privateContentSnap.data() as PromptPrivateContent)?.text || ''
 
-	const tagsString = Array.isArray(promptData.tags)
-		? promptData.tags.join(', ')
-		: ''
+	const tags = Array.isArray(promptData.tags) ? promptData.tags : []
 	const categoryId =
 		promptData.categoryId ??
 		(Array.isArray(promptData.categories) ? promptData.categories[0] : '')
 
 	return {
 		...promptData,
-		tags: tagsString,
+		tags,
 		categoryId: categoryId || '',
 		privateContent,
 	}

@@ -8,6 +8,7 @@ type CategoriesContextValue = {
 	categories: CategoryItem[]
 	nameById: Record<string, string>
 	getNames: (ids: string[] | string | undefined) => string[]
+	isLoading: boolean
 }
 
 const CategoriesContext = createContext<CategoriesContextValue | null>(null)
@@ -19,8 +20,10 @@ export function CategoriesProvider({
 }) {
 	const [nameById, setNameById] = useState<Record<string, string>>({})
 	const [categories, setCategories] = useState<CategoryItem[]>([])
+	const [isLoading, setIsLoading] = useState(true)
 
 	useEffect(() => {
+		setIsLoading(true)
 		fetch('/api/categories')
 			.then(res => (res.ok ? res.json() : []))
 			.then((data: CategoryItem[]) => {
@@ -32,6 +35,7 @@ export function CategoriesProvider({
 				setCategories([])
 				setNameById({})
 			})
+			.finally(() => setIsLoading(false))
 	}, [])
 
 	const getNames = (ids: string[] | string | undefined): string[] => {
@@ -40,7 +44,12 @@ export function CategoriesProvider({
 		return arr.map(id => nameById[id.trim()] ?? id)
 	}
 
-	const value: CategoriesContextValue = { categories, nameById, getNames }
+	const value: CategoriesContextValue = {
+		categories,
+		nameById,
+		getNames,
+		isLoading,
+	}
 	return (
 		<CategoriesContext.Provider value={value}>
 			{children}
@@ -63,5 +72,6 @@ export function useCategories(): CategoriesContextValue {
 			const arr = Array.isArray(ids) ? ids : [ids]
 			return arr.map(id => String(id).trim())
 		},
+		isLoading: false,
 	}
 }

@@ -12,18 +12,20 @@ import {
 } from 'firebase/firestore'
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
 
-export type UpdateUserData = Pick<
-	UserProfile,
-	| 'displayName'
-	| 'role'
-	| 'photoURL'
-	| 'coverImageURL'
-	| 'description'
-	| 'headline'
-	| 'aiTools'
-	| 'xProfile'
-	| 'instagramProfile'
-	| 'facebookProfile'
+export type UpdateUserData = Partial<
+	Pick<
+		UserProfile,
+		| 'displayName'
+		| 'role'
+		| 'photoURL'
+		| 'coverImageURL'
+		| 'description'
+		| 'headline'
+		| 'aiTools'
+		| 'xProfile'
+		| 'instagramProfile'
+		| 'facebookProfile'
+	>
 >
 
 /**
@@ -102,7 +104,7 @@ export async function updateUserProfile(
 			firestoreData.facebookProfile = data.facebookProfile
 
 		if (Object.keys(firestoreData).length > 0) {
-			await updateDoc(userRef, firestoreData)
+			await updateDoc(userRef, firestoreData as Record<string, string | undefined>)
 		}
 
 		// Sync displayName and photoURL to Firebase Auth
