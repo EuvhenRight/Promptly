@@ -102,7 +102,7 @@ export default function Header() {
 										<Link href='#'>Pricing</Link>
 									</Button>
 									<Button variant='ghost' asChild className='justify-start'>
-										<Link href='#'>Community</Link>
+										<Link href='/community'>Community</Link>
 									</Button>
 								</nav>
 							</div>
@@ -119,7 +119,7 @@ export default function Header() {
 							Pricing
 						</Link>
 						<Link
-							href='#'
+							href='/community'
 							className='transition-colors hover:text-foreground/80 text-foreground/60 font-medium'
 						>
 							Community
