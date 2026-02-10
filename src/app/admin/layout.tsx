@@ -68,7 +68,7 @@ function AdminNavLink({
 						<Link
 							href={href}
 							className={cn(
-								'flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-primary',
+								'ml-[5px] flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-primary',
 								isActive && 'bg-muted text-primary',
 							)}
 						>
@@ -86,7 +86,7 @@ function AdminNavLink({
 		<Link
 			href={href}
 			className={cn(
-				'flex h-9 items-center gap-3 rounded-lg px-3 text-muted-foreground transition-all hover:text-primary',
+				'-ml-2.5 flex h-9 items-center gap-3 rounded-lg px-3 text-muted-foreground transition-all hover:text-primary',
 				isActive && 'bg-muted text-primary',
 			)}
 		>
