@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -32,6 +33,7 @@ import { useFirestore } from '@/firebase'
 import { deletePromptComment } from '@/firebase/prompts'
 import { useToast } from '@/hooks/use-toast'
 import type { AdminComment, Prompt } from '@/lib/types'
+import { cn } from '@/lib/utils'
 import {
 	collection,
 	doc,
@@ -40,7 +42,7 @@ import {
 	query,
 	where,
 } from 'firebase/firestore'
-import { format } from 'date-fns'
+import { format, formatDistanceToNow } from 'date-fns'
 import { MoreHorizontal, Pencil, Star, Trash } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
@@ -123,17 +125,118 @@ export function CommentsTable({ comments }: CommentsTableProps) {
 		setIsEditOpen(true)
 	}
 
+	const renderRating = (rating: number) => (
+		<div className='flex items-center gap-0.5'>
+			{[1, 2, 3, 4, 5].map(star => (
+				<Star
+					key={star}
+					className={cn(
+						'h-4 w-4',
+						rating >= star
+							? 'text-yellow-400 fill-yellow-400'
+							: 'text-muted-foreground/50',
+					)}
+				/>
+			))}
+		</div>
+	)
+
 	return (
 		<>
-			<div className='rounded-md border'>
+			{/* Mobile Card View */}
+			<div className='md:hidden space-y-4'>
+				{comments.map(comment => (
+					<Card key={`${comment.promptId}-${comment.id}`}>
+						<CardContent className='p-4'>
+							<div className='flex gap-3'>
+								<Avatar className='h-10 w-10 border'>
+									<AvatarImage
+										src={comment.authorPhotoURL}
+										alt={comment.authorDisplayName}
+									/>
+									<AvatarFallback>
+										{comment.authorDisplayName?.charAt(0) ?? 'A'}
+									</AvatarFallback>
+								</Avatar>
+								<div className='flex-1 space-y-1'>
+									<div className='flex justify-between items-start'>
+										<div>
+											<p className='font-semibold text-sm'>
+												{comment.authorDisplayName}
+											</p>
+											<div className='flex items-center gap-2'>
+												{renderRating(comment.rating)}
+												<span className='text-xs text-muted-foreground'>
+													{comment.timestamp
+														? formatDistanceToNow(comment.timestamp.toDate(), {
+																addSuffix: true,
+															})
+														: 'N/A'}
+												</span>
+											</div>
+										</div>
+										<DropdownMenu>
+											<DropdownMenuTrigger asChild>
+												<Button
+													aria-haspopup='true'
+													size='icon'
+													variant='ghost'
+													className='-mt-2 -mr-2 h-8 w-8'
+												>
+													<MoreHorizontal className='h-4 w-4' />
+													<span className='sr-only'>Toggle menu</span>
+												</Button>
+											</DropdownMenuTrigger>
+											<DropdownMenuContent align='end'>
+												<DropdownMenuLabel>Actions</DropdownMenuLabel>
+												<DropdownMenuItem onSelect={() => handleEditClick(comment)}>
+													<Pencil className='mr-2 h-4 w-4' /> Edit
+												</DropdownMenuItem>
+												<DropdownMenuSeparator />
+												<DropdownMenuItem
+													className='text-destructive focus:text-destructive'
+													onSelect={() => setCommentToDelete(comment)}
+												>
+													<Trash className='mr-2 h-4 w-4' /> Delete
+												</DropdownMenuItem>
+											</DropdownMenuContent>
+										</DropdownMenu>
+									</div>
+
+									<div className='pt-2'>
+										<Link
+											href={`/prompt/${comment.promptId}`}
+											className='text-sm font-medium text-muted-foreground hover:underline'
+										>
+											On prompt:{' '}
+											<span className='text-foreground'>
+												{promptTitles[comment.promptId] || 'View Prompt'}
+											</span>
+										</Link>
+										<p
+											className='mt-2 text-base bg-muted/50 p-3 rounded-md'
+											title={comment.text}
+										>
+											{comment.text}
+										</p>
+									</div>
+								</div>
+							</div>
+						</CardContent>
+					</Card>
+				))}
+			</div>
+
+			{/* Desktop Table View */}
+			<div className='rounded-md border hidden md:block'>
 				<Table>
 					<TableHeader>
 						<TableRow>
-							<TableHead className='hidden md:table-cell'>Author</TableHead>
+							<TableHead>Author</TableHead>
 							<TableHead>Prompt</TableHead>
 							<TableHead>Comment</TableHead>
 							<TableHead className='w-[120px] text-center'>Rating</TableHead>
-							<TableHead className='hidden md:table-cell'>Date</TableHead>
+							<TableHead>Date</TableHead>
 							<TableHead>
 								<span className='sr-only'>Actions</span>
 							</TableHead>
@@ -142,7 +245,7 @@ export function CommentsTable({ comments }: CommentsTableProps) {
 					<TableBody>
 						{comments.map(comment => (
 							<TableRow key={`${comment.promptId}-${comment.id}`}>
-								<TableCell className='hidden md:table-cell'>
+								<TableCell>
 									<div className='flex items-center gap-3'>
 										<Avatar className='h-9 w-9'>
 											<AvatarImage
@@ -177,7 +280,7 @@ export function CommentsTable({ comments }: CommentsTableProps) {
 										<Star className='h-4 w-4 text-yellow-400 fill-yellow-400' />
 									</div>
 								</TableCell>
-								<TableCell className='hidden md:table-cell'>
+								<TableCell>
 									{comment.timestamp
 										? format(comment.timestamp.toDate(), 'PPP')
 										: 'N/A'}
