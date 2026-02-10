@@ -10,8 +10,15 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+	Sheet,
+	SheetContent,
+	SheetTitle,
+	SheetTrigger,
+} from '@/components/ui/sheet'
 import { useUser } from '@/firebase'
-import { signInWithGoogle, signOutUser } from '@/firebase/auth'
+import { signOutUser } from '@/firebase/auth'
+import { UserProfile } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import {
 	Bot,
@@ -22,6 +29,7 @@ import {
 	Home,
 	Image,
 	Loader2,
+	Menu,
 	MessagesSquare,
 	Tags,
 	Users,
@@ -82,10 +90,10 @@ export default function AdminLayout({
 	children: React.ReactNode
 }) {
 	const { user, isUserLoading } = useUser()
-	const router = useRouter()
 	const [authStatus, setAuthStatus] = useState<
 		'loading' | 'admin' | 'guest' | 'no_claim'
 	>('loading')
+	const router = useRouter()
 
 	useEffect(() => {
 		if (isUserLoading) {
@@ -99,6 +107,7 @@ export default function AdminLayout({
 			return
 		}
 
+		// Force refresh the token to get the latest custom claims
 		user
 			.getIdTokenResult(true)
 			.then(idTokenResult => {
@@ -108,10 +117,8 @@ export default function AdminLayout({
 					setAuthStatus('no_claim')
 				}
 			})
-			.catch(error => {
-				console.error('Error fetching user token:', error)
-				setAuthStatus('guest')
-				router.replace('/')
+			.catch(() => {
+				setAuthStatus('no_claim') // If token refresh fails, assume no claim
 			})
 	}, [user, isUserLoading, router])
 
@@ -131,16 +138,26 @@ export default function AdminLayout({
 						Access Denied
 					</h1>
 					<p className='mt-4 text-muted-foreground'>
-						Your account does not have administrator privileges. Access to this
-						panel is controlled by a secure token claim.
+						Your account does not have administrator privileges. The admin panel
+						requires a special permission flag (`admin: true`) which is not
+						present in your current session.
 					</p>
-					<p className='mt-4 text-muted-foreground'>
-						To gain access, please ensure the admin setup script has been run for
-						your user ID and that you have logged out and back in afterward to
-						refresh your credentials.
-					</p>
-					<Button onClick={() => router.push('/')} className='mt-6'>
-						Go to Homepage
+					<p className='mt-2 font-semibold text-foreground'>How to fix this:</p>
+					<ul className='text-sm text-muted-foreground list-decimal list-inside text-left mt-2 space-y-1'>
+						<li>
+							Ensure an existing admin has run the `set-admin.js` script for
+							your User ID.
+						</li>
+						<li>
+							Log out and log back in to refresh your authentication token with
+							the new admin permission.
+						</li>
+					</ul>
+					<Button
+						onClick={() => signOutUser().then(() => router.push('/'))}
+						className='mt-6'
+					>
+						Log Out and Go to Homepage
 					</Button>
 				</div>
 			</div>
@@ -148,6 +165,7 @@ export default function AdminLayout({
 	}
 
 	if (authStatus !== 'admin') {
+		// This handles the 'guest' case and any other unexpected state
 		return (
 			<div className='flex h-screen w-full items-center justify-center bg-background'>
 				<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
@@ -204,6 +222,64 @@ export default function AdminLayout({
 			</div>
 			<div className='flex flex-col'>
 				<header className='flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6'>
+					<Sheet>
+						<SheetTrigger asChild>
+							<Button
+								variant='outline'
+								size='icon'
+								className='shrink-0 md:hidden'
+							>
+								<Menu className='h-5 w-5' />
+								<span className='sr-only'>Toggle navigation menu</span>
+							</Button>
+						</SheetTrigger>
+						<SheetContent side='left' className='flex flex-col p-0'>
+							<SheetTitle className='sr-only'>Admin Menu</SheetTitle>
+							<div className='flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6'>
+								<Link
+									href='/admin'
+									className='flex items-center gap-2 font-semibold'
+								>
+									<Bot className='h-6 w-6 text-primary' />
+									<span className=''>Promptly Admin</span>
+								</Link>
+							</div>
+							<div className='flex-1 overflow-y-auto'>
+								<nav className='grid items-start px-2 text-sm font-medium lg:px-4'>
+									<AdminNavLink href='/admin' icon={Home}>
+										Dashboard
+									</AdminNavLink>
+									<AdminNavLink href='/admin/prompts' icon={FileText}>
+										Prompts
+									</AdminNavLink>
+									<AdminNavLink href='/admin/comments' icon={MessagesSquare}>
+										Comments
+									</AdminNavLink>
+									<AdminNavLink href='/admin/categories' icon={FolderOpen}>
+										Categories
+									</AdminNavLink>
+									<AdminNavLink href='/admin/tags' icon={Tags}>
+										Tags
+									</AdminNavLink>
+									<AdminNavLink href='/admin/types' icon={FileType}>
+										Types
+									</AdminNavLink>
+									<AdminNavLink href='/admin/models' icon={Cpu}>
+										Models
+									</AdminNavLink>
+									<AdminNavLink
+										href='/admin/search-bar-backgrounds'
+										icon={Image}
+									>
+										Search Bar Background
+									</AdminNavLink>
+									<AdminNavLink href='/admin/users' icon={Users}>
+										Users
+									</AdminNavLink>
+								</nav>
+							</div>
+						</SheetContent>
+					</Sheet>
 					<div className='w-full flex-1' />
 					{isUserLoading ? (
 						<div className='h-10 w-24 animate-pulse rounded-md bg-muted' />
@@ -237,7 +313,6 @@ export default function AdminLayout({
 								<DropdownMenuItem
 									onClick={() => {
 										signOutUser()
-										router.push('/')
 									}}
 								>
 									Logout
@@ -245,7 +320,7 @@ export default function AdminLayout({
 							</DropdownMenuContent>
 						</DropdownMenu>
 					) : (
-						<Button onClick={signInWithGoogle}>
+						<Button onClick={() => {}}>
 							<GoogleIcon />
 							Sign In with Google
 						</Button>
