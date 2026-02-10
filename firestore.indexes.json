@@ -216,6 +216,14 @@
 				{ "fieldPath": "stats.views", "order": "DESCENDING" },
 				{ "fieldPath": "createdAt", "order": "DESCENDING" }
 			]
+		},
+		{
+			"collectionGroup": "comments",
+			"queryScope": "COLLECTION_GROUP",
+			"fields": [
+				{ "fieldPath": "rating", "order": "ASCENDING" },
+				{ "fieldPath": "timestamp", "order": "DESCENDING" }
+			]
 		}
 	],
 	"fieldOverrides": []

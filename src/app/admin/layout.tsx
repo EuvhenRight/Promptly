@@ -21,11 +21,14 @@ import {
 	FolderOpen,
 	Home,
 	Image,
+	Loader2,
+	MessagesSquare,
 	Tags,
 	Users,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 
 function AdminNavLink({
 	href,
@@ -80,12 +83,79 @@ export default function AdminLayout({
 }) {
 	const { user, isUserLoading } = useUser()
 	const router = useRouter()
+	const [authStatus, setAuthStatus] = useState<
+		'loading' | 'admin' | 'guest' | 'no_claim'
+	>('loading')
 
-	// NOTE: The admin access check has been temporarily disabled for development.
-	// The layout will render for all users, regardless of their role.
-	// To re-enable protection, the original logic for checking user roles
-	// should be restored here.
+	useEffect(() => {
+		if (isUserLoading) {
+			setAuthStatus('loading')
+			return
+		}
 
+		if (!user) {
+			setAuthStatus('guest')
+			router.replace('/')
+			return
+		}
+
+		user
+			.getIdTokenResult(true)
+			.then(idTokenResult => {
+				if (idTokenResult.claims.admin === true) {
+					setAuthStatus('admin')
+				} else {
+					setAuthStatus('no_claim')
+				}
+			})
+			.catch(error => {
+				console.error('Error fetching user token:', error)
+				setAuthStatus('guest')
+				router.replace('/')
+			})
+	}, [user, isUserLoading, router])
+
+	if (authStatus === 'loading') {
+		return (
+			<div className='flex h-screen w-full items-center justify-center bg-background'>
+				<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
+			</div>
+		)
+	}
+
+	if (authStatus === 'no_claim') {
+		return (
+			<div className='flex h-screen w-full items-center justify-center bg-background p-4'>
+				<div className='text-center p-8 border rounded-lg shadow-lg max-w-md bg-card'>
+					<h1 className='text-2xl font-bold text-destructive'>
+						Access Denied
+					</h1>
+					<p className='mt-4 text-muted-foreground'>
+						Your account does not have administrator privileges. Access to this
+						panel is controlled by a secure token claim.
+					</p>
+					<p className='mt-4 text-muted-foreground'>
+						To gain access, please ensure the admin setup script has been run for
+						your user ID and that you have logged out and back in afterward to
+						refresh your credentials.
+					</p>
+					<Button onClick={() => router.push('/')} className='mt-6'>
+						Go to Homepage
+					</Button>
+				</div>
+			</div>
+		)
+	}
+
+	if (authStatus !== 'admin') {
+		return (
+			<div className='flex h-screen w-full items-center justify-center bg-background'>
+				<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
+			</div>
+		)
+	}
+
+	// Admin access is confirmed, render the layout
 	return (
 		<div className='grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]'>
 			<div className='hidden border-r bg-muted/40 md:block'>
@@ -106,6 +176,9 @@ export default function AdminLayout({
 							</AdminNavLink>
 							<AdminNavLink href='/admin/prompts' icon={FileText}>
 								Prompts
+							</AdminNavLink>
+							<AdminNavLink href='/admin/comments' icon={MessagesSquare}>
+								Comments
 							</AdminNavLink>
 							<AdminNavLink href='/admin/categories' icon={FolderOpen}>
 								Categories
