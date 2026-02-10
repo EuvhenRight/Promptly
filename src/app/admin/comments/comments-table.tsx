@@ -134,7 +134,7 @@ export function CommentsTable({ comments }: CommentsTableProps) {
 					</TableHeader>
 					<TableBody>
 						{comments.map(comment => (
-							<TableRow key={comment.id}>
+							<TableRow key={`${comment.promptId}-${comment.id}`}>
 								<TableCell>
 									<div className='flex items-center gap-3'>
 										<Avatar className='h-9 w-9'>
