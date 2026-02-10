@@ -32,7 +32,14 @@ import { useFirestore } from '@/firebase'
 import { deletePromptComment } from '@/firebase/prompts'
 import { useToast } from '@/hooks/use-toast'
 import type { AdminComment, Prompt } from '@/lib/types'
-import { collection, doc, documentId, getDocs, query, where } from 'firebase/firestore'
+import {
+	collection,
+	doc,
+	documentId,
+	getDocs,
+	query,
+	where,
+} from 'firebase/firestore'
 import { format } from 'date-fns'
 import { MoreHorizontal, Pencil, Star, Trash } from 'lucide-react'
 import Link from 'next/link'
@@ -122,10 +129,10 @@ export function CommentsTable({ comments }: CommentsTableProps) {
 				<Table>
 					<TableHeader>
 						<TableRow>
-							<TableHead>Author</TableHead>
+							<TableHead className='hidden md:table-cell'>Author</TableHead>
+							<TableHead>Prompt</TableHead>
 							<TableHead>Comment</TableHead>
-							<TableHead className='w-[120px]'>Rating</TableHead>
-							<TableHead className='hidden md:table-cell'>Prompt</TableHead>
+							<TableHead className='w-[120px] text-center'>Rating</TableHead>
 							<TableHead className='hidden md:table-cell'>Date</TableHead>
 							<TableHead>
 								<span className='sr-only'>Actions</span>
@@ -135,7 +142,7 @@ export function CommentsTable({ comments }: CommentsTableProps) {
 					<TableBody>
 						{comments.map(comment => (
 							<TableRow key={`${comment.promptId}-${comment.id}`}>
-								<TableCell>
+								<TableCell className='hidden md:table-cell'>
 									<div className='flex items-center gap-3'>
 										<Avatar className='h-9 w-9'>
 											<AvatarImage
@@ -146,29 +153,29 @@ export function CommentsTable({ comments }: CommentsTableProps) {
 												{comment.authorDisplayName?.charAt(0) ?? 'A'}
 											</AvatarFallback>
 										</Avatar>
-										<span className='font-medium'>
+										<div className='font-medium'>
 											{comment.authorDisplayName}
-										</span>
+										</div>
 									</div>
+								</TableCell>
+								<TableCell>
+									<Link
+										href={`/prompt/${comment.promptId}`}
+										className='hover:underline font-medium'
+									>
+										{promptTitles[comment.promptId] || 'View Prompt'}
+									</Link>
 								</TableCell>
 								<TableCell>
 									<p className='max-w-xs truncate' title={comment.text}>
 										{comment.text}
 									</p>
 								</TableCell>
-								<TableCell>
-									<div className='flex items-center gap-1'>
+								<TableCell className='text-center'>
+									<div className='flex items-center justify-center gap-1'>
 										{comment.rating}{' '}
 										<Star className='h-4 w-4 text-yellow-400 fill-yellow-400' />
 									</div>
-								</TableCell>
-								<TableCell className='hidden md:table-cell'>
-									<Link
-										href={`/prompt/${comment.promptId}`}
-										className='hover:underline'
-									>
-										{promptTitles[comment.promptId] || 'View Prompt'}
-									</Link>
 								</TableCell>
 								<TableCell className='hidden md:table-cell'>
 									{comment.timestamp
