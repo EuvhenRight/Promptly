@@ -15,6 +15,7 @@ import { signInWithGoogle, signOutUser } from '@/firebase/auth'
 import { cn } from '@/lib/utils'
 import {
 	Bot,
+	Cpu,
 	FileText,
 	FileType,
 	FolderOpen,
@@ -114,6 +115,9 @@ export default function AdminLayout({
 							</AdminNavLink>
 							<AdminNavLink href='/admin/types' icon={FileType}>
 								Types
+							</AdminNavLink>
+							<AdminNavLink href='/admin/models' icon={Cpu}>
+								Models
 							</AdminNavLink>
 							<AdminNavLink href='/admin/search-bar-backgrounds' icon={Image}>
 								Search Bar Background

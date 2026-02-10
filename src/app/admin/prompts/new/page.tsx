@@ -26,6 +26,7 @@ function NewPromptContent() {
 		categoryId:
 			searchParams.get('categoryId') || searchParams.get('categories') || '',
 		typeId: searchParams.get('typeId') || '',
+		modelId: searchParams.get('modelId') || '',
 		tags: searchParams.get('tags') || '',
 		imageUrl: searchParams.get('imageUrl') || undefined,
 	}
@@ -58,6 +59,7 @@ function NewPromptContent() {
 				price: data.price,
 				categoryId: data.categoryId,
 				typeId: data.typeId,
+				modelId: data.modelId,
 				tags: data.tags,
 				privateContent: data.privateContent,
 				imageUrl: imageUrl,

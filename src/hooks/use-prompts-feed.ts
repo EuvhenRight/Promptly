@@ -14,6 +14,8 @@ import {
 	startAfter,
 	where,
 	getCountFromServer,
+	endAt,
+	startAt,
 } from 'firebase/firestore'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -30,12 +32,16 @@ export function usePromptsFeed({
 	categoryId,
 	typeId,
 	tagId,
+	modelId,
 	sortBy,
+	searchTerm,
 }: {
 	categoryId: string | null
 	typeId: string | null
 	tagId: string | null
+	modelId: string | null
 	sortBy: SortByOption
+	searchTerm: string | null
 }) {
 	const firestore = useFirestore()
 	const [prompts, setPrompts] = useState<Prompt[]>([])
@@ -54,72 +60,117 @@ export function usePromptsFeed({
 
 			try {
 				const promptsCollection = collection(firestore, 'prompts')
-				const queryConstraints: QueryConstraint[] = []
-				const countConstraints: QueryConstraint[] = []
+				let firestoreQueryConstraints: QueryConstraint[] = []
+				let clientSideFilter: (prompt: Prompt) => boolean = () => true
+				let clientSideSort: ((a: Prompt, b: Prompt) => number) | undefined =
+					undefined
 
-				if (categoryId) {
-					const constraint = where('categoryId', '==', categoryId)
-					queryConstraints.push(constraint)
-					countConstraints.push(constraint)
+				// If there's a search term, we perform a text search in Firestore
+				// and do the rest of the filtering/sorting on the client-side.
+				if (searchTerm) {
+					const searchTermLower = searchTerm.toLowerCase()
+					firestoreQueryConstraints.push(
+						where('searchTerms', 'array-contains', searchTermLower),
+					)
+
+					const filters: ((p: Prompt) => boolean)[] = []
+					if (categoryId) filters.push(p => p.categoryId === categoryId)
+					if (typeId) filters.push(p => p.typeId === typeId)
+					if (tagId) filters.push(p => p.tags.includes(tagId))
+					if (modelId) filters.push(p => p.modelId === modelId)
+					if (filters.length > 0) {
+						clientSideFilter = p => filters.every(f => f(p))
+					}
+
+					const [sortField, sortDirection] = sortBy.split(':') as [
+						keyof Prompt,
+						'asc' | 'desc',
+					]
+
+					clientSideSort = (a, b) => {
+						const valA = getNestedValue(a, sortField) ?? 0
+						const valB = getNestedValue(b, sortField) ?? 0
+						if (valA < valB) return sortDirection === 'asc' ? -1 : 1
+						if (valA > valB) return sortDirection === 'asc' ? 1 : -1
+						return 0
+					}
+				} else {
+					// No search term, so we can use Firestore for all filtering and sorting.
+					if (categoryId)
+						firestoreQueryConstraints.push(
+							where('categoryId', '==', categoryId),
+						)
+					if (tagId)
+						firestoreQueryConstraints.push(where('tags', 'array-contains', tagId))
+					if (typeId)
+						firestoreQueryConstraints.push(where('typeId', '==', typeId))
+					if (modelId)
+						firestoreQueryConstraints.push(where('modelId', '==', modelId))
+
+					const [sortField, sortDirection] = sortBy.split(':') as [
+						string,
+						'asc' | 'desc',
+					]
+					firestoreQueryConstraints.push(orderBy(sortField, sortDirection))
+					if (sortField !== 'createdAt') {
+						firestoreQueryConstraints.push(orderBy('createdAt', 'desc'))
+					}
 				}
-				if (tagId) {
-					const constraint = where('tags', 'array-contains', tagId)
-					queryConstraints.push(constraint)
-					countConstraints.push(constraint)
-				}
-				if (typeId) {
-					const constraint = where('typeId', '==', typeId)
-					queryConstraints.push(constraint)
-					countConstraints.push(constraint)
-				}
 
-				if (initialLoad) {
-					const countQuery = query(promptsCollection, ...countConstraints)
-					const snapshot = await getCountFromServer(countQuery)
-					setTotalCount(snapshot.data().count)
-				}
-
-				const [sortField, sortDirection] = sortBy.split(':') as [
-					string,
-					'asc' | 'desc',
-				]
-
-				const finalConstraints = [
-					...queryConstraints,
-					orderBy(sortField, sortDirection),
-				]
-
-				if (sortField !== 'createdAt') {
-					finalConstraints.push(orderBy('createdAt', 'desc'))
+				if (initialLoad && !searchTerm) {
+					const countQuery = query(promptsCollection, ...firestoreQueryConstraints)
+					try {
+						const snapshot = await getCountFromServer(countQuery)
+						setTotalCount(snapshot.data().count)
+					} catch (e) {
+						console.warn('Count query failed, possibly needs index:', e)
+						setTotalCount(null)
+					}
 				}
 
 				let q
 				if (initialLoad) {
-					q = query(promptsCollection, ...finalConstraints, limit(PAGE_SIZE))
-				} else if (lastVisible) {
 					q = query(
 						promptsCollection,
-						...finalConstraints,
+						...firestoreQueryConstraints,
+						limit(PAGE_SIZE),
+					)
+				} else if (lastVisible && !searchTerm) {
+					// Pagination only works for Firestore queries
+					q = query(
+						promptsCollection,
+						...firestoreQueryConstraints,
 						startAfter(lastVisible),
 						limit(PAGE_SIZE),
 					)
 				} else {
 					setLoading(false)
 					setHasMore(false)
-					return
+					return // No more pages to load
 				}
 
 				const documentSnapshots = await getDocs(q)
+				let newPrompts = documentSnapshots.docs.map(
+					doc => ({ id: doc.id, ...doc.data() } as Prompt),
+				)
 
-				const newPrompts = documentSnapshots.docs.map(doc => {
-					return { id: doc.id, ...doc.data() } as Prompt
-				})
+				if (searchTerm) {
+					newPrompts = newPrompts.filter(clientSideFilter)
+					if (clientSideSort) {
+						newPrompts.sort(clientSideSort)
+					}
+					if (initialLoad) {
+						setTotalCount(newPrompts.length)
+					}
+					// For client-side search, we fetch all results at once and disable pagination.
+					setHasMore(false)
+				}
 
 				const lastDoc =
 					documentSnapshots.docs[documentSnapshots.docs.length - 1]
 				setLastVisible(lastDoc || null)
 
-				if (documentSnapshots.docs.length < PAGE_SIZE) {
+				if (documentSnapshots.docs.length < PAGE_SIZE && !searchTerm) {
 					setHasMore(false)
 				}
 
@@ -133,7 +184,8 @@ export function usePromptsFeed({
 				setLoading(false)
 			}
 		},
-		[firestore, loading, lastVisible, categoryId, typeId, tagId, sortBy],
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+		[firestore, loading, lastVisible, categoryId, typeId, tagId, modelId, sortBy, searchTerm],
 	)
 
 	useEffect(() => {
@@ -143,7 +195,7 @@ export function usePromptsFeed({
 		setTotalCount(null)
 		fetchPrompts(true)
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [firestore, categoryId, typeId, tagId, sortBy])
+	}, [firestore, categoryId, typeId, tagId, modelId, sortBy, searchTerm])
 
 	const loadMore = useCallback(() => {
 		if (hasMore && !loading) {
@@ -152,4 +204,8 @@ export function usePromptsFeed({
 	}, [hasMore, loading, fetchPrompts])
 
 	return { prompts, loading, error, hasMore, loadMore, totalCount }
+}
+
+function getNestedValue(obj: any, path: string): any {
+	return path.split('.').reduce((acc, part) => acc && acc[part], obj)
 }

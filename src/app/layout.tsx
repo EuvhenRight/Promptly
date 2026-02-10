@@ -2,6 +2,7 @@ import { Toaster } from '@/components/ui/toaster'
 import { FirebaseClientProvider } from '@/firebase'
 import { firebaseConfig } from '@/firebase/config'
 import { CategoriesProvider } from '@/hooks/use-categories'
+import { ModelsProvider } from '@/hooks/use-models'
 import { TagsProvider } from '@/hooks/use-tags'
 import { TypesProvider } from '@/hooks/use-types'
 import { cn } from '@/lib/utils'
@@ -42,8 +43,10 @@ export default function RootLayout({
 					<CategoriesProvider>
 						<TagsProvider>
 							<TypesProvider>
-								{children}
-								<Toaster />
+								<ModelsProvider>
+									{children}
+									<Toaster />
+								</ModelsProvider>
 							</TypesProvider>
 						</TagsProvider>
 					</CategoriesProvider>

@@ -38,6 +38,7 @@ const promptFormSchema = z.object({
 		.default(1),
 	categoryId: z.string().min(1, 'Please select a category.'),
 	typeId: z.string().optional(),
+	modelId: z.string().optional(),
 	tags: z.string().optional(), // Comma-separated tag IDs from Tags collection
 	privateContent: z.string().min(10, 'The private prompt content is required.'),
 	image: z
@@ -70,6 +71,7 @@ export function PromptForm({
 			price: 1,
 			categoryId: '',
 			typeId: '',
+			modelId: '',
 			tags: '',
 			privateContent: '',
 			...initialData,
@@ -86,6 +88,9 @@ export function PromptForm({
 		[],
 	)
 	const [typeOptions, setTypeOptions] = useState<
+		{ id: string; name: string }[]
+	>([])
+	const [modelOptions, setModelOptions] = useState<
 		{ id: string; name: string }[]
 	>([])
 	const fileInputRef = React.useRef<HTMLInputElement>(null)
@@ -112,6 +117,13 @@ export function PromptForm({
 	}, [])
 
 	useEffect(() => {
+		fetch('/api/models')
+			.then(res => (res.ok ? res.json() : []))
+			.then(data => setModelOptions(Array.isArray(data) ? data : []))
+			.catch(() => setModelOptions([]))
+	}, [])
+
+	useEffect(() => {
 		if (initialData) {
 			// Use reset to update the entire form state when initialData changes
 			form.reset({
@@ -120,6 +132,7 @@ export function PromptForm({
 				price: initialData.price ?? 1,
 				categoryId: initialData.categoryId || '',
 				typeId: initialData.typeId || '',
+				modelId: initialData.modelId || '',
 				tags: initialData.tags || '',
 				privateContent: initialData.privateContent || '',
 			})
@@ -320,6 +333,55 @@ export function PromptForm({
 												</Select>
 												<FormDescription>
 													Content type (Video, Images, Audio).
+												</FormDescription>
+												<FormMessage />
+											</FormItem>
+										)
+									}}
+								/>
+								<FormField
+									control={form.control}
+									name='modelId'
+									render={({ field }) => {
+										const selectedModel = modelOptions.find(
+											t => t.id === field.value,
+										)
+										return (
+											<FormItem>
+												<FormLabel>Model</FormLabel>
+												<Select
+													onValueChange={v =>
+														field.onChange(v === '__none__' ? '' : v)
+													}
+													value={field.value || '__none__'}
+													disabled={isSubmitting}
+												>
+													<FormControl>
+														<SelectTrigger>
+															<SelectValue placeholder='Select a model'>
+																{field.value
+																	? selectedModel?.name || 'Select a model'
+																	: 'None'}
+															</SelectValue>
+														</SelectTrigger>
+													</FormControl>
+													<SelectContent>
+														<SelectItem value='__none__'>None</SelectItem>
+														{modelOptions.length === 0 ? (
+															<div className='py-2 text-center text-sm text-muted-foreground'>
+																Loading models…
+															</div>
+														) : (
+															modelOptions.map(t => (
+																<SelectItem key={t.id} value={t.id}>
+																	{t.name}
+																</SelectItem>
+															))
+														)}
+													</SelectContent>
+												</Select>
+												<FormDescription>
+													AI Model (Gemini, Flux, etc.).
 												</FormDescription>
 												<FormMessage />
 											</FormItem>
