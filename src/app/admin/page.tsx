@@ -1,11 +1,12 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Prompt, PromptComment, UserProfile } from '@/lib/types';
 import { collection, collectionGroup, query } from 'firebase/firestore';
 import { Users, FileText, DollarSign, Loader2, Star } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 function StatCard({ title, value, icon: Icon, isLoading }: { title: string, value: string | number, icon: React.ElementType, isLoading: boolean }) {
     return (
@@ -56,6 +57,8 @@ export default function AdminDashboardPage() {
   // Using a placeholder for now.
   const totalSales = "Not Implemented";
 
+  const ratingsOrder = [5, 4, 3, 2, 1];
+
   return (
     <>
       <div className="flex items-center">
@@ -66,20 +69,44 @@ export default function AdminDashboardPage() {
         <StatCard title="Total Prompts" value={prompts?.length ?? 0} icon={FileText} isLoading={promptsLoading} />
         <StatCard title="Total Sales" value={totalSales} icon={DollarSign} isLoading={false} />
       </div>
-      <div className="pt-4">
-        <h2 className="text-lg font-semibold md:text-xl mb-4">Review Ratings</h2>
-        <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-5">
-            {Object.entries(ratingCounts).sort(([a],[b]) => Number(b) - Number(a)).map(([rating, count]) => (
-                <StatCard 
-                    key={rating}
-                    title={`${rating} Star Reviews`}
-                    value={count} 
-                    icon={Star} 
-                    isLoading={commentsLoading} 
-                />
-            ))}
-        </div>
-      </div>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Review Ratings</CardTitle>
+          <CardDescription>A summary of all ratings given by users.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {commentsLoading ? (
+            <div className="flex justify-center items-center h-24">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {ratingsOrder.map(rating => (
+                    <TableHead key={rating} className="text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <span>{rating}</span>
+                        <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                      </div>
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  {ratingsOrder.map(rating => (
+                    <TableCell key={rating} className="text-center font-bold text-lg">
+                      {ratingCounts[rating].toLocaleString()}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </>
   );
 }
