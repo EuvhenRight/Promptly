@@ -149,7 +149,7 @@ export function CommentsTable({ comments }: CommentsTableProps) {
 					<Card key={`${comment.promptId}-${comment.id}`}>
 						<CardContent className='p-4'>
 							<div className='flex gap-3'>
-								<Avatar className='h-10 w-10 border'>
+								<Avatar className='h-10 w-10 border hidden sm:flex'>
 									<AvatarImage
 										src={comment.authorPhotoURL}
 										alt={comment.authorDisplayName}
@@ -158,7 +158,7 @@ export function CommentsTable({ comments }: CommentsTableProps) {
 										{comment.authorDisplayName?.charAt(0) ?? 'A'}
 									</AvatarFallback>
 								</Avatar>
-								<div className='flex-1 space-y-1'>
+								<div className='flex-1'>
 									<div className='flex justify-between items-start'>
 										<div>
 											<p className='font-semibold text-sm'>
@@ -203,10 +203,10 @@ export function CommentsTable({ comments }: CommentsTableProps) {
 										</DropdownMenu>
 									</div>
 
-									<div className='pt-2'>
+									<div className='mt-3'>
 										<Link
 											href={`/prompt/${comment.promptId}`}
-											className='text-sm font-medium text-muted-foreground hover:underline'
+											className='text-sm font-medium text-muted-foreground hover:underline block'
 										>
 											On prompt:{' '}
 											<span className='text-foreground'>
