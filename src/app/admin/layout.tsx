@@ -10,9 +10,11 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useUser } from '@/firebase'
+import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
 import { signInWithGoogle, signOutUser } from '@/firebase/auth'
+import { UserProfile } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import { doc } from 'firebase/firestore'
 import {
 	Bot,
 	Cpu,
@@ -83,37 +85,33 @@ export default function AdminLayout({
 }) {
 	const { user, isUserLoading } = useUser()
 	const router = useRouter()
+	const firestore = useFirestore()
 	const [authStatus, setAuthStatus] = useState<'loading' | 'admin' | 'guest'>(
 		'loading',
 	)
 
+	const userProfileRef = useMemoFirebase(
+		() => (user ? doc(firestore, 'users', user.uid) : null),
+		[firestore, user],
+	)
+	const { data: userProfile, isLoading: isProfileLoading } =
+		useDoc<UserProfile>(userProfileRef)
+
 	useEffect(() => {
-		if (isUserLoading) {
+		const isLoading = isUserLoading || (user && isProfileLoading)
+		if (isLoading) {
 			setAuthStatus('loading')
 			return
 		}
 
-		if (!user) {
+		if (!user || !userProfile || userProfile.role !== 'admin') {
 			setAuthStatus('guest')
 			router.replace('/')
 			return
 		}
 
-		// Force a token refresh to get the latest custom claims.
-		user.getIdTokenResult(true)
-			.then(idTokenResult => {
-				if (idTokenResult.claims.admin === true) {
-					setAuthStatus('admin')
-				} else {
-					setAuthStatus('guest')
-					router.replace('/')
-				}
-			})
-			.catch(() => {
-				setAuthStatus('guest')
-				router.replace('/')
-			})
-	}, [user, isUserLoading, router])
+		setAuthStatus('admin')
+	}, [user, isUserLoading, userProfile, isProfileLoading, router])
 
 	if (authStatus === 'loading') {
 		return (
