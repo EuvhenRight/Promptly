@@ -106,8 +106,8 @@ service cloud.firestore {
         // `create` will fail if the doc already exists, enforcing one comment per user.
         allow create: if (isAdmin() || hasPurchased(promptId) || get(/databases/$(database)/documents/prompts/$(promptId)).data.price == 0)
                       && isOwner(commentId);
-        // Allow update/delete if user is admin or the owner of the comment.
-        allow update, delete: if isAdmin() || isOwner(resource.data.userId);
+        // Allow update/delete if user is admin or the owner of the comment (commentId == userId).
+        allow update, delete: if isAdmin() || isOwner(commentId);
       }
     }
 
