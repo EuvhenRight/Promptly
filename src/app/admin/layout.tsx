@@ -10,7 +10,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useAuth, useUser } from '@/firebase'
+import { useUser } from '@/firebase'
 import { signInWithGoogle, signOutUser } from '@/firebase/auth'
 import { cn } from '@/lib/utils'
 import {
@@ -82,11 +82,10 @@ export default function AdminLayout({
 	children: React.ReactNode
 }) {
 	const { user, isUserLoading } = useUser()
-	const auth = useAuth()
 	const router = useRouter()
-	const [authStatus, setAuthStatus] = useState<'loading' | 'admin' | 'guest'>(
-		'loading',
-	)
+	const [authStatus, setAuthStatus] = useState<
+		'loading' | 'admin' | 'guest' | 'no_claim'
+	>('loading')
 
 	useEffect(() => {
 		if (isUserLoading) {
@@ -100,23 +99,53 @@ export default function AdminLayout({
 			return
 		}
 
-		// Use the user's ID token to check for admin custom claim.
-		// Force refresh with `true` to get the latest claims after they've been set.
 		user
 			.getIdTokenResult(true)
 			.then(idTokenResult => {
 				if (idTokenResult.claims.admin === true) {
 					setAuthStatus('admin')
 				} else {
-					setAuthStatus('guest')
-					router.replace('/')
+					setAuthStatus('no_claim')
 				}
 			})
-			.catch(() => {
+			.catch(error => {
+				console.error('Error fetching user token:', error)
 				setAuthStatus('guest')
 				router.replace('/')
 			})
 	}, [user, isUserLoading, router])
+
+	if (authStatus === 'loading') {
+		return (
+			<div className='flex h-screen w-full items-center justify-center bg-background'>
+				<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
+			</div>
+		)
+	}
+
+	if (authStatus === 'no_claim') {
+		return (
+			<div className='flex h-screen w-full items-center justify-center bg-background p-4'>
+				<div className='text-center p-8 border rounded-lg shadow-lg max-w-md bg-card'>
+					<h1 className='text-2xl font-bold text-destructive'>
+						Access Denied
+					</h1>
+					<p className='mt-4 text-muted-foreground'>
+						Your account does not have administrator privileges. Access to this
+						panel is controlled by a secure token claim.
+					</p>
+					<p className='mt-4 text-muted-foreground'>
+						To gain access, please ensure the admin setup script has been run for
+						your user ID and that you have logged out and back in afterward to
+						refresh your credentials.
+					</p>
+					<Button onClick={() => router.push('/')} className='mt-6'>
+						Go to Homepage
+					</Button>
+				</div>
+			</div>
+		)
+	}
 
 	if (authStatus !== 'admin') {
 		return (
