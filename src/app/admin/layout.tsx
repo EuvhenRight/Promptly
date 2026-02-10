@@ -245,7 +245,7 @@ export default function AdminLayout({
 								</Link>
 							</div>
 							<div className='flex-1 overflow-y-auto'>
-								<nav className='grid items-start px-2 text-sm font-medium lg:px-4 py-4'>
+								<nav className='grid items-start px-2 text-sm font-medium lg:px-4'>
 									<AdminNavLink href='/admin' icon={Home}>
 										Dashboard
 									</AdminNavLink>
