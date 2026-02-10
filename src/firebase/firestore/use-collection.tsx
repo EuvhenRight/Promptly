@@ -85,22 +85,22 @@ export function useCollection<T = any>(
         setIsLoading(false);
       },
       (error: FirestoreError) => {
-        // This logic extracts the path from either a ref or a query. It's more complex
-        // to handle different types of queries (collection, collectionGroup).
         const internalQuery = (memoizedTargetRefOrQuery as any)._query;
         let path: string;
 
-        if (internalQuery?.path) {
-            path = internalQuery.path.canonicalString();
-        } else if (internalQuery?.collectionGroup) {
-            // For collection group queries, the "path" is the ID of the group.
-            // This makes the error message more informative by showing what group is being queried.
+        // Prioritize checking for collectionGroup as it's more specific.
+        if (internalQuery?.collectionGroup) {
+            // This is a collection group query.
             path = `**/${internalQuery.collectionGroup}`;
+        } else if (internalQuery?.path) {
+            // This handles regular collection queries.
+            path = internalQuery.path.canonicalString();
         } else if (memoizedTargetRefOrQuery.type === 'collection') {
+            // Fallback for CollectionReference.
             path = (memoizedTargetRefOrQuery as CollectionReference).path;
         } else {
             // Fallback for when we can't determine the path.
-            path = '[unknown]';
+            path = '[unknown query type]';
         }
 
         const contextualError = new FirestorePermissionError({
