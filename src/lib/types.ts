@@ -41,6 +41,8 @@ export type Prompt = {
 	authorDisplayName?: string
 	authorPhotoURL?: string
 	title: string
+	titleLowercase: string
+	searchTerms: string[]
 	description: string
 	price: number
 	images: string[] // URLs to images in Firebase Storage
@@ -55,6 +57,8 @@ export type Prompt = {
 	categories?: string[]
 	/** Content type (Video, Images, Audio) from Types collection. */
 	typeId?: string
+	/** Model (Nano Banana, Flux) from Models collection. */
+	modelId?: string
 	stats?: {
 		views: number
 		sales: number

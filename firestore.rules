@@ -71,6 +71,11 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    match /models/{modelId} {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
     match /prompts/{promptId} {
       allow get, list: if true;
       allow create, delete: if isAdmin();

@@ -21,6 +21,14 @@
 			"collectionGroup": "prompts",
 			"queryScope": "COLLECTION",
 			"fields": [
+				{ "fieldPath": "modelId", "order": "ASCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "prompts",
+			"queryScope": "COLLECTION",
+			"fields": [
 				{ "fieldPath": "tags", "arrayConfig": "CONTAINS" },
 				{ "fieldPath": "createdAt", "order": "DESCENDING" }
 			]
@@ -133,6 +141,42 @@
 			"collectionGroup": "prompts",
 			"queryScope": "COLLECTION",
 			"fields": [
+				{ "fieldPath": "modelId", "order": "ASCENDING" },
+				{ "fieldPath": "price", "order": "ASCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "prompts",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "modelId", "order": "ASCENDING" },
+				{ "fieldPath": "price", "order": "DESCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "prompts",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "modelId", "order": "ASCENDING" },
+				{ "fieldPath": "rating.average", "order": "DESCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "prompts",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "modelId", "order": "ASCENDING" },
+				{ "fieldPath": "stats.views", "order": "DESCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "prompts",
+			"queryScope": "COLLECTION",
+			"fields": [
 				{ "fieldPath": "tags", "arrayConfig": "CONTAINS" },
 				{ "fieldPath": "price", "order": "ASCENDING" },
 				{ "fieldPath": "createdAt", "order": "DESCENDING" }
@@ -162,6 +206,14 @@
 			"fields": [
 				{ "fieldPath": "tags", "arrayConfig": "CONTAINS" },
 				{ "fieldPath": "stats.views", "order": "DESCENDING" },
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "prompts",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "searchTerms", "arrayConfig": "CONTAINS" },
 				{ "fieldPath": "createdAt", "order": "DESCENDING" }
 			]
 		}
