@@ -10,10 +10,9 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
+import { useUser } from '@/firebase'
 import { signInWithGoogle, signOutUser } from '@/firebase/auth'
 import { cn } from '@/lib/utils'
-import type { UserProfile } from '@/lib/types'
 import {
 	Bot,
 	Cpu,
@@ -29,8 +28,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useEffect } from 'react'
-import { doc } from 'firebase/firestore'
+import { useEffect, useState } from 'react'
 
 function AdminNavLink({
 	href,
@@ -84,29 +82,40 @@ export default function AdminLayout({
 	children: React.ReactNode
 }) {
 	const { user, isUserLoading } = useUser()
-	const firestore = useFirestore()
 	const router = useRouter()
-
-	const userProfileRef = useMemoFirebase(
-		() => (user ? doc(firestore, 'users', user.uid) : null),
-		[firestore, user],
+	const [authStatus, setAuthStatus] = useState<'loading' | 'admin' | 'guest'>(
+		'loading',
 	)
-	const { data: userProfile, isLoading: isProfileLoading } =
-		useDoc<UserProfile>(userProfileRef)
 
 	useEffect(() => {
-		const isAuthCheckComplete = !isUserLoading && !isProfileLoading
-
-		if (isAuthCheckComplete) {
-			if (!user || userProfile?.role !== 'admin') {
-				// If user is not logged in OR is not an admin, redirect.
-				router.replace('/')
-			}
+		if (isUserLoading) {
+			setAuthStatus('loading')
+			return
 		}
-	}, [user, userProfile, isUserLoading, isProfileLoading, router])
 
-	// While we are checking auth and profile, show a loading screen.
-	if (isUserLoading || isProfileLoading) {
+		if (!user) {
+			setAuthStatus('guest')
+			router.replace('/')
+			return
+		}
+
+		// Force a token refresh to get the latest custom claims.
+		user.getIdTokenResult(true)
+			.then(idTokenResult => {
+				if (idTokenResult.claims.admin === true) {
+					setAuthStatus('admin')
+				} else {
+					setAuthStatus('guest')
+					router.replace('/')
+				}
+			})
+			.catch(() => {
+				setAuthStatus('guest')
+				router.replace('/')
+			})
+	}, [user, isUserLoading, router])
+
+	if (authStatus === 'loading') {
 		return (
 			<div className='flex h-screen w-full items-center justify-center bg-background'>
 				<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
@@ -114,9 +123,8 @@ export default function AdminLayout({
 		)
 	}
 
-	// If the profile is loaded but role is not admin, render nothing while redirecting.
-	if (userProfile?.role !== 'admin') {
-		return null
+	if (authStatus !== 'admin') {
+		return null // Render nothing while redirecting
 	}
 
 	// Admin access is confirmed, render the layout
