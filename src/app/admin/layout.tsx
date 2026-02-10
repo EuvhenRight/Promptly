@@ -10,9 +10,10 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useUser } from '@/firebase'
+import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
 import { signInWithGoogle, signOutUser } from '@/firebase/auth'
 import { cn } from '@/lib/utils'
+import type { UserProfile } from '@/lib/types'
 import {
 	Bot,
 	Cpu,
@@ -21,12 +22,15 @@ import {
 	FolderOpen,
 	Home,
 	Image,
+	Loader2,
 	MessagesSquare,
 	Tags,
 	Users,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { useEffect } from 'react'
+import { doc } from 'firebase/firestore'
 
 function AdminNavLink({
 	href,
@@ -80,13 +84,42 @@ export default function AdminLayout({
 	children: React.ReactNode
 }) {
 	const { user, isUserLoading } = useUser()
+	const firestore = useFirestore()
 	const router = useRouter()
 
-	// NOTE: The admin access check has been temporarily disabled for development.
-	// The layout will render for all users, regardless of their role.
-	// To re-enable protection, the original logic for checking user roles
-	// should be restored here.
+	const userProfileRef = useMemoFirebase(
+		() => (user ? doc(firestore, 'users', user.uid) : null),
+		[firestore, user],
+	)
+	const { data: userProfile, isLoading: isProfileLoading } =
+		useDoc<UserProfile>(userProfileRef)
 
+	useEffect(() => {
+		const isAuthCheckComplete = !isUserLoading && !isProfileLoading
+
+		if (isAuthCheckComplete) {
+			if (!user || userProfile?.role !== 'admin') {
+				// If user is not logged in OR is not an admin, redirect.
+				router.replace('/')
+			}
+		}
+	}, [user, userProfile, isUserLoading, isProfileLoading, router])
+
+	// While we are checking auth and profile, show a loading screen.
+	if (isUserLoading || isProfileLoading) {
+		return (
+			<div className='flex h-screen w-full items-center justify-center bg-background'>
+				<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
+			</div>
+		)
+	}
+
+	// If the profile is loaded but role is not admin, render nothing while redirecting.
+	if (userProfile?.role !== 'admin') {
+		return null
+	}
+
+	// Admin access is confirmed, render the layout
 	return (
 		<div className='grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]'>
 			<div className='hidden border-r bg-muted/40 md:block'>
