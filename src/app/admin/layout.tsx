@@ -10,11 +10,9 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
+import { useAuth, useUser } from '@/firebase'
 import { signInWithGoogle, signOutUser } from '@/firebase/auth'
-import { UserProfile } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { doc } from 'firebase/firestore'
 import {
 	Bot,
 	Cpu,
@@ -84,45 +82,48 @@ export default function AdminLayout({
 	children: React.ReactNode
 }) {
 	const { user, isUserLoading } = useUser()
+	const auth = useAuth()
 	const router = useRouter()
-	const firestore = useFirestore()
 	const [authStatus, setAuthStatus] = useState<'loading' | 'admin' | 'guest'>(
 		'loading',
 	)
 
-	const userProfileRef = useMemoFirebase(
-		() => (user ? doc(firestore, 'users', user.uid) : null),
-		[firestore, user],
-	)
-	const { data: userProfile, isLoading: isProfileLoading } =
-		useDoc<UserProfile>(userProfileRef)
-
 	useEffect(() => {
-		const isLoading = isUserLoading || (user && isProfileLoading)
-		if (isLoading) {
+		if (isUserLoading) {
 			setAuthStatus('loading')
 			return
 		}
 
-		if (!user || !userProfile || userProfile.role !== 'admin') {
+		if (!user) {
 			setAuthStatus('guest')
 			router.replace('/')
 			return
 		}
 
-		setAuthStatus('admin')
-	}, [user, isUserLoading, userProfile, isProfileLoading, router])
+		// Use the user's ID token to check for admin custom claim.
+		// Force refresh with `true` to get the latest claims after they've been set.
+		user
+			.getIdTokenResult(true)
+			.then(idTokenResult => {
+				if (idTokenResult.claims.admin === true) {
+					setAuthStatus('admin')
+				} else {
+					setAuthStatus('guest')
+					router.replace('/')
+				}
+			})
+			.catch(() => {
+				setAuthStatus('guest')
+				router.replace('/')
+			})
+	}, [user, isUserLoading, router])
 
-	if (authStatus === 'loading') {
+	if (authStatus !== 'admin') {
 		return (
 			<div className='flex h-screen w-full items-center justify-center bg-background'>
 				<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
 			</div>
 		)
-	}
-
-	if (authStatus !== 'admin') {
-		return null // Render nothing while redirecting
 	}
 
 	// Admin access is confirmed, render the layout
