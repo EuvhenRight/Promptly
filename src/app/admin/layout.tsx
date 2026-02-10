@@ -16,6 +16,12 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from '@/components/ui/sheet'
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { useUser } from '@/firebase'
 import { signOutUser } from '@/firebase/auth'
 import { UserProfile } from '@/lib/types'
@@ -31,6 +37,8 @@ import {
 	Loader2,
 	Menu,
 	MessagesSquare,
+	PanelLeft,
+	PanelRight,
 	Tags,
 	Users,
 } from 'lucide-react'
@@ -42,13 +50,38 @@ function AdminNavLink({
 	href,
 	children,
 	icon: Icon,
+	isCollapsed,
 }: {
 	href: string
 	children: React.ReactNode
 	icon: React.ElementType
+	isCollapsed: boolean
 }) {
 	const pathname = usePathname()
 	const isActive = pathname === href
+
+	if (isCollapsed) {
+		return (
+			<TooltipProvider>
+				<Tooltip delayDuration={0}>
+					<TooltipTrigger asChild>
+						<Link
+							href={href}
+							className={cn(
+								'flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-primary md:h-8 md:w-8',
+								isActive && 'bg-muted text-primary',
+							)}
+						>
+							<Icon className='h-5 w-5' />
+							<span className='sr-only'>{children}</span>
+						</Link>
+					</TooltipTrigger>
+					<TooltipContent side='right'>{children}</TooltipContent>
+				</Tooltip>
+			</TooltipProvider>
+		)
+	}
+
 	return (
 		<Link
 			href={href}
@@ -94,6 +127,7 @@ export default function AdminLayout({
 		'loading' | 'admin' | 'guest' | 'no_claim'
 	>('loading')
 	const router = useRouter()
+	const [isCollapsed, setIsCollapsed] = useState(false)
 
 	useEffect(() => {
 		if (isUserLoading) {
@@ -175,48 +209,112 @@ export default function AdminLayout({
 
 	// Admin access is confirmed, render the layout
 	return (
-		<div className='grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]'>
+		<div
+			className={cn(
+				'grid min-h-screen w-full',
+				isCollapsed
+					? 'md:grid-cols-[64px_1fr]'
+					: 'md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]',
+			)}
+		>
 			<div className='hidden border-r bg-muted/40 md:block'>
 				<div className='flex h-full max-h-screen flex-col gap-2'>
-					<div className='flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6'>
+					<div
+						className={cn(
+							'flex h-14 items-center border-b lg:h-[60px]',
+							isCollapsed ? 'justify-center px-2' : 'px-4 lg:px-6',
+						)}
+					>
 						<Link
 							href='/admin'
 							className='flex items-center gap-2 font-semibold'
 						>
 							<Bot className='h-6 w-6 text-primary' />
-							<span className=''>Promptly Admin</span>
+							{!isCollapsed && <span className=''>Promptly Admin</span>}
 						</Link>
 					</div>
-					<div className='flex-1'>
-						<nav className='grid items-start px-2 text-sm font-medium lg:px-4'>
-							<AdminNavLink href='/admin' icon={Home}>
+					<div className='flex-1 overflow-auto py-2'>
+						<nav
+							className={cn(
+								'grid items-start text-sm font-medium',
+								isCollapsed ? 'px-2' : 'px-4',
+							)}
+						>
+							<AdminNavLink href='/admin' icon={Home} isCollapsed={isCollapsed}>
 								Dashboard
 							</AdminNavLink>
-							<AdminNavLink href='/admin/prompts' icon={FileText}>
+							<AdminNavLink
+								href='/admin/prompts'
+								icon={FileText}
+								isCollapsed={isCollapsed}
+							>
 								Prompts
 							</AdminNavLink>
-							<AdminNavLink href='/admin/comments' icon={MessagesSquare}>
+							<AdminNavLink
+								href='/admin/comments'
+								icon={MessagesSquare}
+								isCollapsed={isCollapsed}
+							>
 								Comments
 							</AdminNavLink>
-							<AdminNavLink href='/admin/categories' icon={FolderOpen}>
+							<AdminNavLink
+								href='/admin/categories'
+								icon={FolderOpen}
+								isCollapsed={isCollapsed}
+							>
 								Categories
 							</AdminNavLink>
-							<AdminNavLink href='/admin/tags' icon={Tags}>
+							<AdminNavLink
+								href='/admin/tags'
+								icon={Tags}
+								isCollapsed={isCollapsed}
+							>
 								Tags
 							</AdminNavLink>
-							<AdminNavLink href='/admin/types' icon={FileType}>
+							<AdminNavLink
+								href='/admin/types'
+								icon={FileType}
+								isCollapsed={isCollapsed}
+							>
 								Types
 							</AdminNavLink>
-							<AdminNavLink href='/admin/models' icon={Cpu}>
+							<AdminNavLink
+								href='/admin/models'
+								icon={Cpu}
+								isCollapsed={isCollapsed}
+							>
 								Models
 							</AdminNavLink>
-							<AdminNavLink href='/admin/search-bar-backgrounds' icon={Image}>
+							<AdminNavLink
+								href='/admin/search-bar-backgrounds'
+								icon={Image}
+								isCollapsed={isCollapsed}
+							>
 								Search Bar Background
 							</AdminNavLink>
-							<AdminNavLink href='/admin/users' icon={Users}>
+							<AdminNavLink
+								href='/admin/users'
+								icon={Users}
+								isCollapsed={isCollapsed}
+							>
 								Users
 							</AdminNavLink>
 						</nav>
+					</div>
+					<div className='mt-auto border-t p-2'>
+						<Button
+							variant='ghost'
+							size='icon'
+							className='w-full'
+							onClick={() => setIsCollapsed(!isCollapsed)}
+						>
+							{isCollapsed ? (
+								<PanelRight className='h-5 w-5' />
+							) : (
+								<PanelLeft className='h-5 w-5' />
+							)}
+							<span className='sr-only'>Toggle sidebar</span>
+						</Button>
 					</div>
 				</div>
 			</div>
@@ -246,34 +344,63 @@ export default function AdminLayout({
 							</div>
 							<div className='flex-1 overflow-y-auto'>
 								<nav className='grid items-start px-2 text-sm font-medium lg:px-4'>
-									<AdminNavLink href='/admin' icon={Home}>
+									<AdminNavLink href='/admin' icon={Home} isCollapsed={false}>
 										Dashboard
 									</AdminNavLink>
-									<AdminNavLink href='/admin/prompts' icon={FileText}>
+									<AdminNavLink
+										href='/admin/prompts'
+										icon={FileText}
+										isCollapsed={false}
+									>
 										Prompts
 									</AdminNavLink>
-									<AdminNavLink href='/admin/comments' icon={MessagesSquare}>
+									<AdminNavLink
+										href='/admin/comments'
+										icon={MessagesSquare}
+										isCollapsed={false}
+									>
 										Comments
 									</AdminNavLink>
-									<AdminNavLink href='/admin/categories' icon={FolderOpen}>
+									<AdminNavLink
+										href='/admin/categories'
+										icon={FolderOpen}
+										isCollapsed={false}
+									>
 										Categories
 									</AdminNavLink>
-									<AdminNavLink href='/admin/tags' icon={Tags}>
+									<AdminNavLink
+										href='/admin/tags'
+										icon={Tags}
+										isCollapsed={false}
+									>
 										Tags
 									</AdminNavLink>
-									<AdminNavLink href='/admin/types' icon={FileType}>
+									<AdminNavLink
+										href='/admin/types'
+										icon={FileType}
+										isCollapsed={false}
+									>
 										Types
 									</AdminNavLink>
-									<AdminNavLink href='/admin/models' icon={Cpu}>
+									<AdminNavLink
+										href='/admin/models'
+										icon={Cpu}
+										isCollapsed={false}
+									>
 										Models
 									</AdminNavLink>
 									<AdminNavLink
 										href='/admin/search-bar-backgrounds'
 										icon={Image}
+										isCollapsed={false}
 									>
 										Search Bar Background
 									</AdminNavLink>
-									<AdminNavLink href='/admin/users' icon={Users}>
+									<AdminNavLink
+										href='/admin/users'
+										icon={Users}
+										isCollapsed={false}
+									>
 										Users
 									</AdminNavLink>
 								</nav>
