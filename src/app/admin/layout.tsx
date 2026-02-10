@@ -21,6 +21,7 @@ import {
 	FolderOpen,
 	Home,
 	Image,
+	MessagesSquare,
 	Tags,
 	Users,
 } from 'lucide-react'
@@ -106,6 +107,9 @@ export default function AdminLayout({
 							</AdminNavLink>
 							<AdminNavLink href='/admin/prompts' icon={FileText}>
 								Prompts
+							</AdminNavLink>
+							<AdminNavLink href='/admin/comments' icon={MessagesSquare}>
+								Comments
 							</AdminNavLink>
 							<AdminNavLink href='/admin/categories' icon={FolderOpen}>
 								Categories

@@ -82,6 +82,10 @@ export type PromptComment = {
 	timestamp: Timestamp
 }
 
+export type AdminComment = PromptComment & {
+	promptId: string
+}
+
 export type ScrapeResult = {
 	title: string
 	privateContent: string
