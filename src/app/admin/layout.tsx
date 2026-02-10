@@ -68,11 +68,11 @@ function AdminNavLink({
 						<Link
 							href={href}
 							className={cn(
-								'flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-primary md:h-8 md:w-8',
+								'flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-primary',
 								isActive && 'bg-muted text-primary',
 							)}
 						>
-							<Icon className='h-5 w-5' />
+							<Icon className='h-4 w-4' />
 							<span className='sr-only'>{children}</span>
 						</Link>
 					</TooltipTrigger>
@@ -86,7 +86,7 @@ function AdminNavLink({
 		<Link
 			href={href}
 			className={cn(
-				'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
+				'flex h-9 items-center gap-3 rounded-lg px-3 text-muted-foreground transition-all hover:text-primary',
 				isActive && 'bg-muted text-primary',
 			)}
 		>
