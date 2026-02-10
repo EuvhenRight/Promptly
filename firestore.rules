@@ -31,6 +31,15 @@ service cloud.firestore {
     }
 
     // ----------------------------------------------------------------------
+    // Collection Group Rules
+    // ----------------------------------------------------------------------
+
+    // This rule allows admins to list all comments across all prompts for the admin panel.
+    match /{path=**}/comments/{commentId} {
+      allow list: if isAdmin();
+    }
+
+    // ----------------------------------------------------------------------
     // Collections
     // ----------------------------------------------------------------------
 
