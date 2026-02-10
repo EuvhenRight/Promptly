@@ -9,7 +9,8 @@ admin.initializeApp({
 const adminUids = [
   '41FOJWJZZhV3SEKtAx1gIWXYMPQ2',
   'rNDYOUxEpwhnN5NfKLkS6uk0Y0z1',
-  'sOabeHLWOQZDXwKZX9rBGMxj9Hd2'
+  'sOabeHLWOQZDXwKZX9rBGMxj9Hd2',
+  '14mi6ehDyAN9jgjxiG8ageZhcSq2'
 ];
 
 async function makeAdmins(uids) {
