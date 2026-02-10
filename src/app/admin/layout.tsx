@@ -72,7 +72,7 @@ function AdminNavLink({
 								isActive && 'bg-muted text-primary',
 							)}
 						>
-							<Icon className='h-4 w-4' />
+							<Icon className='h-6 w-6' />
 							<span className='sr-only'>{children}</span>
 						</Link>
 					</TooltipTrigger>
@@ -90,7 +90,7 @@ function AdminNavLink({
 				isActive && 'bg-muted text-primary',
 			)}
 		>
-			<Icon className='h-4 w-4' />
+			<Icon className='h-6 w-6' />
 			{children}
 		</Link>
 	)
@@ -173,13 +173,13 @@ export default function AdminLayout({
 					</h1>
 					<p className='mt-4 text-muted-foreground'>
 						Your account does not have administrator privileges. The admin panel
-						requires a special permission flag (`admin: true`) which is not
+						requires a special permission flag ('admin: true') which is not
 						present in your current session.
 					</p>
 					<p className='mt-2 font-semibold text-foreground'>How to fix this:</p>
 					<ul className='text-sm text-muted-foreground list-decimal list-inside text-left mt-2 space-y-1'>
 						<li>
-							Ensure an existing admin has run the `set-admin.js` script for
+							Ensure an existing admin has run the 'set-admin.js' script for
 							your User ID.
 						</li>
 						<li>
@@ -309,9 +309,9 @@ export default function AdminLayout({
 							onClick={() => setIsCollapsed(!isCollapsed)}
 						>
 							{isCollapsed ? (
-								<PanelRight className='h-5 w-5' />
+								<PanelRight className='h-6 w-6' />
 							) : (
-								<PanelLeft className='h-5 w-5' />
+								<PanelLeft className='h-6 w-6' />
 							)}
 							<span className='sr-only'>Toggle sidebar</span>
 						</Button>
@@ -327,7 +327,7 @@ export default function AdminLayout({
 								size='icon'
 								className='shrink-0 md:hidden'
 							>
-								<Menu className='h-5 w-5' />
+								<Menu className='h-6 w-6' />
 								<span className='sr-only'>Toggle navigation menu</span>
 							</Button>
 						</SheetTrigger>
@@ -449,7 +449,7 @@ export default function AdminLayout({
 					) : (
 						<Button onClick={() => {}}>
 							<GoogleIcon />
-							Sign In with Google
+							Sign In
 						</Button>
 					)}
 				</header>
