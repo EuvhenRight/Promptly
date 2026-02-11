@@ -72,6 +72,7 @@ export default function AccountPage() {
 
 	const avatarInputRef = useRef<HTMLInputElement>(null)
 	const coverInputRef = useRef<HTMLInputElement>(null)
+	const appearanceCardRef = useRef<HTMLDivElement>(null)
 
 	const [displayName, setDisplayName] = useState('')
 	const [username, setUsername] = useState('')
@@ -85,7 +86,9 @@ export default function AccountPage() {
 	const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
 	const [isUploadingCover, setIsUploadingCover] = useState(false)
 	const [isDirty, setIsDirty] = useState(false)
-	const [showFeaturedImage, setShowFeaturedImage] = useState<boolean | null>(null)
+	const [showFeaturedImage, setShowFeaturedImage] = useState<boolean | null>(
+		null,
+	)
 
 	// Load and save the featured image toggle preference from/to localStorage
 	useEffect(() => {
@@ -247,6 +250,20 @@ export default function AccountPage() {
 		}
 	}, [user, firestore])
 
+	const handleCoverButtonClick = () => {
+		if (showFeaturedImage) {
+			coverInputRef.current?.click()
+		} else {
+			appearanceCardRef.current?.scrollIntoView({ behavior: 'smooth' })
+			toast({
+				title: 'PRO Feature',
+				description:
+					"To change your featured image, please enable the 'Show Featured Image' option in the Appearance settings below.",
+				variant: 'default',
+			})
+		}
+	}
+
 	const handleCoverChange = useCallback(
 		async (e: React.ChangeEvent<HTMLInputElement>) => {
 			const file = e.target.files?.[0]
@@ -369,56 +386,54 @@ export default function AccountPage() {
 									</div>
 
 									{/* Featured Image (Cover) */}
-									{showFeaturedImage && (
-										<div className='space-y-2'>
-											<Label>Featured Image</Label>
-											<div className='relative w-full h-28 rounded-lg overflow-hidden bg-muted'>
-												{userProfile?.coverImageURL ? (
-													<Image
-														src={userProfile.coverImageURL}
-														alt='Featured'
-														fill
-														className='object-cover'
-														unoptimized
-													/>
-												) : (
-													<div className='flex items-center justify-center h-full'>
-														<ImageIcon className='h-8 w-8 text-muted-foreground' />
-													</div>
-												)}
-											</div>
-											<div className='flex gap-2'>
-												<Button
-													variant='outline'
-													size='sm'
-													onClick={() => coverInputRef.current?.click()}
-													disabled={isUploadingCover}
-												>
-													<Camera className='mr-2 h-4 w-4' />
-													{isUploadingCover ? 'Uploading...' : 'Change'}
-												</Button>
-												<Button
-													variant='ghost'
-													size='sm'
-													onClick={handleRemoveCover}
-													className='text-muted-foreground hover:text-destructive'
-												>
-													<Trash2 className='mr-2 h-4 w-4' />
-													Remove
-												</Button>
-											</div>
-											<p className='text-xs text-muted-foreground'>
-												This is the banner for your public profile page.
-											</p>
-											<input
-												ref={coverInputRef}
-												type='file'
-												accept='image/*'
-												className='hidden'
-												onChange={handleCoverChange}
-											/>
+									<div className='space-y-2'>
+										<Label>Featured Image</Label>
+										<div className='relative w-full h-28 rounded-lg overflow-hidden bg-muted'>
+											{userProfile?.coverImageURL ? (
+												<Image
+													src={userProfile.coverImageURL}
+													alt='Featured'
+													fill
+													className='object-cover'
+													unoptimized
+												/>
+											) : (
+												<div className='flex items-center justify-center h-full'>
+													<ImageIcon className='h-8 w-8 text-muted-foreground' />
+												</div>
+											)}
 										</div>
-									)}
+										<div className='flex gap-2'>
+											<Button
+												variant='outline'
+												size='sm'
+												onClick={handleCoverButtonClick}
+												disabled={isUploadingCover}
+											>
+												<Camera className='mr-2 h-4 w-4' />
+												{isUploadingCover ? 'Uploading...' : 'Change'}
+											</Button>
+											<Button
+												variant='ghost'
+												size='sm'
+												onClick={handleRemoveCover}
+												className='text-muted-foreground hover:text-destructive'
+											>
+												<Trash2 className='mr-2 h-4 w-4' />
+												Remove
+											</Button>
+										</div>
+										<p className='text-xs text-muted-foreground'>
+											This is the banner for your public profile page.
+										</p>
+										<input
+											ref={coverInputRef}
+											type='file'
+											accept='image/*'
+											className='hidden'
+											onChange={handleCoverChange}
+										/>
+									</div>
 								</div>
 								<div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
 									{/* Display Name */}
@@ -546,7 +561,7 @@ export default function AccountPage() {
 						</Card>
 
 						{/* Settings Card */}
-						<Card>
+						<Card ref={appearanceCardRef}>
 							<CardHeader>
 								<CardTitle className='flex items-center gap-2'>
 									<Settings className='h-5 w-5' />
