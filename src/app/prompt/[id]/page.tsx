@@ -29,6 +29,7 @@ import type {
 	Prompt,
 	PromptComment,
 	PromptPrivateContent,
+	PublicProfile,
 	UserProfile,
 } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -117,6 +118,16 @@ export default function PromptDetailPage() {
 	)
 	const { data: prompt, isLoading: isPromptLoading } = useDoc<Prompt>(promptRef)
 
+	const authorProfileRef = useMemoFirebase(
+		() =>
+			firestore && prompt?.authorId
+				? doc(firestore, 'public-profiles', prompt.authorId)
+				: null,
+		[firestore, prompt?.authorId],
+	)
+	const { data: authorProfile, isLoading: isAuthorProfileLoading } =
+		useDoc<PublicProfile>(authorProfileRef)
+
 	const userProfileRef = useMemoFirebase(
 		() => (user ? doc(firestore, 'users', user.uid) : null),
 		[firestore, user],
@@ -174,17 +185,6 @@ export default function PromptDetailPage() {
 			viewIncremented.current = true
 		}
 	}, [params.id, firestore])
-
-	useEffect(() => {
-		if (prompt) {
-			console.log('Author data from prompt object:', {
-				authorId: prompt.authorId,
-				authorDisplayName: prompt.authorDisplayName,
-				authorPhotoURL: prompt.authorPhotoURL,
-				authorUsername: prompt.authorUsername,
-			})
-		}
-	}, [prompt])
 
 	useEffect(() => {
 		if (canViewContent && firestore && params.id && !privateContent) {
@@ -326,7 +326,10 @@ export default function PromptDetailPage() {
 	const { getNames } = useCategories()
 	const { getNames: getTagNames } = useTags()
 	const { getNames: getModelNames } = useModels()
-	const isLoading = isPromptLoading || areCommentsLoading
+	const isLoading =
+		isPromptLoading ||
+		areCommentsLoading ||
+		(prompt && !prompt.authorDisplayName && isAuthorProfileLoading)
 
 	// --- Render Methods ---
 	const renderUserReviewSection = () => {
@@ -427,10 +430,12 @@ export default function PromptDetailPage() {
 			return <p>Prompt not found.</p>
 		}
 
-		const authorUsername = prompt.authorUsername
-		const authorDisplayName = prompt.authorDisplayName ?? 'Anonymous'
-		const authorPhotoURL = prompt.authorPhotoURL ?? ''
+		const authorUsername = prompt.authorUsername ?? authorProfile?.username
+		const authorDisplayName =
+			prompt.authorDisplayName ?? authorProfile?.displayName ?? 'Anonymous'
+		const authorPhotoURL = prompt.authorPhotoURL ?? authorProfile?.photoURL ?? ''
 		const authorInitial = authorDisplayName.charAt(0)
+
 		const promptImage = prompt.images?.[0]
 		const categoryId = prompt.categoryId ?? prompt.categories?.[0]
 		const categoryNames = getNames(categoryId)
