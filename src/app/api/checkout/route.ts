@@ -41,8 +41,9 @@ const CREDITS_PRICES: Record<number, number> = {
 }
 
 type CheckoutBody = {
-	type?: 'prompt' | 'credits' | 'plan'
+	type?: 'prompt' | 'credits' | 'plan' | 'cart'
 	promptId?: string
+	promptIds?: string[]
 	title?: string
 	price?: number
 	description?: string
@@ -55,9 +56,10 @@ type CheckoutBody = {
 export async function POST(req: NextRequest) {
 	try {
 		const body = (await req.json()) as CheckoutBody
-		const type = body.type ?? (body.promptId ? 'prompt' : undefined)
+		const type = body.type ?? (body.promptIds?.length ? 'cart' : body.promptId ? 'prompt' : undefined)
 		const {
 			promptId,
+			promptIds: bodyPromptIds,
 			title: bodyTitle,
 			price: bodyPrice,
 			description: bodyDesc,
@@ -72,8 +74,50 @@ export async function POST(req: NextRequest) {
 		let amountCents: number
 		let image: string | undefined
 		let metadata: Record<string, string> = {}
+		let line_items: Stripe.Checkout.SessionCreateParams['line_items'] = []
 
-		if (type === 'credits') {
+		if (type === 'cart' && Array.isArray(bodyPromptIds) && bodyPromptIds.length > 0) {
+			if (!adminDb) {
+				return Response.json(
+					{ error: 'Cart checkout requires server configuration.' },
+					{ status: 503 },
+				)
+			}
+			metadata = { type: 'cart', promptIds: bodyPromptIds.join(',') }
+			let totalCents = 0
+			const items: Stripe.Checkout.SessionCreateParams['line_items'] = []
+			for (const pid of bodyPromptIds) {
+				const promptSnap = await adminDb.collection('prompts').doc(pid).get()
+				if (!promptSnap.exists) continue
+				const data = promptSnap.data()!
+				const price = Number(data.price)
+				const itemCents = Math.round((Number.isFinite(price) ? price : 0) * 100)
+				if (itemCents < MIN_AMOUNT_CENTS) continue // skip free or invalid
+				totalCents += itemCents
+				items.push({
+					price_data: {
+						currency: STRIPE_CURRENCY,
+						product_data: {
+							name: (data.title as string) || 'Prompt',
+							description: (data.description as string)?.slice(0, 500) || undefined,
+							images: Array.isArray(data.images) && data.images[0] ? [data.images[0] as string] : undefined,
+						},
+						unit_amount: itemCents,
+					},
+					quantity: 1,
+				})
+			}
+			if (items.length === 0) {
+				return Response.json(
+					{ error: 'No valid paid prompts in cart (minimum charge applies).' },
+					{ status: 400 },
+				)
+			}
+			amountCents = totalCents
+			title = `Cart (${items.length} item${items.length === 1 ? '' : 's'})`
+			description = ''
+			line_items = items
+		} else if (type === 'credits') {
 			const credits = bodyCredits === 2000 ? 2000 : 1000
 			const price = CREDITS_PRICES[credits] ?? 10
 			amountCents = Math.round(price * 100)
@@ -159,7 +203,7 @@ export async function POST(req: NextRequest) {
 			ui_mode: 'embedded',
 			mode: 'payment',
 			payment_method_types: ['link', 'card'],
-			line_items: [
+			line_items: line_items.length > 0 ? line_items : [
 				{
 					price_data: {
 						currency: STRIPE_CURRENCY,

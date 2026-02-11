@@ -106,13 +106,13 @@ export default function SearchBar({
 					: undefined
 			}
 		>
-			<div className='container relative z-10 mx-auto px-4 sm:px-6 lg:px-8'>
-				<h1 className='text-4xl md:text-5xl font-bold font-headline tracking-tight'>
+			<div className='relative z-10 mx-auto flex w-full max-w-screen-2xl flex-col items-center gap-12 px-6 py-16 text-center sm:py-10 lg:py-16'>
+				<h1 className='search-bar-title text-4xl md:text-5xl lg:text-6xl font-black font-headline tracking-tight'>
 					{currentTitle}
 				</h1>
-				<p className='mt-3 text-lg text-muted-foreground'>{resultsText}</p>
+				<p className='search-bar-subtitle text-lg'>{resultsText}</p>
 
-				<div className='mt-8 max-w-3xl mx-auto'>
+				<div className='w-full max-w-3xl'>
 					<form
 						className='relative'
 						onSubmit={e => {
@@ -131,26 +131,22 @@ export default function SearchBar({
 							<div className='absolute right-2 top-1/2 -translate-y-1/2'>
 								<Button
 									type='submit'
-									className='rounded-full bg-foreground text-background hover:bg-foreground/90 h-12 px-8'
+									className='rounded-full bg-foreground text-background hover:bg-primary hover:text-primary-foreground h-12 px-8'
 									disabled={isLoading}
 								>
-									{isLoading ? (
-										<Loader2 className='animate-spin' />
-									) : (
-										'Search'
-									)}
+									{isLoading ? <Loader2 className='animate-spin' /> : 'Search'}
 								</Button>
 							</div>
 						</div>
 					</form>
 				</div>
 
-				<div className='mt-6 flex justify-center items-center gap-3'>
+				<div className='flex flex-wrap justify-center items-center gap-3'>
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button
 								variant='outline'
-								className='rounded-full border bg-card'
+								className='rounded-full border bg-card hover:text-primary dark:hover:text-primary'
 								disabled={typesLoading}
 							>
 								{selectedTypeId ? selectedTypeName : '+ Type'}
@@ -166,7 +162,9 @@ export default function SearchBar({
 									onTypeChange(value === 'all' ? null : value)
 								}}
 							>
-								<DropdownMenuRadioItem value='all'>All Types</DropdownMenuRadioItem>
+								<DropdownMenuRadioItem value='all'>
+									All Types
+								</DropdownMenuRadioItem>
 								{types.map(type => (
 									<DropdownMenuRadioItem key={type.id} value={type.id}>
 										{type.name}
@@ -179,7 +177,7 @@ export default function SearchBar({
 						<DropdownMenuTrigger asChild>
 							<Button
 								variant='outline'
-								className='rounded-full border bg-card'
+								className='rounded-full border bg-card hover:text-primary dark:hover:text-primary'
 								disabled={modelsLoading}
 							>
 								{selectedModelId ? selectedModelName : '+ Model'}
@@ -195,7 +193,9 @@ export default function SearchBar({
 									onModelChange(value === 'all' ? null : value)
 								}}
 							>
-								<DropdownMenuRadioItem value='all'>All Models</DropdownMenuRadioItem>
+								<DropdownMenuRadioItem value='all'>
+									All Models
+								</DropdownMenuRadioItem>
 								{models.map(model => (
 									<DropdownMenuRadioItem key={model.id} value={model.id}>
 										{model.name}
@@ -206,7 +206,10 @@ export default function SearchBar({
 					</DropdownMenu>
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
-							<Button variant='outline' className='rounded-full border bg-card'>
+							<Button
+								variant='outline'
+								className='rounded-full border bg-card hover:text-primary dark:hover:text-primary'
+							>
 								{selectedSortLabel}
 								<ArrowDownUp className='ml-2 h-4 w-4' />
 							</Button>
@@ -219,7 +222,10 @@ export default function SearchBar({
 								onValueChange={value => onSortChange(value as SortByOption)}
 							>
 								{sortOptions.map(option => (
-									<DropdownMenuRadioItem key={option.value} value={option.value}>
+									<DropdownMenuRadioItem
+										key={option.value}
+										value={option.value}
+									>
 										{option.label}
 									</DropdownMenuRadioItem>
 								))}

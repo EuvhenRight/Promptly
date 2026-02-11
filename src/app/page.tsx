@@ -6,10 +6,13 @@ import SubHeader from '@/components/home/sub-header'
 import Footer from '@/components/layout/footer'
 import Header from '@/components/layout/header'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
+import type { Cart } from '@/lib/types'
+import { doc } from 'firebase/firestore'
 import { usePromptsFeed, type SortByOption } from '@/hooks/use-prompts-feed'
 import { useTypes } from '@/hooks/use-types'
 import { Loader2 } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useDebounce } from 'use-debounce'
 
 const mainLinks = ['Featured', 'Hot', 'New', 'Top']
@@ -39,6 +42,14 @@ export default function Home() {
 	const [searchTerm, setSearchTerm] = useState('')
 	const [debouncedSearchTerm] = useDebounce(searchTerm, 500)
 	const { types, isLoading: typesLoading } = useTypes()
+	const { user } = useUser()
+	const firestore = useFirestore()
+	const cartRef = useMemoFirebase(
+		() => (user && firestore ? doc(firestore, 'users', user.uid, 'carts', 'active') : null),
+		[firestore, user],
+	)
+	const { data: cart } = useDoc<Cart>(cartRef)
+	const cartPromptIds = useMemo(() => new Set(cart?.promptIds ?? []), [cart?.promptIds])
 
 	useEffect(() => {
 		if (!typesLoading && types.length > 0 && !isInitialTypeSet) {
@@ -146,7 +157,7 @@ export default function Home() {
 						</p>
 					)}
 
-					<PromptFeed prompts={prompts} />
+					<PromptFeed prompts={prompts} cartPromptIds={cartPromptIds} />
 
 					<div ref={loadMoreRef} />
 
