@@ -20,7 +20,7 @@ export default function AccountSidebar({ credits = 0 }: AccountSidebarProps) {
 	const pathname = usePathname()
 
 	return (
-		<aside className='w-full lg:w-56 shrink-0 space-y-6'>
+		<aside className='w-full lg:w-56 shrink-0 space-y-6 lg:sticky lg:top-24 self-start'>
 			<div>
 				<h3 className='mb-2 px-3 text-sm font-semibold tracking-tight'>
 					Dashboard
