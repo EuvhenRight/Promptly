@@ -236,7 +236,7 @@ export const columns: ColumnDef<Prompt>[] = [
 		),
 		cell: ({ row }) => (
 			<div className='text-center'>
-				{row.original.rating?.count?.toLocaleString() ?? 0}
+				{row.original.stats?.likes?.toLocaleString() ?? 0}
 			</div>
 		),
 	},
@@ -329,7 +329,7 @@ export function PromptsTable({ prompts }: PromptsTableProps) {
 					</DropdownMenuContent>
 				</DropdownMenu>
 			</div>
-			<div className='rounded-md border'>
+			<div className='rounded-md border overflow-auto'>
 				<Table>
 					<TableHeader>
 						{table.getHeaderGroups().map(headerGroup => (
