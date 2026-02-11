@@ -79,6 +79,18 @@ export default function AccountPage() {
 	const [isUploadingCover, setIsUploadingCover] = useState(false)
 	const [showFeaturedImage, setShowFeaturedImage] = useState(true)
 
+	// Load and save the featured image toggle preference from/to localStorage
+	useEffect(() => {
+		const storedPreference = localStorage.getItem('showFeaturedImage')
+		if (storedPreference !== null) {
+			setShowFeaturedImage(JSON.parse(storedPreference))
+		}
+	}, [])
+
+	useEffect(() => {
+		localStorage.setItem('showFeaturedImage', JSON.stringify(showFeaturedImage))
+	}, [showFeaturedImage])
+
 	const userProfileRef = useMemoFirebase(
 		() => (user ? doc(firestore, 'users', user.uid) : null),
 		[firestore, user],
