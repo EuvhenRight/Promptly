@@ -103,6 +103,10 @@
         "price": {
           "type": "number"
         },
+        "isPrivate": {
+          "type": "boolean",
+          "description": "If true, this prompt is only visible to users with a PRO subscription."
+        },
         "images": {
           "type": "array",
           "items": {

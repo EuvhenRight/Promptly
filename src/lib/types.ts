@@ -57,6 +57,7 @@ export type Prompt = {
 	searchTerms: string[]
 	description: string
 	price: number
+	isPrivate?: boolean
 	images: string[] // URLs to images in Firebase Storage
 	rating: {
 		average: number

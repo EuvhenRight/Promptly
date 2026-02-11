@@ -36,6 +36,7 @@ const promptFormSchema = z.object({
 		.number({ invalid_type_error: 'Price must be a number.' })
 		.min(0, 'Price cannot be negative.')
 		.default(1),
+	isPrivate: z.boolean().default(false),
 	categoryId: z.string().min(1, 'Please select a category.'),
 	typeId: z.string().optional(),
 	modelId: z.string().optional(),
@@ -69,6 +70,7 @@ export function PromptForm({
 			title: '',
 			description: '',
 			price: 1,
+			isPrivate: false,
 			categoryId: '',
 			typeId: '',
 			modelId: '',
@@ -130,6 +132,7 @@ export function PromptForm({
 				title: initialData.title || '',
 				description: initialData.description || '',
 				price: initialData.price ?? 1,
+				isPrivate: initialData.isPrivate ?? false,
 				categoryId: initialData.categoryId || '',
 				typeId: initialData.typeId || '',
 				modelId: initialData.modelId || '',
@@ -243,6 +246,28 @@ export function PromptForm({
 												Enter 0 for a free prompt.
 											</FormDescription>
 											<FormMessage />
+										</FormItem>
+									)}
+								/>
+								<FormField
+									control={form.control}
+									name='isPrivate'
+									render={({ field }) => (
+										<FormItem className='flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm'>
+											<div className='space-y-0.5'>
+												<FormLabel>Make this prompt private</FormLabel>
+												<FormDescription>
+													Only users with a PRO plan will be able to see this
+													prompt.
+												</FormDescription>
+											</div>
+											<FormControl>
+												<Checkbox
+													checked={field.value}
+													onCheckedChange={field.onChange}
+													disabled={isSubmitting}
+												/>
+											</FormControl>
 										</FormItem>
 									)}
 								/>

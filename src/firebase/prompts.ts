@@ -104,6 +104,7 @@ export async function createPrompt(
 			searchTerms: getSearchTerms(data.title),
 			description: data.description || '',
 			price: data.price,
+			isPrivate: data.isPrivate ?? false,
 			images: data.imageUrl ? [data.imageUrl] : [],
 			rating: {
 				average: 0,
@@ -262,6 +263,7 @@ export async function updatePrompt(
 		searchTerms: getSearchTerms(data.title),
 		description: data.description || '',
 		price: data.price,
+		isPrivate: data.isPrivate ?? false,
 		tags: data.tags
 			? data.tags
 					.split(',')
