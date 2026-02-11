@@ -36,6 +36,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { signInWithGoogle } from '@/firebase/auth'
 
 function PublicProfileSkeleton() {
 	return (
@@ -108,13 +109,12 @@ export default function PublicProfilePage() {
 
 	// Increment view count
 	useEffect(() => {
-		if (
-			userProfile?.uid &&
-			loggedInUser?.uid !== userProfile.uid &&
-			!viewIncremented.current
-		) {
-			incrementProfileView(firestore, userProfile.uid)
-			viewIncremented.current = true
+		if (userProfile?.uid && !viewIncremented.current) {
+			// Increment if user is not logged in, or if logged-in user is not viewing their own profile
+			if (!loggedInUser || loggedInUser.uid !== userProfile.uid) {
+				incrementProfileView(firestore, userProfile.uid)
+				viewIncremented.current = true
+			}
 		}
 	}, [firestore, userProfile, loggedInUser])
 
@@ -171,6 +171,14 @@ export default function PublicProfilePage() {
 		} finally {
 			setIsFollowLoading(false)
 		}
+	}
+
+	const handleFollowClick = () => {
+		if (!loggedInUser) {
+			signInWithGoogle()
+			return
+		}
+		handleFollowToggle()
 	}
 
 	if (profileLoading) {
@@ -255,15 +263,12 @@ export default function PublicProfilePage() {
 								<p className='text-muted-foreground'>@{userProfile.username}</p>
 							</div>
 							<div className='pb-4 flex gap-2'>
-								{!isOwnProfile && loggedInUser && (
-									<Button
-										onClick={handleFollowToggle}
-										disabled={isFollowLoading}
-									>
-										{isFollowLoading ? (
+								{!isOwnProfile && (
+									<Button onClick={handleFollowClick} disabled={isFollowLoading}>
+										{isFollowLoading && loggedInUser ? (
 											<Loader2 className='mr-2 h-4 w-4 animate-spin' />
 										) : null}
-										{isFollowing ? 'Unfollow' : 'Follow'}
+										{loggedInUser && isFollowing ? 'Unfollow' : 'Follow'}
 									</Button>
 								)}
 							</div>

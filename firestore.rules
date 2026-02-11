@@ -64,11 +64,11 @@ service cloud.firestore {
       allow delete: if isAdmin();
 
       match /followers/{followerId} {
-        allow get, list: if isSignedIn();
+        allow get, list: if true;
         allow create, delete: if request.auth.uid == followerId;
       }
       match /following/{followingId} {
-        allow get, list: if isSignedIn();
+        allow get, list: if true;
         allow create, delete: if request.auth.uid == userId;
       }
     }
