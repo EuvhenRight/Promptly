@@ -14,6 +14,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
 import {
 	updateUserProfile,
@@ -76,6 +77,7 @@ export default function AccountPage() {
 	const [isSaving, setIsSaving] = useState(false)
 	const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
 	const [isUploadingCover, setIsUploadingCover] = useState(false)
+	const [showFeaturedImage, setShowFeaturedImage] = useState(true)
 
 	const userProfileRef = useMemoFirebase(
 		() => (user ? doc(firestore, 'users', user.uid) : null),
@@ -278,54 +280,56 @@ export default function AccountPage() {
 									</div>
 
 									{/* Featured Image (Cover) */}
-									<div className='space-y-2'>
-										<Label>Featured Image</Label>
-										<div className='relative w-full h-28 rounded-lg overflow-hidden bg-muted'>
-											{userProfile?.coverImageURL ? (
-												<Image
-													src={userProfile.coverImageURL}
-													alt='Featured'
-													fill
-													className='object-cover'
-													unoptimized
-												/>
-											) : (
-												<div className='flex items-center justify-center h-full'>
-													<ImageIcon className='h-8 w-8 text-muted-foreground' />
-												</div>
-											)}
+									{showFeaturedImage && (
+										<div className='space-y-2'>
+											<Label>Featured Image</Label>
+											<div className='relative w-full h-28 rounded-lg overflow-hidden bg-muted'>
+												{userProfile?.coverImageURL ? (
+													<Image
+														src={userProfile.coverImageURL}
+														alt='Featured'
+														fill
+														className='object-cover'
+														unoptimized
+													/>
+												) : (
+													<div className='flex items-center justify-center h-full'>
+														<ImageIcon className='h-8 w-8 text-muted-foreground' />
+													</div>
+												)}
+											</div>
+											<div className='flex gap-2'>
+												<Button
+													variant='outline'
+													size='sm'
+													onClick={() => coverInputRef.current?.click()}
+													disabled={isUploadingCover}
+												>
+													<Camera className='mr-2 h-4 w-4' />
+													{isUploadingCover ? 'Uploading...' : 'Change'}
+												</Button>
+												<Button
+													variant='ghost'
+													size='sm'
+													onClick={handleRemoveCover}
+													className='text-muted-foreground hover:text-destructive'
+												>
+													<Trash2 className='mr-2 h-4 w-4' />
+													Remove
+												</Button>
+											</div>
+											<p className='text-xs text-muted-foreground'>
+												This is the banner for your public profile page.
+											</p>
+											<input
+												ref={coverInputRef}
+												type='file'
+												accept='image/*'
+												className='hidden'
+												onChange={handleCoverChange}
+											/>
 										</div>
-										<div className='flex gap-2'>
-											<Button
-												variant='outline'
-												size='sm'
-												onClick={() => coverInputRef.current?.click()}
-												disabled={isUploadingCover}
-											>
-												<Camera className='mr-2 h-4 w-4' />
-												{isUploadingCover ? 'Uploading...' : 'Change'}
-											</Button>
-											<Button
-												variant='ghost'
-												size='sm'
-												onClick={handleRemoveCover}
-												className='text-muted-foreground hover:text-destructive'
-											>
-												<Trash2 className='mr-2 h-4 w-4' />
-												Remove
-											</Button>
-										</div>
-										<p className='text-xs text-muted-foreground'>
-											This is the banner for your public profile page.
-										</p>
-										<input
-											ref={coverInputRef}
-											type='file'
-											accept='image/*'
-											className='hidden'
-											onChange={handleCoverChange}
-										/>
-									</div>
+									)}
 								</div>
 								<div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
 									{/* Display Name */}
@@ -444,6 +448,22 @@ export default function AccountPage() {
 							</CardHeader>
 							<CardContent>
 								<ThemeSwitcher />
+								<div className='mt-4 flex items-center justify-between rounded-lg border p-4'>
+									<Label
+										htmlFor='featured-image-switch'
+										className='flex flex-col space-y-1'
+									>
+										<span>Show Featured Image</span>
+										<span className='font-normal leading-snug text-muted-foreground'>
+											Toggle visibility of the featured image editor.
+										</span>
+									</Label>
+									<Switch
+										id='featured-image-switch'
+										checked={showFeaturedImage}
+										onCheckedChange={setShowFeaturedImage}
+									/>
+								</div>
 							</CardContent>
 						</Card>
 
