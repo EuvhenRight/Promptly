@@ -320,7 +320,7 @@ export default function PromptDetailPage() {
 			if (isEditingComment) {
 				return (
 					<AddCommentForm
-						key={`edit-${userComment.id}`}
+						key={`edit-${userComment.userId}`}
 						promptId={params.id as string}
 						initialData={userComment}
 						isSubmitting={isSubmittingComment}
@@ -411,12 +411,31 @@ export default function PromptDetailPage() {
 			return <p>Prompt not found.</p>
 		}
 
+		const authorUsername = prompt.authorUsername
 		const authorDisplayName = prompt.authorDisplayName ?? 'Anonymous'
 		const authorPhotoURL = prompt.authorPhotoURL ?? ''
 		const authorInitial = authorDisplayName.charAt(0)
 		const promptImage = prompt.images?.[0]
 		const categoryId = prompt.categoryId ?? prompt.categories?.[0]
 		const categoryNames = getNames(categoryId)
+
+		const authorLink = authorUsername ? (
+			<Link href={`/user/${authorUsername}`} className='flex items-center gap-4'>
+				<Avatar>
+					<AvatarImage src={authorPhotoURL} alt={authorDisplayName} />
+					<AvatarFallback>{authorInitial}</AvatarFallback>
+				</Avatar>
+				<span className='font-semibold hover:underline'>{authorDisplayName}</span>
+			</Link>
+		) : (
+			<div className='flex items-center gap-4'>
+				<Avatar>
+					<AvatarImage src={authorPhotoURL} alt={authorDisplayName} />
+					<AvatarFallback>{authorInitial}</AvatarFallback>
+				</Avatar>
+				<span className='font-semibold'>{authorDisplayName}</span>
+			</div>
+		)
 
 		return (
 			<div className='grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12'>
@@ -441,13 +460,7 @@ export default function PromptDetailPage() {
 						<h1 className='font-headline text-3xl md:text-4xl font-bold'>
 							{prompt.title}
 						</h1>
-						<div className='flex items-center gap-4'>
-							<Avatar>
-								<AvatarImage src={authorPhotoURL} alt={authorDisplayName} />
-								<AvatarFallback>{authorInitial}</AvatarFallback>
-							</Avatar>
-							<span className='font-semibold'>{authorDisplayName}</span>
-						</div>
+						{authorLink}
 					</div>
 
 					<div className='flex flex-wrap items-center gap-4 text-sm text-muted-foreground'>

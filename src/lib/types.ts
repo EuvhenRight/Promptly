@@ -51,6 +51,7 @@ export type Prompt = {
 	authorId: string
 	authorDisplayName?: string
 	authorPhotoURL?: string
+	authorUsername?: string
 	title: string
 	titleLowercase: string
 	searchTerms: string[]

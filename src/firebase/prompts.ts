@@ -98,6 +98,7 @@ export async function createPrompt(
 			authorId: adminId,
 			authorDisplayName: authorData.displayName,
 			authorPhotoURL: authorData.photoURL,
+			authorUsername: authorData.username,
 			title: data.title,
 			titleLowercase: data.title.toLowerCase(),
 			searchTerms: getSearchTerms(data.title),
@@ -351,7 +352,6 @@ export async function addPromptCommentAndRating({
 
 		// 1. Create the new comment document
 		transaction.set(commentRef, {
-			id: userId, // Use userId as the ID inside the doc as well
 			userId,
 			rating,
 			text,
@@ -408,7 +408,8 @@ export async function updatePromptComment({
 
 		// Recalculate average rating
 		const { count, average } = promptData.rating
-		const newAverage = (average * count - oldRating + rating) / count
+		const newAverage =
+			count > 0 ? (average * count - oldRating + rating) / count : rating
 
 		// Update prompt rating
 		transaction.update(promptRef, { 'rating.average': newAverage })

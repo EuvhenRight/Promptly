@@ -12,7 +12,7 @@ export default function MemberOfTheDay() {
 				<span>🏅</span> Member of the Day
 			</h2>
 			<Link
-				href='#'
+				href={`/user/${MEMBER_OF_THE_DAY.username}`}
 				className='flex flex-col items-center gap-3 p-6 rounded-lg border bg-card hover:bg-muted/30 transition-colors group block'
 			>
 				<Avatar className='h-24 w-24 group-hover:ring-2 group-hover:ring-primary'>

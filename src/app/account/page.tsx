@@ -290,12 +290,18 @@ export default function AccountPage() {
 									<Label>Featured Image</Label>
 									<p className='text-xs text-muted-foreground mb-2'>
 										A banner image for your profile.{' '}
-										<Link
-											href='/profile'
-											className='underline hover:text-primary'
-										>
-											Go to your Profile page
-										</Link>
+										{userProfile?.username ? (
+											<Link
+												href={`/user/${userProfile.username}`}
+												className='underline hover:text-primary'
+											>
+												Go to your public profile page
+											</Link>
+										) : (
+											<span className='cursor-not-allowed'>
+												Go to your public profile page
+											</span>
+										)}
 										, find a prompt you want to feature, and set it as
 										featured.
 									</p>
