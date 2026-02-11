@@ -202,7 +202,11 @@ export default function PromptDetailPage() {
 		[firestore, user],
 	)
 	const { data: cart } = useDoc<Cart>(cartRef)
-	const isInCart = (cart?.promptIds?.includes(params.id as string)) ?? false
+
+	const isInCart = useMemo(
+		() => cart?.promptIds?.includes(params.id as string) ?? false,
+		[cart, params.id],
+	)
 
 	const commentsQuery = useMemoFirebase(
 		() =>
@@ -224,7 +228,6 @@ export default function PromptDetailPage() {
 	const [isSubmittingComment, setIsSubmittingComment] = useState(false)
 	const [isDeletingComment, setIsDeletingComment] = useState(false)
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-	const [justAddedToCart, setJustAddedToCart] = useState(false)
 
 	// --- Memoized Derived State ---
 	const isFavorite = useMemo(
@@ -292,10 +295,8 @@ export default function PromptDetailPage() {
 			return
 		}
 		addPromptToCart(firestore, user.uid, prompt.id)
-		setJustAddedToCart(true)
-		setTimeout(() => setJustAddedToCart(false), 3000)
 		toast({
-			title: 'Added to cart',
+			title: 'Success!',
 			description: `"${prompt.title}" has been added to your cart.`,
 		})
 	}
@@ -656,12 +657,7 @@ export default function PromptDetailPage() {
 									<h2 className='text-2xl font-bold'>
 										{`$${(Number(prompt.price) ?? 0).toFixed(2)}`}
 									</h2>
-									<div className='flex flex-grow justify-end items-center gap-2 sm:flex-grow-0 flex-wrap'>
-										{justAddedToCart && (
-											<span className='text-sm font-medium text-primary rounded-md bg-primary/10 px-3 py-1.5'>
-												Added to cart
-											</span>
-										)}
+									<div className='flex flex-grow justify-end items-center gap-2 sm:flex-grow-0'>
 										<Button
 											size='lg'
 											variant='outline'
@@ -669,7 +665,7 @@ export default function PromptDetailPage() {
 											className='flex-1 sm:flex-initial'
 											disabled={!user || isInCart}
 										>
-											<ShoppingBag className='mr-2 h-4 w-4' />
+											<ShoppingCart className='mr-2 h-4 w-4' />
 											{isInCart ? 'In cart' : 'Add to Cart'}
 										</Button>
 										<Button
@@ -677,13 +673,9 @@ export default function PromptDetailPage() {
 											className='bg-accent text-accent-foreground hover:bg-accent/90 flex-1 sm:flex-initial'
 											asChild
 										>
-											{isInCart ? (
-												<Link href='/cart'>View cart</Link>
-											) : (
-												<Link href={`/checkout?promptId=${prompt.id}`}>
-													Buy Now
-												</Link>
-											)}
+											<Link href={`/checkout?promptId=${prompt.id}`}>
+												Buy Now
+											</Link>
 										</Button>
 									</div>
 								</div>
