@@ -103,6 +103,7 @@ export async function POST(req: NextRequest) {
 		const session = await stripe.checkout.sessions.create({
 			ui_mode: 'embedded',
 			mode: 'payment',
+			payment_method_types: ['link', 'card'],
 			line_items: [
 				{
 					price_data: {
@@ -121,7 +122,11 @@ export async function POST(req: NextRequest) {
 			metadata: { promptId },
 		})
 
-		return Response.json({ clientSecret: session.client_secret })
+		return Response.json({
+			clientSecret: session.client_secret,
+			currency: STRIPE_CURRENCY,
+			amountCents,
+		})
 	} catch (err) {
 		console.error('Checkout session error:', err)
 		return Response.json(

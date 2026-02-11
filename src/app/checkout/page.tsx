@@ -24,6 +24,8 @@ function CheckoutContent() {
 	const [error, setError] = useState<string | null>(null)
 	const [clientSecret, setClientSecret] = useState<string | null>(null)
 	const [checkoutError, setCheckoutError] = useState<string | null>(null)
+	const [currency, setCurrency] = useState<string>('usd')
+	const [amountCents, setAmountCents] = useState<number | null>(null)
 
 	// Pre-fetch client secret so we can show API errors and ensure Stripe has a secret to mount
 	useEffect(() => {
@@ -59,6 +61,8 @@ function CheckoutContent() {
 			})
 			.then(data => {
 				setClientSecret(data.clientSecret)
+				if (data.currency) setCurrency(data.currency)
+				if (typeof data.amountCents === 'number') setAmountCents(data.amountCents)
 			})
 			.catch(err => {
 				setCheckoutError(err.message || 'Failed to load checkout')
@@ -103,13 +107,17 @@ function CheckoutContent() {
 	return (
 		<div className='flex min-h-screen flex-col'>
 			<Header />
-			<main className='flex-grow container mx-auto px-4 py-8'>
+			<main className='flex-grow w-full px-0 py-0'>
 				<StripeCheckout
 					productName={productName}
 					backHref={backHref}
 					clientSecret={clientSecret}
 					checkoutError={checkoutError}
 					isLoadingSecret={!clientSecret && !checkoutError}
+					productPrice={prompt?.price ?? (amountCents != null ? amountCents / 100 : undefined)}
+					currency={currency}
+					description={prompt?.description}
+					imageUrl={prompt?.images?.[0]}
 				/>
 			</main>
 			<Footer />
