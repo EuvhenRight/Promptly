@@ -1,6 +1,3 @@
-// Раніше було тимчасово: allow read, write для всіх авторизованих.
-// Нижче — повні правила для продакшену: користувачі, кошики, замовлення,
-// промпти, категорії, приватний контент, коментарі.
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -17,17 +14,43 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
+    // Correct, reliable way to check for admin role using custom claims.
     function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isSignedIn() && request.auth.token.admin == true;
     }
 
     // Use .get('purchasedPrompts', []) so missing field does not cause rule failure
     function hasPurchased(promptId) {
       return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('purchasedPrompts', []).hasAny([promptId]);
+    }
+    
+    function isOnlyChanging(key) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([key]);
+    }
+
+    function isIncrementing(field, by) {
+      return request.resource.data[field] == resource.data[field] + by;
+    }
+    
+    function isOnlyChangingStat(stat, by) {
+      let diff = request.resource.data.diff(resource.data);
+      if (diff.affectedKeys().hasOnly(['stats'])) {
+        let statsDiff = request.resource.data.stats.diff(resource.data.stats);
+        if (statsDiff.affectedKeys().hasOnly([stat])) {
+          return request.resource.data.stats[stat] == resource.data.stats[stat] + by;
+        }
+      }
+      return false;
+    }
+
+
+    // ----------------------------------------------------------------------
+    // Collection Group Rules
+    // ----------------------------------------------------------------------
+
+    // This rule allows admins to list all comments across all prompts for the admin panel.
+    match /{path=**}/comments/{commentId} {
+      allow list: if isAdmin();
     }
 
     // ----------------------------------------------------------------------
@@ -38,22 +61,17 @@ service cloud.firestore {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
       allow create: if isOwner(userId);
+      // Prevent users from elevating their own role.
       allow update: if (isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin();
       allow delete: if isAdmin();
     }
 
     match /users/{userId}/carts/{cartId} {
-      allow get, list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(userId);
+      allow get, list, create, update, delete: if isOwner(userId);
     }
 
     match /users/{userId}/orders/{orderId} {
-      allow get, list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(userId);
+      allow get, list, create, update, delete: if isOwner(userId);
     }
 
     match /categories/{categoryId} {
@@ -71,15 +89,23 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    match /models/{modelId} {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
     match /prompts/{promptId} {
       allow get, list: if true;
       allow create, delete: if isAdmin();
-      // Allow admins to update anything.
-      // Allow users who can comment to update ONLY the rating field.
-      allow update: if isAdmin() || (
-        (hasPurchased(promptId) || get(/databases/$(database)/documents/prompts/$(promptId)).data.price == 0) &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating'])
-      );
+      allow update: if 
+        isAdmin() ||
+        (isSignedIn() && isOnlyChangingStat('likes', 1)) ||
+        (isSignedIn() && isOnlyChangingStat('likes', -1)) ||
+        (isOnlyChangingStat('views', 1)) ||
+        (
+          (hasPurchased(promptId) || resource.data.price == 0) &&
+          request.resource.data.rating != resource.data.rating && isOnlyChanging('rating')
+        );
 
       match /private/{docId} {
         allow get: if docId == 'content' && (isAdmin() || hasPurchased(promptId));
@@ -88,12 +114,14 @@ service cloud.firestore {
 
       match /comments/{commentId} {
         allow get, list: if true;
-        // User can create a comment if they have access and the comment ID is their own UID.
-        // `create` will fail if the doc already exists, enforcing one comment per user.
-        allow create: if (isAdmin() || hasPurchased(promptId) || get(/databases/$(database)/documents/prompts/$(promptId)).data.price == 0)
+        
+        // CREATE: User can create a comment IF they have purchased/free access
+        // AND the comment ID is their own UID. This enforces one comment per user.
+        allow create: if (hasPurchased(promptId) || get(/databases/$(database)/documents/prompts/$(promptId)).data.price == 0)
                       && isOwner(commentId);
-        // Allow update/delete if user is admin or the owner of the comment.
-        allow update, delete: if isAdmin() || isOwner(resource.data.userId);
+                      
+        // UPDATE/DELETE: User can modify their own comment (identified by doc ID) or an admin can.
+        allow update, delete: if isAdmin() || isOwner(commentId);
       }
     }
 

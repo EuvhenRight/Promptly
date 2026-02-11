@@ -55,37 +55,37 @@ import { useToast } from '@/hooks/use-toast'
 import { Loader2, Pencil, PlusCircle, Trash } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
-type TypeItem = { id: string; name: string }
+type ModelItem = { id: string; name: string }
 
-export default function AdminTypesPage() {
+export default function AdminModelsPage() {
 	const { toast } = useToast()
-	const [types, setTypes] = useState<TypeItem[]>([])
+	const [models, setModels] = useState<ModelItem[]>([])
 	const [loading, setLoading] = useState(true)
 	const [newName, setNewName] = useState('')
 	const [adding, setAdding] = useState(false)
-	const [editType, setEditType] = useState<TypeItem | null>(null)
+	const [editModel, setEditModel] = useState<ModelItem | null>(null)
 	const [editName, setEditName] = useState('')
 	const [savingEdit, setSavingEdit] = useState(false)
-	const [deleteType, setDeleteType] = useState<TypeItem | null>(null)
+	const [deleteModel, setDeleteModel] = useState<ModelItem | null>(null)
 	const [deleting, setDeleting] = useState(false)
 	const [itemsPerPage, setItemsPerPage] = useState(10)
 	const [currentPage, setCurrentPage] = useState(1)
 
-	const fetchTypes = async () => {
+	const fetchModels = async () => {
 		setLoading(true)
 		try {
-			const res = await fetch('/api/types')
+			const res = await fetch('/api/models')
 			const data = await res.json()
-			setTypes(Array.isArray(data) ? data : [])
+			setModels(Array.isArray(data) ? data : [])
 		} catch {
-			setTypes([])
+			setModels([])
 		} finally {
 			setLoading(false)
 		}
 	}
 
 	useEffect(() => {
-		fetchTypes()
+		fetchModels()
 	}, [])
 
 	const handleCreate = async () => {
@@ -94,27 +94,27 @@ export default function AdminTypesPage() {
 			toast({
 				variant: 'destructive',
 				title: 'Name required',
-				description: 'Enter a type name.',
+				description: 'Enter a model name.',
 			})
 			return
 		}
 		setAdding(true)
 		try {
-			const res = await fetch('/api/types', {
+			const res = await fetch('/api/models', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ name }),
 			})
 			const data = await res.json()
 			if (!res.ok) throw new Error(data.error || 'Failed to create')
-			toast({ title: 'Type created', description: data.name ?? name })
+			toast({ title: 'Model created', description: data.name ?? name })
 			setNewName('')
-			fetchTypes()
+			fetchModels()
 		} catch (e) {
 			toast({
 				variant: 'destructive',
 				title: 'Error',
-				description: e instanceof Error ? e.message : 'Failed to create type.',
+				description: e instanceof Error ? e.message : 'Failed to create model.',
 			})
 		} finally {
 			setAdding(false)
@@ -122,7 +122,7 @@ export default function AdminTypesPage() {
 	}
 
 	const handleUpdate = async () => {
-		if (!editType) return
+		if (!editModel) return
 		const name = editName.trim()
 		if (!name) {
 			toast({ variant: 'destructive', title: 'Name required' })
@@ -130,22 +130,22 @@ export default function AdminTypesPage() {
 		}
 		setSavingEdit(true)
 		try {
-			const res = await fetch(`/api/types/${editType.id}`, {
+			const res = await fetch(`/api/models/${editModel.id}`, {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ name }),
 			})
 			const data = await res.json()
 			if (!res.ok) throw new Error(data.error || 'Failed to update')
-			toast({ title: 'Type updated', description: name })
-			setEditType(null)
+			toast({ title: 'Model updated', description: name })
+			setEditModel(null)
 			setEditName('')
-			fetchTypes()
+			fetchModels()
 		} catch (e) {
 			toast({
 				variant: 'destructive',
 				title: 'Error',
-				description: e instanceof Error ? e.message : 'Failed to update type.',
+				description: e instanceof Error ? e.message : 'Failed to update model.',
 			})
 		} finally {
 			setSavingEdit(false)
@@ -153,30 +153,30 @@ export default function AdminTypesPage() {
 	}
 
 	const handleDelete = async () => {
-		if (!deleteType) return
+		if (!deleteModel) return
 		setDeleting(true)
 		try {
-			const res = await fetch(`/api/types/${deleteType.id}`, {
+			const res = await fetch(`/api/models/${deleteModel.id}`, {
 				method: 'DELETE',
 			})
 			const data = await res.json()
 			if (!res.ok) throw new Error(data.error || 'Failed to delete')
-			toast({ title: 'Type deleted', description: deleteType.name })
-			setDeleteType(null)
-			fetchTypes()
+			toast({ title: 'Model deleted', description: deleteModel.name })
+			setDeleteModel(null)
+			fetchModels()
 		} catch (e) {
 			toast({
 				variant: 'destructive',
 				title: 'Error',
-				description: e instanceof Error ? e.message : 'Failed to delete type.',
+				description: e instanceof Error ? e.message : 'Failed to delete model.',
 			})
 		} finally {
 			setDeleting(false)
 		}
 	}
 
-	const pageCount = Math.ceil(types.length / itemsPerPage)
-	const paginatedTypes = types.slice(
+	const pageCount = Math.ceil(models.length / itemsPerPage)
+	const paginatedModels = models.slice(
 		(currentPage - 1) * itemsPerPage,
 		currentPage * itemsPerPage,
 	)
@@ -184,14 +184,14 @@ export default function AdminTypesPage() {
 	return (
 		<div className='space-y-6'>
 			<div className='flex items-center justify-between gap-4'>
-				<h1 className='text-lg font-semibold md:text-2xl'>Types</h1>
+				<h1 className='text-lg font-semibold md:text-2xl'>Models</h1>
 			</div>
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Add type</CardTitle>
+					<CardTitle>Add model</CardTitle>
 					<CardDescription>
-						Create a new type. ID is auto-generated by Firestore.
+						Create a new model. ID is auto-generated by Firestore.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className='flex flex-wrap items-end gap-4'>
@@ -199,7 +199,7 @@ export default function AdminTypesPage() {
 						<Label htmlFor='new-name'>Name</Label>
 						<Input
 							id='new-name'
-							placeholder='e.g. Video'
+							placeholder='e.g. Gemini'
 							value={newName}
 							onChange={e => setNewName(e.target.value)}
 							disabled={adding}
@@ -217,9 +217,9 @@ export default function AdminTypesPage() {
 				<CardHeader>
 					<div className='flex items-start justify-between gap-4'>
 						<div>
-							<CardTitle>All types</CardTitle>
+							<CardTitle>All models</CardTitle>
 							<CardDescription>
-								Edit or delete types. Use POST /api/types (no body) to seed
+								Edit or delete models. Use POST /api/models (no body) to seed
 								defaults.
 							</CardDescription>
 						</div>
@@ -248,9 +248,9 @@ export default function AdminTypesPage() {
 						<div className='flex justify-center py-8'>
 							<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
 						</div>
-					) : paginatedTypes.length === 0 ? (
+					) : paginatedModels.length === 0 ? (
 						<p className='text-muted-foreground py-4'>
-							No types yet. Add one above or seed defaults with: POST /api/types
+							No models yet. Add one above or seed defaults with: POST /api/models
 							(no body).
 						</p>
 					) : (
@@ -263,20 +263,20 @@ export default function AdminTypesPage() {
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{paginatedTypes.map(type => (
-									<TableRow key={type.id}>
+								{paginatedModels.map(model => (
+									<TableRow key={model.id}>
 										<TableCell className='font-mono text-sm'>
-											{type.id}
+											{model.id}
 										</TableCell>
-										<TableCell>{type.name}</TableCell>
+										<TableCell>{model.name}</TableCell>
 										<TableCell>
 											<div className='flex gap-2'>
 												<Button
 													variant='ghost'
 													size='icon'
 													onClick={() => {
-														setEditType(type)
-														setEditName(type.name)
+														setEditModel(model)
+														setEditName(model.name)
 													}}
 												>
 													<Pencil className='h-4 w-4' />
@@ -285,7 +285,7 @@ export default function AdminTypesPage() {
 													variant='ghost'
 													size='icon'
 													className='text-destructive hover:text-destructive'
-													onClick={() => setDeleteType(type)}
+													onClick={() => setDeleteModel(model)}
 												>
 													<Trash className='h-4 w-4' />
 												</Button>
@@ -334,12 +334,12 @@ export default function AdminTypesPage() {
 			</Card>
 
 			<Dialog
-				open={!!editType}
-				onOpenChange={open => !open && setEditType(null)}
+				open={!!editModel}
+				onOpenChange={open => !open && setEditModel(null)}
 			>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Edit type</DialogTitle>
+						<DialogTitle>Edit model</DialogTitle>
 					</DialogHeader>
 					<div className='space-y-2 py-4'>
 						<Label>Name</Label>
@@ -347,18 +347,18 @@ export default function AdminTypesPage() {
 							value={editName}
 							onChange={e => setEditName(e.target.value)}
 							disabled={savingEdit}
-							placeholder='Type name'
+							placeholder='Model name'
 						/>
-						{editType && (
+						{editModel && (
 							<p className='text-xs text-muted-foreground'>
-								ID: {editType.id} (cannot change)
+								ID: {editModel.id} (cannot change)
 							</p>
 						)}
 					</div>
 					<DialogFooter>
 						<Button
 							variant='outline'
-							onClick={() => setEditType(null)}
+							onClick={() => setEditModel(null)}
 							disabled={savingEdit}
 						>
 							Cancel
@@ -372,16 +372,16 @@ export default function AdminTypesPage() {
 			</Dialog>
 
 			<AlertDialog
-				open={!!deleteType}
-				onOpenChange={open => !open && setDeleteType(null)}
+				open={!!deleteModel}
+				onOpenChange={open => !open && setDeleteModel(null)}
 			>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Delete type?</AlertDialogTitle>
+						<AlertDialogTitle>Delete model?</AlertDialogTitle>
 						<AlertDialogDescription>
-							This will remove &quot;{deleteType?.name}&quot;. Prompts using
-							this type will keep the reference but the name may not resolve
-							until you re-add a type with the same ID.
+							This will remove &quot;{deleteModel?.name}&quot;. Prompts using
+							this model will keep the reference but the name may not resolve
+							until you re-add a model with the same ID.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>

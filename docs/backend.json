@@ -85,6 +85,9 @@
             "type": "string"
           }
         },
+        "modelId": {
+          "type": "string"
+        },
         "rating": {
           "type": "object",
           "properties": {
@@ -102,6 +105,22 @@
         "title",
         "description",
         "price"
+      ]
+    },
+    "Model": {
+      "title": "Model",
+      "type": "object",
+      "description": "Represents an AI model used to generate prompts.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
       ]
     },
     "PromptPrivateContent": {
@@ -285,6 +304,16 @@
             "$ref": "#/backend/entities/Prompt"
           },
           "description": "Publicly accessible data for a prompt listing."
+        }
+      },
+      {
+        "path": "/models/{modelId}",
+        "definition": {
+          "entityName": "Model",
+          "schema": {
+            "$ref": "#/backend/entities/Model"
+          },
+          "description": "Publicly accessible list of AI models."
         }
       },
       {

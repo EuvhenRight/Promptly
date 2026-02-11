@@ -75,6 +75,7 @@ export default function EditPromptPage() {
 				price: data.price,
 				categoryId: data.categoryId,
 				typeId: data.typeId,
+				modelId: data.modelId,
 				tags: data.tags,
 				privateContent: data.privateContent,
 				imageUrl: newImageUrl, // Only pass if a new one was uploaded
@@ -128,6 +129,7 @@ export default function EditPromptPage() {
 			price: promptData.price,
 			categoryId: initialCategoryId,
 			typeId: promptData.typeId || '',
+			modelId: promptData.modelId || '',
 			tags: toFormList(promptData.tags),
 			privateContent: promptData.privateContent,
 			imageUrl: promptData.images?.[0],

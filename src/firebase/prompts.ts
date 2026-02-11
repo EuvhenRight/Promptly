@@ -70,6 +70,12 @@ export type CreatePromptData = Omit<PromptFormValues, 'image'> & {
 	sourceId?: string | null
 }
 
+function getSearchTerms(title: string): string[] {
+	const titleLower = title.toLowerCase()
+	const terms = new Set(titleLower.split(/\s+/).filter(Boolean))
+	return Array.from(terms)
+}
+
 export async function createPrompt(
 	firestore: Firestore,
 	adminId: string,
@@ -88,12 +94,14 @@ export async function createPrompt(
 		}
 		const authorData = authorSnap.data() as UserProfile
 
-		const publicData = {
+		const publicData: Omit<Prompt, 'id'> & { id: string } = {
 			id: newPromptRef.id,
 			authorId: adminId,
 			authorDisplayName: authorData.displayName,
 			authorPhotoURL: authorData.photoURL,
 			title: data.title,
+			titleLowercase: data.title.toLowerCase(),
+			searchTerms: getSearchTerms(data.title),
 			description: data.description || '',
 			price: data.price,
 			images: data.imageUrl ? [data.imageUrl] : [],
@@ -110,6 +118,7 @@ export async function createPrompt(
 			categoryId: data.categoryId || '',
 			categories: data.categoryId ? [data.categoryId] : [],
 			typeId: data.typeId || '',
+			modelId: data.modelId || '',
 			createdAt: serverTimestamp(),
 			updatedAt: serverTimestamp(),
 			stats: {
@@ -249,6 +258,8 @@ export async function updatePrompt(
 
 	const publicDataToUpdate: any = {
 		title: data.title,
+		titleLowercase: data.title.toLowerCase(),
+		searchTerms: getSearchTerms(data.title),
 		description: data.description || '',
 		price: data.price,
 		tags: data.tags
@@ -260,6 +271,7 @@ export async function updatePrompt(
 		categoryId: data.categoryId || '',
 		categories: data.categoryId ? [data.categoryId] : [],
 		typeId: data.typeId || '',
+		modelId: data.modelId || '',
 		updatedAt: serverTimestamp(),
 	}
 

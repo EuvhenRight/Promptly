@@ -11,9 +11,10 @@ import {
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
-import { useTypes } from '@/hooks/use-types'
+import { useModels } from '@/hooks/use-models'
 import { type SortByOption } from '@/hooks/use-prompts-feed'
-import { ArrowDownUp, ChevronDown, Search } from 'lucide-react'
+import { useTypes } from '@/hooks/use-types'
+import { ArrowDownUp, ChevronDown, Loader2, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 const sortOptions: { label: string; value: SortByOption }[] = [
@@ -28,23 +29,34 @@ interface SearchBarProps {
 	activeFilter: string
 	selectedTypeId: string | null
 	onTypeChange: (typeId: string | null) => void
+	selectedModelId: string | null
+	onModelChange: (modelId: string | null) => void
 	totalCount: number | null
 	sortBy: SortByOption
 	onSortChange: (sortBy: SortByOption) => void
+	searchTerm: string
+	onSearch: (term: string) => void
+	isLoading: boolean
 }
 
 export default function SearchBar({
 	activeFilter,
 	selectedTypeId,
 	onTypeChange,
+	selectedModelId,
+	onModelChange,
 	totalCount,
 	sortBy,
 	onSortChange,
+	searchTerm,
+	onSearch,
+	isLoading,
 }: SearchBarProps) {
 	const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(
 		null,
 	)
 	const { types, isLoading: typesLoading } = useTypes()
+	const { models, isLoading: modelsLoading } = useModels()
 
 	const currentTitle = `${activeFilter} Prompts`
 	const resultsText =
@@ -54,6 +66,8 @@ export default function SearchBar({
 
 	const selectedTypeName =
 		types.find(t => t.id === selectedTypeId)?.name || 'Type'
+	const selectedModelName =
+		models.find(m => m.id === selectedModelId)?.name || 'Model'
 
 	const selectedSortLabel =
 		sortOptions.find(o => o.value === sortBy)?.label || 'Sort'
@@ -99,23 +113,36 @@ export default function SearchBar({
 				<p className='mt-3 text-lg text-muted-foreground'>{resultsText}</p>
 
 				<div className='mt-8 max-w-3xl mx-auto'>
-					<div className='relative'>
+					<form
+						className='relative'
+						onSubmit={e => {
+							e.preventDefault()
+							// onSearch is already called via onChange
+						}}
+					>
 						<div className='relative flex items-center w-full h-16 bg-card border rounded-full shadow-lg shadow-primary/10'>
 							<Search className='absolute left-6 h-6 w-6 text-muted-foreground' />
 							<Input
 								placeholder='Search for prompts, models, or inspiration…'
 								className='pl-16 pr-32 h-full text-base rounded-full bg-transparent border-0 focus-visible:ring-0'
+								value={searchTerm}
+								onChange={e => onSearch(e.target.value)}
 							/>
 							<div className='absolute right-2 top-1/2 -translate-y-1/2'>
 								<Button
 									type='submit'
 									className='rounded-full bg-foreground text-background hover:bg-foreground/90 h-12 px-8'
+									disabled={isLoading}
 								>
-									Search
+									{isLoading ? (
+										<Loader2 className='animate-spin' />
+									) : (
+										'Search'
+									)}
 								</Button>
 							</div>
 						</div>
-					</div>
+					</form>
 				</div>
 
 				<div className='mt-6 flex justify-center items-center gap-3'>
@@ -148,9 +175,35 @@ export default function SearchBar({
 							</DropdownMenuRadioGroup>
 						</DropdownMenuContent>
 					</DropdownMenu>
-					<Button variant='outline' className='rounded-full border bg-card'>
-						+ Model
-					</Button>
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button
+								variant='outline'
+								className='rounded-full border bg-card'
+								disabled={modelsLoading}
+							>
+								{selectedModelId ? selectedModelName : '+ Model'}
+								<ChevronDown className='ml-2 h-4 w-4' />
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent>
+							<DropdownMenuLabel>Filter by Model</DropdownMenuLabel>
+							<DropdownMenuSeparator />
+							<DropdownMenuRadioGroup
+								value={selectedModelId ?? 'all'}
+								onValueChange={value => {
+									onModelChange(value === 'all' ? null : value)
+								}}
+							>
+								<DropdownMenuRadioItem value='all'>All Models</DropdownMenuRadioItem>
+								{models.map(model => (
+									<DropdownMenuRadioItem key={model.id} value={model.id}>
+										{model.name}
+									</DropdownMenuRadioItem>
+								))}
+							</DropdownMenuRadioGroup>
+						</DropdownMenuContent>
+					</DropdownMenu>
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button variant='outline' className='rounded-full border bg-card'>

@@ -10,6 +10,7 @@ import { usePromptsFeed, type SortByOption } from '@/hooks/use-prompts-feed'
 import { useTypes } from '@/hooks/use-types'
 import { Loader2 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useDebounce } from 'use-debounce'
 
 const mainLinks = ['Featured', 'Hot', 'New', 'Top']
 
@@ -28,12 +29,15 @@ export default function Home() {
 	const [activeFilter, setActiveFilter] = useState('Featured')
 	const [activeFilterName, setActiveFilterName] = useState('Featured')
 	const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null)
+	const [selectedModelId, setSelectedModelId] = useState<string | null>(null)
 	const [isInitialTypeSet, setIsInitialTypeSet] = useState(false)
 	const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
 		null,
 	)
 	const [selectedTagId, setSelectedTagId] = useState<string | null>(null)
 	const [sortBy, setSortBy] = useState<SortByOption>('createdAt:desc')
+	const [searchTerm, setSearchTerm] = useState('')
+	const [debouncedSearchTerm] = useDebounce(searchTerm, 500)
 	const { types, isLoading: typesLoading } = useTypes()
 
 	useEffect(() => {
@@ -56,6 +60,7 @@ export default function Home() {
 
 		setSelectedCategoryId(null)
 		setSelectedTagId(null)
+		setSearchTerm('')
 
 		if (type === 'category') {
 			setSelectedCategoryId(id)
@@ -68,8 +73,20 @@ export default function Home() {
 		setSelectedTypeId(typeId)
 	}
 
+	const handleModelChange = (modelId: string | null) => {
+		setSelectedModelId(modelId)
+	}
+
 	const handleSortChange = (newSortBy: SortByOption) => {
 		setSortBy(newSortBy)
+	}
+
+	const handleSearch = (term: string) => {
+		setSearchTerm(term)
+		setActiveFilterName(term ? `"${term}"` : 'Featured')
+		setActiveFilter(term ? 'search' : 'Featured')
+		setSelectedCategoryId(null)
+		setSelectedTagId(null)
 	}
 
 	const { prompts, loading, error, hasMore, loadMore, totalCount } =
@@ -77,7 +94,9 @@ export default function Home() {
 			categoryId: selectedCategoryId,
 			typeId: selectedTypeId,
 			tagId: selectedTagId,
+			modelId: selectedModelId,
 			sortBy,
+			searchTerm: debouncedSearchTerm,
 		})
 
 	const observer = useRef<IntersectionObserver | null>(null)
@@ -111,9 +130,14 @@ export default function Home() {
 					activeFilter={activeFilterName}
 					selectedTypeId={selectedTypeId}
 					onTypeChange={handleTypeChange}
+					selectedModelId={selectedModelId}
+					onModelChange={handleModelChange}
 					totalCount={totalCount}
 					sortBy={sortBy}
 					onSortChange={handleSortChange}
+					searchTerm={searchTerm}
+					onSearch={handleSearch}
+					isLoading={loading}
 				/>
 				<div className='container mx-auto px-4 py-8 sm:px-6 lg:px-8'>
 					{error && (
