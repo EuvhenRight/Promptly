@@ -99,7 +99,7 @@ export default function Header() {
 							<div className='mt-8 flex flex-col gap-4'>
 								<nav className='mt-4 flex flex-col gap-2'>
 									<Button variant='ghost' asChild className='justify-start'>
-										<Link href='/plans'>Pricing</Link>
+										<Link href='/account/plans'>Pricing</Link>
 									</Button>
 									<Button variant='ghost' asChild className='justify-start'>
 										<Link href='/community'>Community</Link>
@@ -113,7 +113,7 @@ export default function Header() {
 				<div className='hidden md:flex items-center gap-6 ml-10'>
 					<nav className='flex items-center gap-6 text-sm'>
 						<Link
-							href='/plans'
+							href='/account/plans'
 							className='transition-colors hover:text-foreground/80 text-foreground/60 font-medium'
 						>
 							Pricing
@@ -186,21 +186,21 @@ export default function Header() {
 								<DropdownMenuSeparator />
 								<DropdownMenuItem onSelect={() => router.push('/account')}>
 									<Settings className='mr-2 h-4 w-4' />
-									<span>Account</span>
+									<span>Account Settings</span>
 								</DropdownMenuItem>
-								<DropdownMenuItem onSelect={() => router.push('/plans')}>
+								<DropdownMenuItem onSelect={() => router.push('/account/plans')}>
 									<Star className='mr-2 h-4 w-4' />
 									<span>Plans</span>
 								</DropdownMenuItem>
 								<DropdownMenuItem
-									onSelect={() => router.push('/notifications')}
+									onSelect={() => router.push('/account/notifications')}
 								>
 									<Bell className='mr-2 h-4 w-4' />
 									<span>Notifications</span>
 								</DropdownMenuItem>
 								<DropdownMenuItem onSelect={() => router.push('/profile')}>
 									<User className='mr-2 h-4 w-4' />
-									<span>Profile</span>
+									<span>My Profile</span>
 								</DropdownMenuItem>
 								{userProfile?.role === 'admin' && (
 									<>

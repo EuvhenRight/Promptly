@@ -39,20 +39,26 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
+import AccountSidebar from '@/components/account/account-sidebar'
 
 function ProfileSkeleton() {
 	return (
-		<div className='space-y-8'>
-			<div className='flex flex-col sm:flex-row items-start sm:items-center gap-6'>
-				<Skeleton className='h-24 w-24 rounded-full' />
-				<div className='space-y-2'>
-					<Skeleton className='h-8 w-48' />
-					<Skeleton className='h-4 w-64' />
-				</div>
+		<div className='flex flex-col lg:flex-row gap-8'>
+			<div className='w-full lg:w-56 shrink-0'>
+				<Skeleton className='h-48 w-full' />
 			</div>
-			<div className='grid gap-6 md:grid-cols-2'>
-				<Skeleton className='h-48 rounded-lg' />
-				<Skeleton className='h-48 rounded-lg' />
+			<div className='flex-1 min-w-0 space-y-8'>
+				<div className='flex flex-col sm:flex-row items-start sm:items-center gap-6'>
+					<Skeleton className='h-24 w-24 rounded-full' />
+					<div className='space-y-2'>
+						<Skeleton className='h-8 w-48' />
+						<Skeleton className='h-4 w-64' />
+					</div>
+				</div>
+				<div className='grid gap-6 md:grid-cols-2'>
+					<Skeleton className='h-48 rounded-lg' />
+					<Skeleton className='h-48 rounded-lg' />
+				</div>
 			</div>
 		</div>
 	)
@@ -125,6 +131,8 @@ export default function ProfilePage() {
 	const firestore = useFirestore()
 	const router = useRouter()
 	const [showFeaturedImage, setShowFeaturedImage] = useState<boolean | null>(null)
+
+	const credits = 10 // Placeholder
 
 	useEffect(() => {
 		const storedPreference = localStorage.getItem('showFeaturedImage')
@@ -230,204 +238,212 @@ export default function ProfilePage() {
 				)}
 
 				<div className='container mx-auto px-4 py-8 sm:px-6 lg:px-8'>
-					<div className='-mt-24 sm:-mt-28'>
-						<div className='flex flex-col sm:flex-row sm:items-end gap-6'>
-							<Avatar className='h-24 w-24 sm:h-32 sm:w-32 border-4 border-background bg-background shrink-0 shadow-lg'>
-								<AvatarImage
-									src={userProfile?.photoURL ?? user.photoURL ?? ''}
-									alt={user.displayName ?? 'User'}
-								/>
-								<AvatarFallback className='text-4xl'>
-									{(userProfile?.displayName ?? user.displayName ?? 'U').charAt(
-										0,
-									)}
-								</AvatarFallback>
-							</Avatar>
-							<div className='flex-1 py-4'>
-								<div className='flex items-center gap-2 flex-wrap'>
-									<h2 className='text-2xl font-bold'>
-										{userProfile?.displayName ?? user.displayName ?? 'User'}
-									</h2>
-									{userProfile?.role === 'admin' && (
-										<Badge variant='secondary'>Admin</Badge>
-									)}
-									{isSeller && <Badge variant='outline'>Seller</Badge>}
-								</div>
-								<p className='text-muted-foreground mt-1'>
-									@{userProfile?.username ?? '...'}
-								</p>
-							</div>
-							<div className='pb-4 flex flex-wrap gap-2'>
-								<Button asChild variant='outline'>
-									<Link href='/account'>
-										<Edit2 className='mr-2 h-4 w-4' />
-										Edit Profile
-									</Link>
-								</Button>
-								<Button asChild>
-									<Link href='/checkout'>
-										<CreditCard className='mr-2 h-4 w-4' />
-										Billing
-									</Link>
-								</Button>
-							</div>
-						</div>
-						
-						{userProfile?.description && (
-							<p className='mt-4 text-muted-foreground max-w-2xl'>
-								{userProfile.description}
-							</p>
-						)}
-
-						<div className='flex items-center gap-6 mt-6 text-sm border-t pt-6'>
-							<div className='flex items-center gap-1.5'>
-								<Users className='h-4 w-4 text-muted-foreground' />
-								<span className='font-medium'>{followers}</span>
-								<span className='text-muted-foreground'>Followers</span>
-							</div>
-							<div className='flex items-center gap-1.5'>
-								<UserPlus className='h-4 w-4 text-muted-foreground' />
-								<span className='font-medium'>{following}</span>
-								<span className='text-muted-foreground'>Following</span>
-							</div>
-							<div className='flex items-center gap-1.5'>
-								<Eye className='h-4 w-4 text-muted-foreground' />
-								<span className='font-medium'>{views}</span>
-								<span className='text-muted-foreground'>Profile Views</span>
-							</div>
-						</div>
-					</div>
-
-					<div className='mt-8'>
-						{isSeller && stats && (
-							<Card className='mb-8'>
-								<CardHeader>
-									<CardTitle className='flex items-center gap-2'>
-										<TrendingUp className='h-5 w-5' />
-										Seller Statistics
-									</CardTitle>
-									<CardDescription>Your marketplace performance</CardDescription>
-								</CardHeader>
-								<CardContent>
-									<div className='grid grid-cols-2 sm:grid-cols-4 gap-4'>
-										<div className='rounded-lg border p-4'>
-											<div className='flex items-center gap-2 text-muted-foreground'>
-												<DollarSign className='h-4 w-4' />
-												<span className='text-sm'>Total Sales</span>
-											</div>
-											<p className='text-2xl font-bold mt-1'>
-												{stats.totalSales ?? 0}
-											</p>
-										</div>
-										<div className='rounded-lg border p-4'>
-											<div className='flex items-center gap-2 text-muted-foreground'>
-												<TrendingUp className='h-4 w-4' />
-												<span className='text-sm'>Monthly</span>
-											</div>
-											<p className='text-2xl font-bold mt-1'>
-												{stats.monthlySales ?? 0}
-											</p>
-										</div>
-										<div className='rounded-lg border p-4'>
-											<div className='flex items-center gap-2 text-muted-foreground'>
-												<Package className='h-4 w-4' />
-												<span className='text-sm'>Weekly</span>
-											</div>
-											<p className='text-2xl font-bold mt-1'>
-												{stats.weeklySales ?? 0}
-											</p>
-										</div>
-										<div className='rounded-lg border p-4'>
-											<div className='flex items-center gap-2 text-muted-foreground'>
-												<Star className='h-4 w-4' />
-												<span className='text-sm'>Reputation</span>
-											</div>
-											<p className='text-2xl font-bold mt-1'>
-												{stats.reputation ?? 0}
-											</p>
-										</div>
+					<div className='flex flex-col lg:flex-row gap-8'>
+						<AccountSidebar credits={credits} />
+						<div className='flex-1 min-w-0 -mt-24 sm:-mt-28'>
+							<div className='flex flex-col sm:flex-row sm:items-end gap-6'>
+								<Avatar className='h-24 w-24 sm:h-32 sm:w-32 border-4 border-background bg-background shrink-0 shadow-lg'>
+									<AvatarImage
+										src={userProfile?.photoURL ?? user.photoURL ?? ''}
+										alt={user.displayName ?? 'User'}
+									/>
+									<AvatarFallback className='text-4xl'>
+										{(
+											userProfile?.displayName ??
+											user.displayName ??
+											'U'
+										).charAt(0)}
+									</AvatarFallback>
+								</Avatar>
+								<div className='flex-1 py-4'>
+									<div className='flex items-center gap-2 flex-wrap'>
+										<h2 className='text-2xl font-bold'>
+											{userProfile?.displayName ?? user.displayName ?? 'User'}
+										</h2>
+										{userProfile?.role === 'admin' && (
+											<Badge variant='secondary'>Admin</Badge>
+										)}
+										{isSeller && <Badge variant='outline'>Seller</Badge>}
 									</div>
-								</CardContent>
-							</Card>
-						)}
+									<p className='text-muted-foreground mt-1'>
+										@{userProfile?.username ?? '...'}
+									</p>
+								</div>
+								<div className='pb-4 flex flex-wrap gap-2'>
+									<Button asChild variant='outline'>
+										<Link href='/account'>
+											<Edit2 className='mr-2 h-4 w-4' />
+											Edit Profile
+										</Link>
+									</Button>
+									<Button asChild>
+										<Link href='/account/plans'>
+											<CreditCard className='mr-2 h-4 w-4' />
+											Billing
+										</Link>
+									</Button>
+								</div>
+							</div>
 
-						<Card>
-							<Tabs defaultValue='purchased'>
-								<CardHeader>
-									<TabsList className='grid w-full max-w-md grid-cols-3'>
-										<TabsTrigger
-											value='purchased'
-											className='flex items-center gap-2'
-										>
-											<Package className='h-4 w-4' />
-											Purchased
-										</TabsTrigger>
-										<TabsTrigger
-											value='favorites'
-											className='flex items-center gap-2'
-										>
-											<Heart className='h-4 w-4' />
-											Favorites
-										</TabsTrigger>
-										<TabsTrigger
-											value='my-prompts'
-											className='flex items-center gap-2'
-										>
-											<Star className='h-4 w-4' />
-											My Prompts
-										</TabsTrigger>
-									</TabsList>
-								</CardHeader>
-								<CardContent>
-									<TabsContent value='purchased' className='mt-0'>
-										{!userProfile?.purchasedPrompts ||
-										userProfile.purchasedPrompts.length === 0 ? (
-											<EmptyTabContent
-												icon={Package}
-												title='No purchases yet'
-												description='Prompts you buy will appear here.'
-												actionLabel='Browse Prompts'
-											/>
-										) : !purchasedPrompts || purchasedPrompts.length === 0 ? (
-											<div className='flex justify-center py-12'>
-												<Skeleton className='h-24 w-full max-w-md' />
+							{userProfile?.description && (
+								<p className='mt-4 text-muted-foreground max-w-2xl'>
+									{userProfile.description}
+								</p>
+							)}
+
+							<div className='flex items-center gap-6 mt-6 text-sm border-t pt-6'>
+								<div className='flex items-center gap-1.5'>
+									<Users className='h-4 w-4 text-muted-foreground' />
+									<span className='font-medium'>{followers}</span>
+									<span className='text-muted-foreground'>Followers</span>
+								</div>
+								<div className='flex items-center gap-1.5'>
+									<UserPlus className='h-4 w-4 text-muted-foreground' />
+									<span className='font-medium'>{following}</span>
+									<span className='text-muted-foreground'>Following</span>
+								</div>
+								<div className='flex items-center gap-1.5'>
+									<Eye className='h-4 w-4 text-muted-foreground' />
+									<span className='font-medium'>{views}</span>
+									<span className='text-muted-foreground'>Profile Views</span>
+								</div>
+							</div>
+
+							<div className='mt-8'>
+								{isSeller && stats && (
+									<Card className='mb-8'>
+										<CardHeader>
+											<CardTitle className='flex items-center gap-2'>
+												<TrendingUp className='h-5 w-5' />
+												Seller Statistics
+											</CardTitle>
+											<CardDescription>
+												Your marketplace performance
+											</CardDescription>
+										</CardHeader>
+										<CardContent>
+											<div className='grid grid-cols-2 sm:grid-cols-4 gap-4'>
+												<div className='rounded-lg border p-4'>
+													<div className='flex items-center gap-2 text-muted-foreground'>
+														<DollarSign className='h-4 w-4' />
+														<span className='text-sm'>Total Sales</span>
+													</div>
+													<p className='text-2xl font-bold mt-1'>
+														{stats.totalSales ?? 0}
+													</p>
+												</div>
+												<div className='rounded-lg border p-4'>
+													<div className='flex items-center gap-2 text-muted-foreground'>
+														<TrendingUp className='h-4 w-4' />
+														<span className='text-sm'>Monthly</span>
+													</div>
+													<p className='text-2xl font-bold mt-1'>
+														{stats.monthlySales ?? 0}
+													</p>
+												</div>
+												<div className='rounded-lg border p-4'>
+													<div className='flex items-center gap-2 text-muted-foreground'>
+														<Package className='h-4 w-4' />
+														<span className='text-sm'>Weekly</span>
+													</div>
+													<p className='text-2xl font-bold mt-1'>
+														{stats.weeklySales ?? 0}
+													</p>
+												</div>
+												<div className='rounded-lg border p-4'>
+													<div className='flex items-center gap-2 text-muted-foreground'>
+														<Star className='h-4 w-4' />
+														<span className='text-sm'>Reputation</span>
+													</div>
+													<p className='text-2xl font-bold mt-1'>
+														{stats.reputation ?? 0}
+													</p>
+												</div>
 											</div>
-										) : (
-											<PromptGrid prompts={purchasedPrompts} />
-										)}
-									</TabsContent>
-									<TabsContent value='favorites' className='mt-0'>
-										{!userProfile?.favoritePrompts ||
-										userProfile.favoritePrompts.length === 0 ? (
-											<EmptyTabContent
-												icon={Heart}
-												title='No favorites yet'
-												description='Save prompts you love to find them easily later.'
-												actionLabel='Discover Prompts'
-											/>
-										) : !favoritePrompts || favoritePrompts.length === 0 ? (
-											<div className='flex justify-center py-12'>
-												<Skeleton className='h-24 w-full max-w-md' />
-											</div>
-										) : (
-											<PromptGrid prompts={favoritePrompts} />
-										)}
-									</TabsContent>
-									<TabsContent value='my-prompts' className='mt-0'>
-										{!myPrompts || myPrompts.length === 0 ? (
-											<EmptyTabContent
-												icon={Star}
-												title='No creations yet'
-												description='Prompts you create will appear here.'
-												actionLabel='Create a Prompt'
-											/>
-										) : (
-											<PromptGrid prompts={myPrompts} />
-										)}
-									</TabsContent>
-								</CardContent>
-							</Tabs>
-						</Card>
+										</CardContent>
+									</Card>
+								)}
+
+								<Card>
+									<Tabs defaultValue='purchased'>
+										<CardHeader>
+											<TabsList className='grid w-full max-w-md grid-cols-3'>
+												<TabsTrigger
+													value='purchased'
+													className='flex items-center gap-2'
+												>
+													<Package className='h-4 w-4' />
+													Purchased
+												</TabsTrigger>
+												<TabsTrigger
+													value='favorites'
+													className='flex items-center gap-2'
+												>
+													<Heart className='h-4 w-4' />
+													Favorites
+												</TabsTrigger>
+												<TabsTrigger
+													value='my-prompts'
+													className='flex items-center gap-2'
+												>
+													<Star className='h-4 w-4' />
+													My Prompts
+												</TabsTrigger>
+											</TabsList>
+										</CardHeader>
+										<CardContent>
+											<TabsContent value='purchased' className='mt-0'>
+												{!userProfile?.purchasedPrompts ||
+												userProfile.purchasedPrompts.length === 0 ? (
+													<EmptyTabContent
+														icon={Package}
+														title='No purchases yet'
+														description='Prompts you buy will appear here.'
+														actionLabel='Browse Prompts'
+													/>
+												) : !purchasedPrompts ||
+												  purchasedPrompts.length === 0 ? (
+													<div className='flex justify-center py-12'>
+														<Skeleton className='h-24 w-full max-w-md' />
+													</div>
+												) : (
+													<PromptGrid prompts={purchasedPrompts} />
+												)}
+											</TabsContent>
+											<TabsContent value='favorites' className='mt-0'>
+												{!userProfile?.favoritePrompts ||
+												userProfile.favoritePrompts.length === 0 ? (
+													<EmptyTabContent
+														icon={Heart}
+														title='No favorites yet'
+														description='Save prompts you love to find them easily later.'
+														actionLabel='Discover Prompts'
+													/>
+												) : !favoritePrompts || favoritePrompts.length === 0 ? (
+													<div className='flex justify-center py-12'>
+														<Skeleton className='h-24 w-full max-w-md' />
+													</div>
+												) : (
+													<PromptGrid prompts={favoritePrompts} />
+												)}
+											</TabsContent>
+											<TabsContent value='my-prompts' className='mt-0'>
+												{!myPrompts || myPrompts.length === 0 ? (
+													<EmptyTabContent
+														icon={Star}
+														title='No creations yet'
+														description='Prompts you create will appear here.'
+														actionLabel='Create a Prompt'
+													/>
+												) : (
+													<PromptGrid prompts={myPrompts} />
+												)}
+											</TabsContent>
+										</CardContent>
+									</Tabs>
+								</Card>
+							</div>
+						</div>
 					</div>
 				</div>
 			</main>

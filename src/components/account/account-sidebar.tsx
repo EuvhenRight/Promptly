@@ -7,8 +7,8 @@ import { cn } from '@/lib/utils'
 
 const navItems = [
 	{ href: '/account', label: 'Account', icon: Settings },
-	{ href: '/plans', label: 'Plans', icon: Star },
-	{ href: '/notifications', label: 'Notifications', icon: Bell },
+	{ href: '/account/plans', label: 'Plans', icon: Star },
+	{ href: '/account/notifications', label: 'Notifications', icon: Bell },
 	{ href: '/profile', label: 'Profile', icon: User },
 ]
 
@@ -27,9 +27,7 @@ export default function AccountSidebar({ credits = 0 }: AccountSidebarProps) {
 				</h3>
 				<nav className='flex flex-row lg:flex-col gap-1 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0'>
 					{navItems.map(({ href, label, icon: Icon }) => {
-						const isActive =
-							pathname === href ||
-							(href === '/plans' && pathname.startsWith('/plans'))
+						const isActive = pathname === href
 						return (
 							<Link
 								key={href}
@@ -57,7 +55,7 @@ export default function AccountSidebar({ credits = 0 }: AccountSidebarProps) {
 					</p>
 				</div>
 				<Link
-					href='/plans#credits'
+					href='/account/plans#credits'
 					className='ml-auto text-xs font-medium text-primary hover:underline shrink-0'
 				>
 					Buy more
