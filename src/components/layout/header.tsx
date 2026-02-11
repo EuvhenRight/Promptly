@@ -217,7 +217,7 @@ export default function Header() {
 									</>
 								)}
 								<DropdownMenuSeparator />
-								<DropdownMenuItem onClick={() => signOutUser()}>
+								<DropdownMenuItem onClick={async () => await signOutUser()}>
 									<LogOut className='mr-2 h-4 w-4' />
 									<span>Log out</span>
 								</DropdownMenuItem>

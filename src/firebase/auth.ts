@@ -18,8 +18,5 @@ export function signInWithGoogle() {
 
 export function signOutUser() {
   const auth = getAuth();
-  // CRITICAL: Do NOT await this.
-  signOut(auth).catch((error) => {
-    console.error('Sign Out Error:', error);
-  });
+  return signOut(auth);
 }

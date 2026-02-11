@@ -188,7 +188,10 @@ export default function AdminLayout({
 						</li>
 					</ul>
 					<Button
-						onClick={() => signOutUser().then(() => router.push('/'))}
+						onClick={async () => {
+							await signOutUser()
+							router.push('/')
+						}}
 						className='mt-6'
 					>
 						Log Out and Go to Homepage
@@ -438,8 +441,8 @@ export default function AdminLayout({
 								</DropdownMenuItem>
 								<DropdownMenuSeparator />
 								<DropdownMenuItem
-									onClick={() => {
-										signOutUser()
+									onClick={async () => {
+										await signOutUser()
 									}}
 								>
 									Logout
