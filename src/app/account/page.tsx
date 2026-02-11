@@ -22,12 +22,19 @@ import {
 } from '@/firebase/users'
 import type { UserProfile } from '@/lib/types'
 import { doc } from 'firebase/firestore'
-import { Camera, ImageIcon, Trash2 } from 'lucide-react'
+import {
+	Camera,
+	ImageIcon,
+	Settings,
+	Trash2,
+	Link as LinkIcon,
+} from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import AccountSidebar from '@/components/account/account-sidebar'
+import { ThemeSwitcher } from '@/components/account/theme-switcher'
 
 function AccountPageSkeleton() {
 	return (
@@ -99,13 +106,13 @@ export default function AccountPage() {
 		setIsSaving(true)
 		try {
 			await updateUserProfile(firestore, user.uid, {
-				displayName: (displayName.trim() || user.displayName) ?? 'User',
-				username: username.trim() || undefined,
-				headline: headline.trim() || undefined,
-				aiTools: aiTools.trim() || undefined,
-				xProfile: xProfile.trim() || undefined,
-				instagramProfile: instagramProfile.trim() || undefined,
-				facebookProfile: facebookProfile.trim() || undefined,
+				displayName: displayName.trim() || user.displayName || 'User',
+				username: username.trim(),
+				headline: headline.trim(),
+				aiTools: aiTools.trim(),
+				xProfile: xProfile.trim(),
+				instagramProfile: instagramProfile.trim(),
+				facebookProfile: facebookProfile.trim(),
 			})
 		} catch (err) {
 			console.error(err)
@@ -203,28 +210,12 @@ export default function AccountPage() {
 			<main className='flex-grow container mx-auto px-4 py-8 sm:px-6 lg:px-8'>
 				<div className='flex flex-col lg:flex-row gap-8'>
 					<AccountSidebar credits={credits} />
-					<div className='flex-1 min-w-0'>
-						{/* User identification */}
-						<div className='flex flex-col sm:flex-row items-start sm:items-center gap-6 mb-8'>
-							<Avatar className='h-20 w-20 border-4 border-background shadow-lg'>
-								<AvatarImage
-									src={userProfile?.photoURL ?? user.photoURL ?? ''}
-									alt={user.displayName ?? 'User'}
-								/>
-								<AvatarFallback className='text-2xl'>
-									{(userProfile?.displayName ?? user.displayName ?? 'U').charAt(
-										0,
-									)}
-								</AvatarFallback>
-							</Avatar>
-							<div>
-								<h1 className='font-headline text-2xl md:text-3xl font-bold'>
-									{user.email}
-								</h1>
-								<p className='text-muted-foreground mt-1'>
-									Manage your Promptly account
-								</p>
-							</div>
+					<div className='flex-1 min-w-0 space-y-8'>
+						<div>
+							<h1 className='font-headline text-3xl font-bold'>Account</h1>
+							<p className='mt-1 text-muted-foreground'>
+								Manage your Promptly account settings.
+							</p>
 						</div>
 
 						{/* Profile Information Card */}
@@ -235,168 +226,133 @@ export default function AccountPage() {
 									Profile Information
 								</CardTitle>
 								<CardDescription>
-									Update your profile picture and account details
+									Update your profile picture and account details. Changes will be
+									reflected on your public profile.
 								</CardDescription>
 							</CardHeader>
 							<CardContent className='space-y-6'>
-								{/* Profile Picture */}
-								<div className='space-y-2'>
-									<Label>Profile Picture</Label>
-									<div className='flex items-center gap-4'>
-										<Avatar className='h-20 w-20'>
-											<AvatarImage
-												src={userProfile?.photoURL ?? user.photoURL ?? ''}
-											/>
-											<AvatarFallback className='text-xl'>
-												{displayName?.charAt(0) ?? 'U'}
-											</AvatarFallback>
-										</Avatar>
-										<div className='flex flex-col gap-2'>
+								<div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+									{/* Profile Picture */}
+									<div className='space-y-2'>
+										<Label>Profile Picture</Label>
+										<div className='flex items-center gap-4'>
+											<Avatar className='h-20 w-20'>
+												<AvatarImage
+													src={userProfile?.photoURL ?? user.photoURL ?? ''}
+												/>
+												<AvatarFallback className='text-xl'>
+													{displayName?.charAt(0) ?? 'U'}
+												</AvatarFallback>
+											</Avatar>
+											<div className='flex flex-col gap-2'>
+												<Button
+													variant='outline'
+													size='sm'
+													onClick={() => avatarInputRef.current?.click()}
+													disabled={isUploadingAvatar}
+												>
+													<Camera className='mr-2 h-4 w-4' />
+													{isUploadingAvatar ? 'Uploading...' : 'Change Image'}
+												</Button>
+												<Button
+													variant='ghost'
+													size='sm'
+													onClick={handleRemoveAvatar}
+													className='text-muted-foreground hover:text-destructive'
+												>
+													<Trash2 className='mr-2 h-4 w-4' />
+													Remove
+												</Button>
+											</div>
+										</div>
+										<p className='text-xs text-muted-foreground'>
+											JPG, PNG, WebP or GIF. Max 5MB.
+										</p>
+										<input
+											ref={avatarInputRef}
+											type='file'
+											accept='image/*'
+											className='hidden'
+											onChange={handleAvatarChange}
+										/>
+									</div>
+
+									{/* Featured Image (Cover) */}
+									<div className='space-y-2'>
+										<Label>Featured Image</Label>
+										<div className='relative w-full h-28 rounded-lg overflow-hidden bg-muted'>
+											{userProfile?.coverImageURL ? (
+												<Image
+													src={userProfile.coverImageURL}
+													alt='Featured'
+													fill
+													className='object-cover'
+													unoptimized
+												/>
+											) : (
+												<div className='flex items-center justify-center h-full'>
+													<ImageIcon className='h-8 w-8 text-muted-foreground' />
+												</div>
+											)}
+										</div>
+										<div className='flex gap-2'>
 											<Button
 												variant='outline'
 												size='sm'
-												onClick={() => avatarInputRef.current?.click()}
-												disabled={isUploadingAvatar}
+												onClick={() => coverInputRef.current?.click()}
+												disabled={isUploadingCover}
 											>
 												<Camera className='mr-2 h-4 w-4' />
-												{isUploadingAvatar ? 'Uploading...' : 'Change Image'}
+												{isUploadingCover ? 'Uploading...' : 'Change'}
 											</Button>
 											<Button
 												variant='ghost'
 												size='sm'
-												onClick={handleRemoveAvatar}
+												onClick={handleRemoveCover}
 												className='text-muted-foreground hover:text-destructive'
 											>
 												<Trash2 className='mr-2 h-4 w-4' />
 												Remove
 											</Button>
 										</div>
+										<p className='text-xs text-muted-foreground'>
+											This is the banner for your public profile page.
+										</p>
+										<input
+											ref={coverInputRef}
+											type='file'
+											accept='image/*'
+											className='hidden'
+											onChange={handleCoverChange}
+										/>
 									</div>
-									<p className='text-xs text-muted-foreground'>
-										JPG, PNG, WebP or GIF. Max 5MB. Recommended: 170x170px or
-										larger.
-									</p>
-									<input
-										ref={avatarInputRef}
-										type='file'
-										accept='image/*'
-										className='hidden'
-										onChange={handleAvatarChange}
-									/>
 								</div>
+								<div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+									{/* Display Name */}
+									<div className='space-y-2'>
+										<Label htmlFor='displayName'>Display Name</Label>
+										<Input
+											id='displayName'
+											value={displayName}
+											onChange={e => setDisplayName(e.target.value)}
+											placeholder='Enter your display name'
+										/>
+									</div>
 
-								{/* Featured Image (Cover) */}
-								<div className='space-y-2'>
-									<Label>Featured Image</Label>
-									<p className='text-xs text-muted-foreground mb-2'>
-										A banner image for your profile.{' '}
-										{userProfile?.username ? (
-											<Link
-												href={`/user/${userProfile.username}`}
-												className='underline hover:text-primary'
-											>
-												Go to your public profile page
-											</Link>
-										) : (
-											<span className='cursor-not-allowed'>
-												Go to your public profile page
-											</span>
-										)}
-										, find a prompt you want to feature, and set it as
-										featured.
-									</p>
-									{userProfile?.coverImageURL ? (
-										<div className='relative w-full h-40 rounded-lg overflow-hidden bg-muted'>
-											<Image
-												src={userProfile.coverImageURL}
-												alt='Featured'
-												fill
-												className='object-cover'
-												unoptimized
-											/>
-											<div className='absolute bottom-2 right-2 flex gap-2'>
-												<Button
-													variant='secondary'
-													size='sm'
-													onClick={() => coverInputRef.current?.click()}
-													disabled={isUploadingCover}
-												>
-													<Camera className='mr-2 h-4 w-4' />
-													{isUploadingCover ? 'Uploading...' : 'Change'}
-												</Button>
-												<Button
-													variant='destructive'
-													size='sm'
-													onClick={handleRemoveCover}
-												>
-													<Trash2 className='mr-2 h-4 w-4' />
-													Remove
-												</Button>
-											</div>
-											<input
-												ref={coverInputRef}
-												type='file'
-												accept='image/*'
-												className='hidden'
-												onChange={handleCoverChange}
-											/>
-										</div>
-									) : (
-										<div className='flex items-center gap-4'>
-											<div
-												className='h-24 w-32 rounded-lg border-2 border-dashed flex items-center justify-center bg-muted/50 cursor-pointer hover:bg-muted transition-colors'
-												onClick={() => coverInputRef.current?.click()}
-												role='button'
-												tabIndex={0}
-												onKeyDown={e =>
-													e.key === 'Enter' &&
-													coverInputRef.current?.click()
-												}
-											>
-												{isUploadingCover ? (
-													<span className='text-sm text-muted-foreground'>
-														Uploading...
-													</span>
-												) : (
-													<Camera className='h-8 w-8 text-muted-foreground' />
-												)}
-											</div>
-											<input
-												ref={coverInputRef}
-												type='file'
-												accept='image/*'
-												className='hidden'
-												onChange={handleCoverChange}
-											/>
-										</div>
-									)}
+									{/* Username */}
+									<div className='space-y-2'>
+										<Label htmlFor='username'>Username</Label>
+										<Input
+											id='username'
+											value={username}
+											onChange={e => setUsername(e.target.value)}
+											placeholder='Enter your unique username'
+										/>
+										<p className='text-xs text-muted-foreground'>
+											Your public URL will be /user/{username || '...'}
+										</p>
+									</div>
 								</div>
-
-								{/* Display Name */}
-								<div className='space-y-2'>
-									<Label htmlFor='displayName'>Display Name</Label>
-									<Input
-										id='displayName'
-										value={displayName}
-										onChange={e => setDisplayName(e.target.value)}
-										placeholder='Enter your display name'
-									/>
-								</div>
-
-								{/* Username */}
-								<div className='space-y-2'>
-									<Label htmlFor='username'>Username</Label>
-									<Input
-										id='username'
-										value={username}
-										onChange={e => setUsername(e.target.value)}
-										placeholder='Enter your unique username'
-									/>
-									<p className='text-xs text-muted-foreground'>
-										This will be used for your public profile URL.
-									</p>
-								</div>
-
 								{/* Headline */}
 								<div className='space-y-2'>
 									<Label htmlFor='headline'>Headline</Label>
@@ -407,8 +363,7 @@ export default function AccountPage() {
 										placeholder='e.g. AI Enthusiast & Prompt Creator'
 									/>
 									<p className='text-xs text-muted-foreground'>
-										A big headline to summarize what you like creating and what
-										you do best with AI.
+										A brief summary of what you do.
 									</p>
 								</div>
 
@@ -421,23 +376,30 @@ export default function AccountPage() {
 										id='aiTools'
 										value={aiTools}
 										onChange={e => setAiTools(e.target.value)}
-										placeholder='AUTOMATIC1111, CodeFormer, Midjourney'
+										placeholder='Midjourney, Stable Diffusion, etc.'
 									/>
 									<p className='text-xs text-muted-foreground'>
-										Separate with commas. Only the first 3 will be used.
+										Separate with commas.
 									</p>
 								</div>
+							</CardContent>
+						</Card>
 
-								{/* Social links */}
-								<div className='space-y-4'>
-									<Label>Social Profiles</Label>
+						{/* Social Profiles Card */}
+						<Card>
+							<CardHeader>
+								<CardTitle className='flex items-center gap-2'>
+									<LinkIcon className='h-5 w-5' />
+									Social Profiles
+								</CardTitle>
+								<CardDescription>
+									Add links to your social media profiles.
+								</CardDescription>
+							</CardHeader>
+							<CardContent className='space-y-4'>
+								<div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
 									<div className='space-y-2'>
-										<Label
-											htmlFor='xProfile'
-											className='text-muted-foreground text-sm'
-										>
-											X Profile
-										</Label>
+										<Label htmlFor='xProfile'>X Profile</Label>
 										<Input
 											id='xProfile'
 											value={xProfile}
@@ -446,12 +408,7 @@ export default function AccountPage() {
 										/>
 									</div>
 									<div className='space-y-2'>
-										<Label
-											htmlFor='instagramProfile'
-											className='text-muted-foreground text-sm'
-										>
-											Instagram Profile
-										</Label>
+										<Label htmlFor='instagramProfile'>Instagram Profile</Label>
 										<Input
 											id='instagramProfile'
 											value={instagramProfile}
@@ -459,13 +416,10 @@ export default function AccountPage() {
 											placeholder='https://instagram.com/yourhandle'
 										/>
 									</div>
+								</div>
+								<div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
 									<div className='space-y-2'>
-										<Label
-											htmlFor='facebookProfile'
-											className='text-muted-foreground text-sm'
-										>
-											Facebook Profile
-										</Label>
+										<Label htmlFor='facebookProfile'>Facebook Profile</Label>
 										<Input
 											id='facebookProfile'
 											value={facebookProfile}
@@ -474,13 +428,30 @@ export default function AccountPage() {
 										/>
 									</div>
 								</div>
-
-								{/* Save */}
-								<Button onClick={handleSave} disabled={isSaving}>
-									{isSaving ? 'Saving...' : 'Save Changes'}
-								</Button>
 							</CardContent>
 						</Card>
+
+						{/* Settings Card */}
+						<Card>
+							<CardHeader>
+								<CardTitle className='flex items-center gap-2'>
+									<Settings className='h-5 w-5' />
+									Appearance
+								</CardTitle>
+								<CardDescription>
+									Customize the look and feel of the application.
+								</CardDescription>
+							</CardHeader>
+							<CardContent>
+								<ThemeSwitcher />
+							</CardContent>
+						</Card>
+
+						<div className='flex justify-end'>
+							<Button onClick={handleSave} disabled={isSaving}>
+								{isSaving ? 'Saving...' : 'Save All Changes'}
+							</Button>
+						</div>
 					</div>
 				</div>
 			</main>
