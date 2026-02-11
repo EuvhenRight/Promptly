@@ -166,8 +166,8 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 								// Existing user: ensure public profile is created and/or synced.
 								const userProfile = userDocSnap.data() as UserProfile
 
-								// Only sync fields that are managed by the user, not counters.
-								const fieldsToSync: Partial<PublicProfile> = {
+								// Sync ALL relevant public fields, including counters.
+								const fieldsToSync: PublicProfile = {
 									uid: firebaseUser.uid,
 									username:
 										userProfile.username ||
@@ -177,6 +177,9 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 									photoURL: userProfile.photoURL,
 									description: userProfile.description || '',
 									coverImageURL: userProfile.coverImageURL || '',
+									followers: userProfile.followers ?? 0,
+									following: userProfile.following ?? 0,
+									views: userProfile.views ?? 0,
 									xProfile: userProfile.xProfile ?? '',
 									instagramProfile: userProfile.instagramProfile ?? '',
 									facebookProfile: userProfile.facebookProfile ?? '',
