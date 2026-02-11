@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/sheet'
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
 import { signInWithGoogle, signOutUser } from '@/firebase/auth'
-import type { UserProfile } from '@/lib/types'
+import type { Cart, UserProfile } from '@/lib/types'
 import { doc } from 'firebase/firestore'
 import {
 	Bell,
@@ -20,7 +20,7 @@ import {
 	PlusCircle,
 	Settings,
 	ShieldCheck,
-	ShoppingCart,
+	ShoppingBag,
 	Star,
 	Upload,
 	User,
@@ -47,6 +47,13 @@ export default function Header() {
 		[firestore, user],
 	)
 	const { data: userProfile } = useDoc<UserProfile>(userProfileRef)
+
+	const cartRef = useMemoFirebase(
+		() => (user ? doc(firestore, 'users', user.uid, 'carts', 'active') : null),
+		[firestore, user],
+	)
+	const { data: cart } = useDoc<Cart>(cartRef)
+	const cartCount = cart?.promptIds?.length ?? 0
 
 	return (
 		<header className='sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'>
@@ -111,10 +118,18 @@ export default function Header() {
 				<div className='flex-1' />
 
 				<div className='flex flex-shrink-0 items-center gap-2'>
-					<Link href='/cart' className='hidden md:block'>
-						<Button variant='ghost' size='icon'>
-							<ShoppingCart className='h-5 w-5' />
-							<span className='sr-only'>Cart</span>
+					<Link href='/cart' className='hidden md:flex items-center'>
+						<Button variant='ghost' size='icon' className='relative h-11 w-11'>
+							<ShoppingBag className='h-7 w-7 text-foreground' strokeWidth={1.5} />
+							{cartCount > 0 && (
+								<span
+									className='absolute -top-0.5 -right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground'
+									aria-label={`${cartCount} items in cart`}
+								>
+									{cartCount > 99 ? '99+' : cartCount}
+								</span>
+							)}
+							<span className='sr-only'>Cart{cartCount > 0 ? ` (${cartCount} items)` : ''}</span>
 						</Button>
 					</Link>
 
