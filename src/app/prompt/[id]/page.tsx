@@ -67,6 +67,9 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Card } from '@/components/ui/card'
 import { formatDistanceToNow } from 'date-fns'
+import { Separator } from '@/components/ui/separator'
+import { useTags } from '@/hooks/use-tags'
+import { useModels } from '@/hooks/use-models'
 
 const PromptDetailSkeleton = () => (
 	<div className='grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12'>
@@ -310,6 +313,8 @@ export default function PromptDetailPage() {
 	}
 
 	const { getNames } = useCategories()
+	const { getNames: getTagNames } = useTags()
+	const { getNames: getModelNames } = useModels()
 	const isLoading = isPromptLoading || areCommentsLoading
 
 	// --- Render Methods ---
@@ -418,24 +423,8 @@ export default function PromptDetailPage() {
 		const promptImage = prompt.images?.[0]
 		const categoryId = prompt.categoryId ?? prompt.categories?.[0]
 		const categoryNames = getNames(categoryId)
-
-		const authorLink = authorUsername ? (
-			<Link href={`/user/${authorUsername}`} className='flex items-center gap-4'>
-				<Avatar>
-					<AvatarImage src={authorPhotoURL} alt={authorDisplayName} />
-					<AvatarFallback>{authorInitial}</AvatarFallback>
-				</Avatar>
-				<span className='font-semibold hover:underline'>{authorDisplayName}</span>
-			</Link>
-		) : (
-			<div className='flex items-center gap-4'>
-				<Avatar>
-					<AvatarImage src={authorPhotoURL} alt={authorDisplayName} />
-					<AvatarFallback>{authorInitial}</AvatarFallback>
-				</Avatar>
-				<span className='font-semibold'>{authorDisplayName}</span>
-			</div>
-		)
+		const tagNames = getTagNames(prompt.tags)
+		const modelName = getModelNames(prompt.modelId)[0]
 
 		return (
 			<div className='grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12'>
@@ -456,11 +445,31 @@ export default function PromptDetailPage() {
 				</div>
 
 				<div className='space-y-6'>
-					<div className='space-y-2'>
-						<h1 className='font-headline text-3xl md:text-4xl font-bold'>
-							{prompt.title}
-						</h1>
-						{authorLink}
+					<h1 className='font-headline text-3xl md:text-4xl font-bold'>
+						{prompt.title}
+					</h1>
+
+					<div className='flex items-center justify-between'>
+						<div className='flex items-center gap-4'>
+							<Avatar>
+								<AvatarImage src={authorPhotoURL} alt={authorDisplayName} />
+								<AvatarFallback>{authorInitial}</AvatarFallback>
+							</Avatar>
+							<div>
+								<p className='font-semibold'>{authorDisplayName}</p>
+								{authorUsername ? (
+									<Link
+										href={`/user/${authorUsername}`}
+										className='text-sm text-muted-foreground hover:underline'
+									>
+										@{authorUsername}
+									</Link>
+								) : (
+									<p className='text-sm text-muted-foreground'>No username</p>
+								)}
+							</div>
+						</div>
+						<Button variant='outline'>Follow</Button>
 					</div>
 
 					<div className='flex flex-wrap items-center gap-4 text-sm text-muted-foreground'>
@@ -499,21 +508,40 @@ export default function PromptDetailPage() {
 						</button>
 					</div>
 
-					<div className='flex flex-wrap gap-2'>
-						{categoryNames.map(name => (
-							<Badge key={name} variant='secondary'>
-								{name}
-							</Badge>
-						))}
-						{Array.isArray(prompt.tags) &&
-							prompt.tags.map(tag => (
-								<Badge key={tag} variant='outline'>
-									{tag}
-								</Badge>
-							))}
+					<Separator />
+
+					<div>
+						<div className='grid grid-cols-2 gap-y-4 gap-x-2 text-sm'>
+							{categoryId && (
+								<div>
+									<p className='text-muted-foreground'>Category</p>
+									<p className='font-medium'>{categoryNames.join(', ')}</p>
+								</div>
+							)}
+							{modelName && (
+								<div>
+									<p className='text-muted-foreground'>Model</p>
+									<p className='font-medium'>{modelName}</p>
+								</div>
+							)}
+						</div>
+						{tagNames.length > 0 && (
+							<div className='mt-4'>
+								<p className='text-sm text-muted-foreground'>Tags</p>
+								<div className='flex flex-wrap gap-2 mt-2'>
+									{tagNames.map(tag => (
+										<Badge key={tag} variant='outline'>
+											{tag}
+										</Badge>
+									))}
+								</div>
+							</div>
+						)}
 					</div>
 
 					<p className='text-muted-foreground'>{prompt.description}</p>
+
+					<Separator />
 
 					<div className='rounded-lg border bg-card text-card-foreground shadow-sm p-6 space-y-4'>
 						{!canViewContent ? (
