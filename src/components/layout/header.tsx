@@ -14,8 +14,10 @@ import { doc } from 'firebase/firestore'
 import {
 	Bell,
 	Bot,
+	Coins,
 	LogOut,
 	Menu,
+	PlusCircle,
 	Settings,
 	ShieldCheck,
 	ShoppingCart,
@@ -119,93 +121,111 @@ export default function Header() {
 					{isUserLoading ? (
 						<div className='h-10 w-24 animate-pulse rounded-md bg-muted' />
 					) : user ? (
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button
-									variant='ghost'
-									className='relative h-10 w-10 rounded-full'
-								>
-									<Avatar className='h-10 w-10'>
-										<AvatarImage
-											src={user.photoURL ?? ''}
-											alt={user.displayName ?? 'User'}
-										/>
-										<AvatarFallback>
-											{user.displayName?.charAt(0) ?? 'U'}
-										</AvatarFallback>
-									</Avatar>
-								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent className='w-64' align='end' forceMount>
-								<DropdownMenuLabel className='font-normal'>
-									<div className='flex items-center gap-3'>
+						<>
+							<Button asChild>
+								<Link href='/submit'>
+									<PlusCircle className='mr-2 h-4 w-4' />
+									Create
+								</Link>
+							</Button>
+							<Button
+								variant='ghost'
+								asChild
+								className='hidden sm:inline-flex'
+							>
+								<Link href='/account/plans'>
+									<Coins className='mr-2 h-4 w-4 text-amber-500' />
+									10
+								</Link>
+							</Button>
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button
+										variant='ghost'
+										className='relative h-10 w-10 rounded-full'
+									>
 										<Avatar className='h-10 w-10'>
 											<AvatarImage
-												src={userProfile?.photoURL ?? user.photoURL ?? ''}
+												src={user.photoURL ?? ''}
 												alt={user.displayName ?? 'User'}
 											/>
 											<AvatarFallback>
-												{(
-													userProfile?.displayName ??
-													user.displayName ??
-													'U'
-												).charAt(0)}
+												{user.displayName?.charAt(0) ?? 'U'}
 											</AvatarFallback>
 										</Avatar>
-										<div className='flex flex-col space-y-0.5'>
-											<p className='text-sm font-medium leading-none'>
-												{user.email}
-											</p>
-											<p className='text-xs leading-none text-muted-foreground'>
-												{userProfile?.displayName ?? user.displayName}
-											</p>
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent className='w-64' align='end' forceMount>
+									<DropdownMenuLabel className='font-normal'>
+										<div className='flex items-center gap-3'>
+											<Avatar className='h-10 w-10'>
+												<AvatarImage
+													src={userProfile?.photoURL ?? user.photoURL ?? ''}
+													alt={user.displayName ?? 'User'}
+												/>
+												<AvatarFallback>
+													{(
+														userProfile?.displayName ??
+														user.displayName ??
+														'U'
+													).charAt(0)}
+												</AvatarFallback>
+											</Avatar>
+											<div className='flex flex-col space-y-0.5'>
+												<p className='text-sm font-medium leading-none'>
+													{user.email}
+												</p>
+												<p className='text-xs leading-none text-muted-foreground'>
+													{userProfile?.displayName ?? user.displayName}
+												</p>
+											</div>
 										</div>
-									</div>
-								</DropdownMenuLabel>
-								<DropdownMenuSeparator />
-								<DropdownMenuItem onSelect={() => router.push('/account')}>
-									<Settings className='mr-2 h-4 w-4' />
-									<span>Account Settings</span>
-								</DropdownMenuItem>
-								<DropdownMenuItem onSelect={() => router.push('/account/plans')}>
-									<Star className='mr-2 h-4 w-4' />
-									<span>Plans</span>
-								</DropdownMenuItem>
-								<DropdownMenuItem
-									onSelect={() => router.push('/account/notifications')}
-								>
-									<Bell className='mr-2 h-4 w-4' />
-									<span>Notifications</span>
-								</DropdownMenuItem>
-								<DropdownMenuItem onSelect={() => router.push('/account/profile')}>
-									<User className='mr-2 h-4 w-4' />
-									<span>My Profile</span>
-								</DropdownMenuItem>
-								<DropdownMenuItem onSelect={() => router.push('/submit')}>
-									<Upload className='mr-2 h-4 w-4' />
-									<span>Submit a Prompt</span>
-								</DropdownMenuItem>
-								{userProfile?.role === 'admin' && (
-									<DropdownMenuItem onSelect={() => router.push('/admin')}>
-										<ShieldCheck className='mr-2 h-4 w-4' />
-										<span>Admin Panel</span>
+									</DropdownMenuLabel>
+									<DropdownMenuSeparator />
+									<DropdownMenuItem onSelect={() => router.push('/account')}>
+										<Settings className='mr-2 h-4 w-4' />
+										<span>Account Settings</span>
 									</DropdownMenuItem>
-								)}
-								<DropdownMenuSeparator />
-								<DropdownMenuItem
-									onClick={async () => {
-										await signOutUser()
-									}}
-								>
-									<LogOut className='mr-2 h-4 w-4' />
-									<span>Log out</span>
-								</DropdownMenuItem>
-							</DropdownMenuContent>
-						</DropdownMenu>
+									<DropdownMenuItem onSelect={() => router.push('/account/plans')}>
+										<Star className='mr-2 h-4 w-4' />
+										<span>Plans & Credits</span>
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										onSelect={() => router.push('/account/notifications')}
+									>
+										<Bell className='mr-2 h-4 w-4' />
+										<span>Notifications</span>
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										onSelect={() => router.push('/account/profile')}
+									>
+										<User className='mr-2 h-4 w-4' />
+										<span>My Profile</span>
+									</DropdownMenuItem>
+									<DropdownMenuItem onSelect={() => router.push('/submit')}>
+										<Upload className='mr-2 h-4 w-4' />
+										<span>Submit a Prompt</span>
+									</DropdownMenuItem>
+									{userProfile?.role === 'admin' && (
+										<DropdownMenuItem onSelect={() => router.push('/admin')}>
+											<ShieldCheck className='mr-2 h-4 w-4' />
+											<span>Admin Panel</span>
+										</DropdownMenuItem>
+									)}
+									<DropdownMenuSeparator />
+									<DropdownMenuItem
+										onClick={async () => {
+											await signOutUser()
+										}}
+									>
+										<LogOut className='mr-2 h-4 w-4' />
+										<span>Log out</span>
+									</DropdownMenuItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
+						</>
 					) : (
-						<Button onClick={() => signInWithGoogle()}>
-							Sign In
-						</Button>
+						<Button onClick={() => signInWithGoogle()}>Sign In</Button>
 					)}
 				</div>
 			</div>
