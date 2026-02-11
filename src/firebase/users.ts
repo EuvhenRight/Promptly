@@ -127,11 +127,15 @@ export async function updateUserProfile(
 		// Run as a transaction to ensure both private and public profiles are updated together
 		await runTransaction(firestore, async transaction => {
 			const userDoc = await transaction.get(userRef)
+			const publicDoc = await transaction.get(publicProfileRef)
 			if (!userDoc.exists()) {
 				throw new Error('User profile does not exist.')
 			}
 
 			const userProfileData = userDoc.data() as UserProfile
+			const publicProfileDataOld = publicDoc.exists()
+				? (publicDoc.data() as PublicProfile)
+				: null
 
 			const firestoreData: Record<string, unknown> = {}
 			if (data.displayName !== undefined)
@@ -156,7 +160,7 @@ export async function updateUserProfile(
 				transaction.update(userRef, firestoreData)
 			}
 
-			// Prepare and update the public profile document
+			// Prepare and update the public profile document, preserving counters
 			const publicProfileData: PublicProfile = {
 				uid: userId,
 				displayName: data.displayName ?? userProfileData.displayName,
@@ -165,9 +169,12 @@ export async function updateUserProfile(
 				description: data.description ?? userProfileData.description ?? '',
 				coverImageURL:
 					data.coverImageURL ?? userProfileData.coverImageURL ?? '',
-				followers: userProfileData.followers ?? 0,
-				following: userProfileData.following ?? 0,
-				views: userProfileData.views ?? 0,
+				// Preserve existing counters from public profile, or default from private if public doesn't exist yet
+				followers:
+					publicProfileDataOld?.followers ?? userProfileData.followers ?? 0,
+				following:
+					publicProfileDataOld?.following ?? userProfileData.following ?? 0,
+				views: publicProfileDataOld?.views ?? userProfileData.views ?? 0,
 				xProfile: data.xProfile ?? userProfileData.xProfile ?? '',
 				instagramProfile:
 					data.instagramProfile ?? userProfileData.instagramProfile ?? '',
@@ -243,22 +250,15 @@ export async function toggleFavoritePrompt(
  */
 export function incrementProfileView(firestore: Firestore, userId: string) {
 	if (!userId) return
-	const userRef = doc(firestore, 'users', userId)
 	const publicProfileRef = doc(firestore, 'public-profiles', userId)
 
-	// Increment user profile views
-	updateDoc(userRef, {
-		views: increment(1),
-	}).catch(err =>
-		console.warn(`Failed to increment user views for ${userId}:`, err),
-	)
-
-	// Increment public profile views
+	// Increment public profile views. This is a non-blocking "fire and forget" operation.
 	updateDoc(publicProfileRef, {
 		views: increment(1),
-	}).catch(err =>
-		console.warn(`Failed to increment public profile views for ${userId}:`, err),
-	)
+	}).catch(err => {
+		// We don't want to bother the user if this fails. Log it for monitoring.
+		console.warn(`Failed to increment profile view count for ${userId}:`, err)
+	})
 }
 
 /**
@@ -277,7 +277,7 @@ export async function followUser(
 
 	const batch = writeBatch(firestore)
 
-	// Add target to current user's 'following' list
+	// Add target to current user's 'following' list (subcollection)
 	const followingRef = doc(
 		firestore,
 		'users',
@@ -287,7 +287,7 @@ export async function followUser(
 	)
 	batch.set(followingRef, { followedAt: serverTimestamp() })
 
-	// Add current user to target's 'followers' list
+	// Add current user to target's 'followers' list (subcollection)
 	const followerRef = doc(
 		firestore,
 		'users',
@@ -297,15 +297,11 @@ export async function followUser(
 	)
 	batch.set(followerRef, { followedAt: serverTimestamp() })
 
-	// Increment counts
-	const currentUserRef = doc(firestore, 'users', currentUserId)
-	const targetUserRef = doc(firestore, 'users', targetUserId)
+	// Increment counts on public profiles
 	const currentUserPublicRef = doc(firestore, 'public-profiles', currentUserId)
 	const targetUserPublicRef = doc(firestore, 'public-profiles', targetUserId)
 
-	batch.update(currentUserRef, { following: increment(1) })
 	batch.update(currentUserPublicRef, { following: increment(1) })
-	batch.update(targetUserRef, { followers: increment(1) })
 	batch.update(targetUserPublicRef, { followers: increment(1) })
 
 	await batch.commit()
@@ -347,15 +343,11 @@ export async function unfollowUser(
 	)
 	batch.delete(followerRef)
 
-	// Decrement counts
-	const currentUserRef = doc(firestore, 'users', currentUserId)
-	const targetUserRef = doc(firestore, 'users', targetUserId)
+	// Decrement counts on public profiles
 	const currentUserPublicRef = doc(firestore, 'public-profiles', currentUserId)
 	const targetUserPublicRef = doc(firestore, 'public-profiles', targetUserId)
 
-	batch.update(currentUserRef, { following: increment(-1) })
 	batch.update(currentUserPublicRef, { following: increment(-1) })
-	batch.update(targetUserRef, { followers: increment(-1) })
 	batch.update(targetUserPublicRef, { followers: increment(-1) })
 
 	await batch.commit()

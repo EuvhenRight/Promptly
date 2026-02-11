@@ -57,16 +57,10 @@ service cloud.firestore {
       allow list: if isAdmin();
       allow create: if isOwner(userId);
       // Allow a user to update their own profile, but NOT their role.
-      // Allow anyone to increment views or follower counts.
-      // Allow owner to increment their own following count.
+      // Stats like followers/views are managed via public-profiles and other functions.
       allow update: if
         (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])) ||
-        isAdmin() ||
-        (isOnlyChanging('views') && isIncrementing('views', 1)) ||
-        (isOnlyChanging('followers') && isIncrementing('followers', 1)) ||
-        (isOnlyChanging('followers') && isIncrementing('followers', -1)) ||
-        (isOwner(userId) && isOnlyChanging('following') && isIncrementing('following', 1)) ||
-        (isOwner(userId) && isOnlyChanging('following') && isIncrementing('following', -1));
+        isAdmin();
       allow delete: if isAdmin();
 
       match /followers/{followerId} {
@@ -86,7 +80,9 @@ service cloud.firestore {
         request.auth.uid == userId ||
         (isOnlyChanging('views') && isIncrementing('views', 1)) ||
         (isOnlyChanging('followers') && isIncrementing('followers', 1)) ||
-        (isOnlyChanging('followers') && isIncrementing('followers', -1));
+        (isOnlyChanging('followers') && isIncrementing('followers', -1)) ||
+        (isOnlyChanging('following') && isIncrementing('following', 1)) ||
+        (isOnlyChanging('following') && isIncrementing('following', -1));
     }
 
     match /users/{userId}/carts/{cartId} {

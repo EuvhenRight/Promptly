@@ -152,6 +152,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 									photoURL: newUserProfile.photoURL,
 									description: newUserProfile.description,
 									coverImageURL: newUserProfile.coverImageURL,
+									// Initialize counters to 0 for new public profiles
 									followers: 0,
 									following: 0,
 									views: 0,
@@ -164,7 +165,8 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 								transaction.set(publicProfileRef, publicProfileData)
 							} else if (!publicProfileSnap.exists()) {
 								// The user profile exists, but the public one is missing.
-								// Create the public profile from the existing user data.
+								// Create the public profile from the existing user data, but
+								// initialize counters to 0, as they are managed separately.
 								const userProfile = userDocSnap.data() as UserProfile
 								const publicProfileData: PublicProfile = {
 									uid: firebaseUser.uid,
@@ -176,22 +178,21 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 									photoURL: userProfile.photoURL,
 									description: userProfile.description || '',
 									coverImageURL: userProfile.coverImageURL || '',
-									followers: userProfile.followers ?? 0,
-									following: userProfile.following ?? 0,
-									views: userProfile.views ?? 0,
+									followers: 0, // Initialize to 0
+									following: 0, // Initialize to 0
+									views: 0, // Initialize to 0
 									xProfile: userProfile.xProfile ?? '',
 									instagramProfile: userProfile.instagramProfile ?? '',
 									facebookProfile: userProfile.facebookProfile ?? '',
 								}
 								transaction.set(publicProfileRef, publicProfileData)
+								// Also update the main user document with the generated username if it's missing
 								if (!userProfile.username) {
 									transaction.update(userDocRef, {
 										username: publicProfileData.username,
 									})
 								}
 							}
-							// If both documents exist, do nothing. This prevents overwriting
-							// stats that are updated by other operations.
 						})
 					} catch (error) {
 						console.error(
