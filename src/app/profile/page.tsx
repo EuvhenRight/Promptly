@@ -218,7 +218,7 @@ export default function ProfilePage() {
 		try {
 			await updateUserProfile(firestore, user.uid, {
 				displayName: (displayName.trim() || user.displayName) ?? 'User',
-				description: description.trim() || undefined,
+				description: description.trim(),
 			})
 			setIsEditing(false)
 		} catch (err) {

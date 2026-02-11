@@ -129,8 +129,9 @@ export async function updateUserProfile(
 				displayName: data.displayName ?? userProfileData.displayName,
 				username: data.username ?? userProfileData.username ?? '',
 				photoURL: data.photoURL ?? userProfileData.photoURL,
-				description: data.description ?? userProfileData.description,
-				coverImageURL: data.coverImageURL ?? userProfileData.coverImageURL,
+				description: data.description ?? userProfileData.description ?? '',
+				coverImageURL:
+					data.coverImageURL ?? userProfileData.coverImageURL ?? '',
 			}
 			transaction.set(publicProfileRef, publicProfileData, { merge: true })
 		})
