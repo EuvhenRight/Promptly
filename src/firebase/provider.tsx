@@ -154,19 +154,30 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 								transaction.set(userDocRef, newUserProfile)
 								transaction.set(publicProfileRef, publicProfileData)
 							} else {
-								// Existing user, check if username is missing and add it.
-								const userProfile = userDocSnap.data() as UserProfile
-								if (!userProfile.username) {
-									const email = firebaseUser.email ?? ''
-									const username = email.split('@')[0] || firebaseUser.uid
-									
-									transaction.update(userDocRef, { username: username })
-									// Use set with merge in case the public profile doesn't exist yet for some reason
-									transaction.set(
-										publicProfileRef,
-										{ username: username },
-										{ merge: true },
-									)
+								// Existing user. Ensure their public profile exists.
+								const publicProfileSnap = await transaction.get(publicProfileRef)
+								
+								if (!publicProfileSnap.exists()) {
+									const userProfile = userDocSnap.data() as UserProfile
+									// Public profile is missing, create it from the main user profile.
+									const publicProfileData: PublicProfile = {
+										uid: firebaseUser.uid,
+										username: userProfile.username || firebaseUser.email?.split('@')[0] || firebaseUser.uid,
+										displayName: userProfile.displayName,
+										photoURL: userProfile.photoURL,
+										description: userProfile.description || '',
+										coverImageURL: userProfile.coverImageURL || '',
+									}
+									transaction.set(publicProfileRef, publicProfileData)
+								} else {
+									// Both exist. As an additional check, ensure username is synced if it was missing from the main profile.
+									const userProfile = userDocSnap.data() as UserProfile
+									if (!userProfile.username) {
+										const email = firebaseUser.email ?? ''
+										const username = email.split('@')[0] || firebaseUser.uid
+										transaction.update(userDocRef, { username: username })
+										transaction.update(publicProfileRef, { username: username })
+									}
 								}
 							}
 						})

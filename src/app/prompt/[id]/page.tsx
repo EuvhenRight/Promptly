@@ -217,15 +217,6 @@ export default function PromptDetailPage() {
 		}
 	}, [canViewContent, firestore, params.id, privateContent])
 
-	useEffect(() => {
-		if (prompt || authorProfile) {
-			console.log('Author Data:', {
-				promptData: prompt,
-				authorProfileData: authorProfile,
-			})
-		}
-	}, [prompt, authorProfile])
-
 	// --- Handlers ---
 	const handleAddToCart = () => {
 		if (!user || !firestore || !prompt) {
@@ -691,11 +682,13 @@ export default function PromptDetailPage() {
 								isLoading={areCommentsLoading}
 							/>
 						)}
-						{otherComments.length === 0 && !hasUserComment && !areCommentsLoading && (
-							<p className='text-muted-foreground text-center py-4'>
-								No reviews yet.
-							</p>
-						)}
+						{otherComments.length === 0 &&
+							!hasUserComment &&
+							!areCommentsLoading && (
+								<p className='text-muted-foreground text-center py-4'>
+									No reviews yet.
+								</p>
+							)}
 					</div>
 				</div>
 			</main>
