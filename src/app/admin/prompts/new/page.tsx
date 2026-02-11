@@ -57,6 +57,7 @@ function NewPromptContent() {
 				title: data.title,
 				description: data.description,
 				price: data.price,
+				isPrivate: data.isPrivate,
 				categoryId: data.categoryId,
 				typeId: data.typeId,
 				modelId: data.modelId,
