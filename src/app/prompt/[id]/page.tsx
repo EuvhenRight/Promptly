@@ -50,7 +50,7 @@ import {
 	Heart,
 	Loader2,
 	MoreHorizontal,
-	ShoppingCart,
+	ShoppingBag,
 	Star,
 	Trash2,
 } from 'lucide-react'
@@ -665,7 +665,7 @@ export default function PromptDetailPage() {
 											className='flex-1 sm:flex-initial'
 											disabled={!user || isInCart}
 										>
-											<ShoppingCart className='mr-2 h-4 w-4' />
+											<ShoppingBag className='mr-2 h-4 w-4' />
 											{isInCart ? 'In cart' : 'Add to Cart'}
 										</Button>
 										<Button
