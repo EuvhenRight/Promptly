@@ -140,6 +140,9 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 									followers: 0,
 									following: 0,
 									views: 0,
+									xProfile: '',
+									instagramProfile: '',
+									facebookProfile: '',
 								}
 
 								const publicProfileData: PublicProfile = {
@@ -152,6 +155,9 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 									followers: 0,
 									following: 0,
 									views: 0,
+									xProfile: '',
+									instagramProfile: '',
+									facebookProfile: '',
 								}
 
 								transaction.set(userDocRef, newUserProfile)
@@ -173,6 +179,9 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 										followers: userProfile.followers ?? 0,
 										following: userProfile.following ?? 0,
 										views: userProfile.views ?? 0,
+										xProfile: userProfile.xProfile ?? '',
+										instagramProfile: userProfile.instagramProfile ?? '',
+										facebookProfile: userProfile.facebookProfile ?? '',
 									}
 									transaction.set(publicProfileRef, publicProfileData)
 								} else {

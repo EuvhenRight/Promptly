@@ -168,6 +168,11 @@ export async function updateUserProfile(
 				followers: userProfileData.followers ?? 0,
 				following: userProfileData.following ?? 0,
 				views: userProfileData.views ?? 0,
+				xProfile: data.xProfile ?? userProfileData.xProfile ?? '',
+				instagramProfile:
+					data.instagramProfile ?? userProfileData.instagramProfile ?? '',
+				facebookProfile:
+					data.facebookProfile ?? userProfileData.facebookProfile ?? '',
 			}
 			transaction.set(publicProfileRef, publicProfileData, { merge: true })
 		})

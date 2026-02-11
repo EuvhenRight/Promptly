@@ -47,6 +47,9 @@ export type PublicProfile = Pick<
 	| 'followers'
 	| 'following'
 	| 'views'
+	| 'xProfile'
+	| 'instagramProfile'
+	| 'facebookProfile'
 >
 
 export type Prompt = {

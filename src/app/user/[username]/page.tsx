@@ -22,7 +22,16 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import type { Prompt, PublicProfile } from '@/lib/types'
 import { collection, query, where, limit, doc } from 'firebase/firestore'
-import { Eye, Globe, Loader2, Package, UserPlus, Users } from 'lucide-react'
+import {
+	Eye,
+	Facebook,
+	Instagram,
+	Loader2,
+	Package,
+	Twitter,
+	UserPlus,
+	Users,
+} from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
@@ -183,6 +192,24 @@ export default function PublicProfilePage() {
 		)
 	}
 
+	const socialLinks = [
+		{
+			href: userProfile.xProfile,
+			icon: Twitter,
+			label: 'X / Twitter',
+		},
+		{
+			href: userProfile.instagramProfile,
+			icon: Instagram,
+			label: 'Instagram',
+		},
+		{
+			href: userProfile.facebookProfile,
+			icon: Facebook,
+			label: 'Facebook',
+		},
+	].filter(link => link.href)
+
 	const isOwnProfile = loggedInUser && loggedInUser.uid === userProfile.uid
 	const followersCount = followersList?.length ?? userProfile.followers ?? 0
 	const followingCount = followingList?.length ?? userProfile.following ?? 0
@@ -272,17 +299,27 @@ export default function PublicProfilePage() {
 						<div className='lg:col-span-1 space-y-6'>
 							<Card>
 								<CardContent className='pt-6 space-y-4'>
-									{userProfile.description && <p>{userProfile.description}</p>}
-									<div className='flex items-center gap-4 text-sm text-muted-foreground'>
-										<div className='flex items-center gap-1.5'>
-											<Eye className='h-4 w-4' />
-											<span>3.2k views</span>
+									{userProfile.description && (
+										<p className='text-sm'>{userProfile.description}</p>
+									)}
+									{socialLinks.length > 0 && (
+										<div className='space-y-2 pt-2'>
+											{socialLinks.map(link => (
+												<a
+													key={link.label}
+													href={link.href}
+													target='_blank'
+													rel='noopener noreferrer'
+													className='flex items-center gap-3 text-sm text-muted-foreground hover:text-primary transition-colors group'
+												>
+													<link.icon className='h-4 w-4 flex-shrink-0' />
+													<span className='truncate group-hover:underline'>
+														{link.href?.replace(/^(https?:\/\/)?(www\.)?/, '')}
+													</span>
+												</a>
+											))}
 										</div>
-										<div className='flex items-center gap-1.5'>
-											<Globe className='h-4 w-4' />
-											<span>promptly.com</span>
-										</div>
-									</div>
+									)}
 								</CardContent>
 							</Card>
 						</div>
