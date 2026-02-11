@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase'
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase'
 import type { Prompt, PublicProfile } from '@/lib/types'
 import { collection, query, where, limit } from 'firebase/firestore'
 import { Eye, Globe } from 'lucide-react'
@@ -39,6 +39,7 @@ function PublicProfileSkeleton() {
 export default function PublicProfilePage() {
 	const params = useParams<{ username: string }>()
 	const firestore = useFirestore()
+	const { user: loggedInUser } = useUser()
 
 	const profileQuery = useMemoFirebase(
 		() =>
@@ -100,6 +101,8 @@ export default function PublicProfilePage() {
 		)
 	}
 
+	const isOwnProfile = loggedInUser && loggedInUser.uid === userProfile.uid
+
 	return (
 		<div className='flex min-h-screen flex-col bg-muted/20'>
 			<Header />
@@ -136,8 +139,12 @@ export default function PublicProfilePage() {
 								<p className='text-muted-foreground'>@{userProfile.username}</p>
 							</div>
 							<div className='pb-4 flex gap-2'>
-								<Button>Follow</Button>
-								<Button variant='outline'>Message</Button>
+								{!isOwnProfile && (
+									<>
+										<Button>Follow</Button>
+										<Button variant='outline'>Message</Button>
+									</>
+								)}
 							</div>
 						</div>
 					</div>
