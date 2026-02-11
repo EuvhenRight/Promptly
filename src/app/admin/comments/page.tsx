@@ -140,10 +140,7 @@ export default function AdminCommentsPage() {
 				</CardHeader>
 				<CardContent>{renderContent()}</CardContent>
 				{pageCount > 1 && (
-					<CardFooter className='justify-between'>
-						<div className='text-sm text-muted-foreground'>
-							Page {currentPage} of {pageCount}
-						</div>
+					<CardFooter className='justify-end'>
 						<Pagination>
 							<PaginationContent>
 								<PaginationItem>
