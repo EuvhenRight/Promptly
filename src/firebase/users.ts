@@ -1,6 +1,6 @@
 'use client'
 
-import type { UserProfile } from '@/lib/types'
+import type { Prompt, UserProfile } from '@/lib/types'
 import { getAuth, updateProfile } from 'firebase/auth'
 import {
 	Firestore,
@@ -10,7 +10,6 @@ import {
 	getDoc,
 	updateDoc,
 	runTransaction,
-	increment,
 } from 'firebase/firestore'
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
 
@@ -162,8 +161,12 @@ export async function toggleFavoritePrompt(
 		})
 
 		// Update prompt's like count
+		const promptData = promptDoc.data() as Prompt
+		const currentLikes = promptData.stats?.likes ?? 0
+		const newLikes = isFavorite ? currentLikes - 1 : currentLikes + 1
+
 		transaction.update(promptRef, {
-			'stats.likes': increment(isFavorite ? -1 : 1),
+			'stats.likes': Math.max(0, newLikes),
 		})
 	})
 }
