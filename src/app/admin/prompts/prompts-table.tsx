@@ -195,7 +195,7 @@ export const columns: ColumnDef<Prompt>[] = [
 			</Button>
 		),
 		cell: ({ row }) => {
-			const title = row.getValue('title') as string
+			const title = String(row.getValue('title') ?? 'Untitled')
 			return (
 				<Link
 					href={`/prompt/${row.original.id}`}
