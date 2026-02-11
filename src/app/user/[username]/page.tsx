@@ -219,7 +219,7 @@ export default function PublicProfilePage() {
 	return (
 		<div className='flex min-h-screen flex-col bg-muted/20'>
 			<Header />
-			<main className='flex-grow'>
+			<main className='flex-grow pb-12'>
 				<div className='relative h-48 sm:h-56 md:h-64 w-full bg-muted'>
 					{userProfile.coverImageURL && (
 						<Image
@@ -295,79 +295,74 @@ export default function PublicProfilePage() {
 						</div>
 					</div>
 
-					<div className='mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8'>
-						<div className='lg:col-span-1 space-y-6'>
-							<Card>
-								<CardContent className='pt-6 space-y-4'>
-									{userProfile.description && (
-										<p className='text-sm'>{userProfile.description}</p>
-									)}
-									{socialLinks.length > 0 && (
-										<div className='space-y-2 pt-2'>
-											{socialLinks.map(link => (
-												<a
-													key={link.label}
-													href={link.href}
-													target='_blank'
-													rel='noopener noreferrer'
-													className='flex items-center gap-3 text-sm text-muted-foreground hover:text-primary transition-colors group'
-												>
-													<link.icon className='h-4 w-4 flex-shrink-0' />
-													<span className='truncate group-hover:underline'>
-														{link.href?.replace(/^(https?:\/\/)?(www\.)?/, '')}
-													</span>
-												</a>
-											))}
-										</div>
-									)}
-								</CardContent>
-							</Card>
-						</div>
+					<div className='mt-6 max-w-2xl'>
+						{userProfile.description && (
+							<p className='text-sm text-muted-foreground'>
+								{userProfile.description}
+							</p>
+						)}
+						{socialLinks.length > 0 && (
+							<div className='flex items-center gap-4 mt-4'>
+								{socialLinks.map(link => (
+									<a
+										key={link.label}
+										href={link.href}
+										target='_blank'
+										rel='noopener noreferrer'
+										className='text-muted-foreground hover:text-primary transition-colors'
+										aria-label={link.label}
+									>
+										<link.icon className='h-5 w-5' />
+									</a>
+								))}
+							</div>
+						)}
+					</div>
 
-						<div className='lg:col-span-2'>
-							<h2 className='text-xl font-bold mb-4'>Prompts by this user</h2>
-							{promptsLoading ? (
-								<div className='grid gap-4 sm:grid-cols-2'>
-									<Skeleton className='h-48' />
-									<Skeleton className='h-48' />
-								</div>
-							) : !prompts || prompts.length === 0 ? (
-								<p className='text-muted-foreground py-8 text-center'>
-									This user hasn't created any prompts yet.
-								</p>
-							) : (
-								<div className='grid gap-4 sm:grid-cols-2'>
-									{prompts.map(prompt => {
-										const img = prompt.images?.[0]
-										return (
-											<Link key={prompt.id} href={`/prompt/${prompt.id}`}>
-												<Card className='overflow-hidden transition-all hover:scale-[1.02] hover:shadow-lg'>
-													<div className='relative aspect-video bg-muted'>
-														{img && (
-															<Image
-																src={img}
-																alt={prompt.title}
-																fill
-																className='object-cover'
-																unoptimized
-															/>
-														)}
-														<div className='absolute bottom-2 right-2'>
-															<Badge>{`$${prompt.price}`}</Badge>
-														</div>
+					<div className='mt-8'>
+						<h2 className='text-xl font-bold mb-4'>Prompts by this user</h2>
+						{promptsLoading ? (
+							<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+								<Skeleton className='h-48' />
+								<Skeleton className='h-48' />
+								<Skeleton className='h-48' />
+							</div>
+						) : !prompts || prompts.length === 0 ? (
+							<p className='text-muted-foreground py-8 text-center'>
+								This user hasn't created any prompts yet.
+							</p>
+						) : (
+							<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+								{prompts.map(prompt => {
+									const img = prompt.images?.[0]
+									return (
+										<Link key={prompt.id} href={`/prompt/${prompt.id}`}>
+											<Card className='overflow-hidden transition-all hover:scale-[1.02] hover:shadow-lg'>
+												<div className='relative aspect-video bg-muted'>
+													{img && (
+														<Image
+															src={img}
+															alt={prompt.title}
+															fill
+															className='object-cover'
+															unoptimized
+														/>
+													)}
+													<div className='absolute bottom-2 right-2'>
+														<Badge>{`$${prompt.price}`}</Badge>
 													</div>
-													<CardContent className='p-3'>
-														<h3 className='font-semibold truncate'>
-															{prompt.title}
-														</h3>
-													</CardContent>
-												</Card>
-											</Link>
-										)
-									})}
-								</div>
-							)}
-						</div>
+												</div>
+												<CardContent className='p-3'>
+													<h3 className='font-semibold truncate'>
+														{prompt.title}
+													</h3>
+												</CardContent>
+											</Card>
+										</Link>
+									)
+								})}
+							</div>
+						)}
 					</div>
 				</div>
 			</main>

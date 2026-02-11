@@ -110,15 +110,15 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 				if (firebaseUser) {
 					// User is signed in. Ensure their Firestore document exists.
 					const userDocRef = doc(firestore, 'users', firebaseUser.uid)
+					const publicProfileRef = doc(
+						firestore,
+						'public-profiles',
+						firebaseUser.uid,
+					)
 
 					try {
 						await runTransaction(firestore, async transaction => {
 							const userDocSnap = await transaction.get(userDocRef)
-							const publicProfileRef = doc(
-								firestore,
-								'public-profiles',
-								firebaseUser.uid,
-							)
 
 							if (!userDocSnap.exists()) {
 								// This is a new user. Create their profile document in Firestore.
@@ -163,36 +163,36 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 								transaction.set(userDocRef, newUserProfile)
 								transaction.set(publicProfileRef, publicProfileData)
 							} else {
-								// Existing user. Ensure their public profile exists.
-								const publicProfileSnap = await transaction.get(publicProfileRef)
-								
-								if (!publicProfileSnap.exists()) {
-									const userProfile = userDocSnap.data() as UserProfile
-									// Public profile is missing, create it from the main user profile.
-									const publicProfileData: PublicProfile = {
-										uid: firebaseUser.uid,
-										username: userProfile.username || firebaseUser.email?.split('@')[0] || firebaseUser.uid,
-										displayName: userProfile.displayName,
-										photoURL: userProfile.photoURL,
-										description: userProfile.description || '',
-										coverImageURL: userProfile.coverImageURL || '',
-										followers: userProfile.followers ?? 0,
-										following: userProfile.following ?? 0,
-										views: userProfile.views ?? 0,
-										xProfile: userProfile.xProfile ?? '',
-										instagramProfile: userProfile.instagramProfile ?? '',
-										facebookProfile: userProfile.facebookProfile ?? '',
-									}
-									transaction.set(publicProfileRef, publicProfileData)
-								} else {
-									// Both exist. As an additional check, ensure username is synced if it was missing from the main profile.
-									const userProfile = userDocSnap.data() as UserProfile
-									if (!userProfile.username) {
-										const email = firebaseUser.email ?? ''
-										const username = email.split('@')[0] || firebaseUser.uid
-										transaction.update(userDocRef, { username: username })
-										transaction.update(publicProfileRef, { username: username })
-									}
+								// Existing user: ensure public profile is created and/or synced.
+								const userProfile = userDocSnap.data() as UserProfile
+
+								const publicProfileData: PublicProfile = {
+									uid: firebaseUser.uid,
+									username:
+										userProfile.username ||
+										firebaseUser.email?.split('@')[0] ||
+										firebaseUser.uid,
+									displayName: userProfile.displayName,
+									photoURL: userProfile.photoURL,
+									description: userProfile.description || '',
+									coverImageURL: userProfile.coverImageURL || '',
+									followers: userProfile.followers ?? 0,
+									following: userProfile.following ?? 0,
+									views: userProfile.views ?? 0,
+									xProfile: userProfile.xProfile ?? '',
+									instagramProfile: userProfile.instagramProfile ?? '',
+									facebookProfile: userProfile.facebookProfile ?? '',
+								}
+								// Use set with merge: true to safely create or update the public profile.
+								transaction.set(publicProfileRef, publicProfileData, {
+									merge: true,
+								})
+
+								// Also ensure the username exists on the main user profile if it's missing.
+								if (!userProfile.username) {
+									transaction.update(userDocRef, {
+										username: publicProfileData.username,
+									})
 								}
 							}
 						})
