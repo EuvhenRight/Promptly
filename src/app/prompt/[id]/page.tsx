@@ -124,18 +124,34 @@ export default function PromptDetailPage() {
 		[firestore, params.id],
 	)
 	const { data: prompt, isLoading: isPromptLoading } = useDoc<Prompt>(promptRef)
+	console.log(
+		'[1] Prompt data loaded:',
+		prompt ? { id: prompt.id, authorId: prompt.authorId } : 'null',
+	)
 
 	const authorProfileRef = useMemoFirebase(
-		() =>
-			firestore && prompt?.authorId
-				? doc(firestore, 'public-profiles', prompt.authorId)
-				: null,
+		() => {
+			if (firestore && prompt?.authorId) {
+				console.log(
+					`[2] Creating author profile ref for authorId: ${prompt.authorId}`,
+				)
+				return doc(firestore, 'public-profiles', prompt.authorId)
+			}
+			console.log(
+				'[2] Not creating author profile ref, no firestore or authorId.',
+			)
+			return null
+		},
 		[firestore, prompt?.authorId],
 	)
 	const { data: authorProfile, isLoading: isAuthorProfileLoading } =
 		useDoc<PublicProfile>(authorProfileRef)
+	console.log('[3] Author profile hook state:', {
+		data: authorProfile,
+		isLoading: isAuthorProfileLoading,
+	})
 
-	console.log('Author Data', {
+	console.log('[4] Final Combined Author Data', {
 		promptData: prompt,
 		authorProfileData: authorProfile,
 	})
@@ -340,9 +356,7 @@ export default function PromptDetailPage() {
 	const { getNames } = useCategories()
 	const { getNames: getTagNames } = useTags()
 	const { getNames: getModelNames } = useModels()
-	const isLoading =
-		isPromptLoading ||
-		(prompt && isAuthorProfileLoading)
+	const isLoading = isPromptLoading || (prompt && isAuthorProfileLoading)
 
 	// --- Render Methods ---
 	const renderUserReviewSection = () => {
