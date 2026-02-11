@@ -3,10 +3,10 @@
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 import { errorEmitter } from '@/firebase/error-emitter'
 import { FirestorePermissionError } from '@/firebase/errors'
-import type { UserProfile } from '@/lib/types'
+import type { PublicProfile, UserProfile } from '@/lib/types'
 import { FirebaseApp } from 'firebase/app'
 import { Auth, User, onAuthStateChanged } from 'firebase/auth'
-import { Firestore, doc, getDoc, setDoc } from 'firebase/firestore'
+import { Firestore, doc, getDoc, setDoc, writeBatch } from 'firebase/firestore'
 import React, {
 	DependencyList,
 	ReactNode,
@@ -108,11 +108,18 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 
 						if (!userDocSnap.exists()) {
 							// This is a new user. Create their profile document in Firestore.
+							const email = firebaseUser.email ?? ''
+							// Generate username from email, or fallback to uid if email is empty
+							const username = email.split('@')[0] || firebaseUser.uid
+
 							const newUserProfile: UserProfile = {
 								uid: firebaseUser.uid,
-								email: firebaseUser.email ?? 'no-email@promptly.com',
+								email: email || 'no-email@promptly.com',
 								displayName: firebaseUser.displayName ?? 'Anonymous User',
+								username: username,
 								photoURL: firebaseUser.photoURL ?? '',
+								coverImageURL: '',
+								description: '',
 								role: 'user', // Assign 'user' role by default
 								purchasedPrompts: [],
 								favoritePrompts: [],
@@ -121,10 +128,25 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 								views: 0,
 							}
 
-							// **CRITICAL FIX**: Await the setDoc to prevent race conditions.
-							// This ensures the user profile exists before the user state is set,
-							// which prevents downstream components from reading a non-existent profile.
-							await setDoc(userDocRef, newUserProfile)
+							const publicProfileRef = doc(
+								firestore,
+								'public-profiles',
+								firebaseUser.uid,
+							)
+							const publicProfileData: PublicProfile = {
+								uid: firebaseUser.uid,
+								username: username,
+								displayName: newUserProfile.displayName,
+								photoURL: newUserProfile.photoURL,
+								description: newUserProfile.description,
+								coverImageURL: newUserProfile.coverImageURL,
+							}
+
+							// Use a batch to write both documents atomically.
+							const batch = writeBatch(firestore)
+							batch.set(userDocRef, newUserProfile)
+							batch.set(publicProfileRef, publicProfileData)
+							await batch.commit()
 						}
 					} catch (error) {
 						console.error(
