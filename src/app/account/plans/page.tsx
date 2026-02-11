@@ -195,7 +195,11 @@ export default function PlansPage() {
 								</CardContent>
 								<CardFooter>
 									<Button className='w-full' asChild>
-										<Link href='#'>Upgrade to Starter</Link>
+										<Link
+											href={`/checkout?type=plan&plan=starter&billing=${billingPeriod}`}
+										>
+											Upgrade to Starter
+										</Link>
 									</Button>
 								</CardFooter>
 							</Card>
@@ -231,7 +235,11 @@ export default function PlansPage() {
 								</CardContent>
 								<CardFooter>
 									<Button className='w-full' asChild>
-										<Link href='#'>Upgrade to Pro</Link>
+										<Link
+											href={`/checkout?type=plan&plan=pro&billing=${billingPeriod}`}
+										>
+											Upgrade to Pro
+										</Link>
 									</Button>
 								</CardFooter>
 							</Card>
@@ -247,10 +255,14 @@ export default function PlansPage() {
 							</p>
 							<div className='mt-6 flex flex-wrap gap-4'>
 								<Button variant='outline' asChild>
-									<Link href='#'>Buy 1,000 Credits</Link>
+									<Link href='/checkout?type=credits&credits=1000'>
+										Buy 1,000 Credits
+									</Link>
 								</Button>
 								<Button variant='outline' asChild>
-									<Link href='#'>Buy 2,000 Credits</Link>
+									<Link href='/checkout?type=credits&credits=2000'>
+										Buy 2,000 Credits
+									</Link>
 								</Button>
 							</div>
 						</section>
