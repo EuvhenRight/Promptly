@@ -506,21 +506,23 @@ export default function PromptDetailPage() {
 						<button
 							onClick={handleToggleFavorite}
 							disabled={!user}
-							className='flex items-center gap-1 disabled:cursor-not-allowed group'
+							className='flex items-center gap-1.5 disabled:cursor-not-allowed group text-muted-foreground hover:text-primary transition-colors'
 							aria-label='Toggle Favorite'
 						>
 							<Heart
 								className={cn(
-									'h-5 w-5 transition-colors group-hover:text-red-500/80',
+									'h-5 w-5 transition-colors',
 									isFavorite
 										? 'fill-red-500 text-red-500'
-										: 'text-muted-foreground',
+										: 'text-muted-foreground group-hover:text-red-500/80',
 								)}
 							/>
 							<span className='font-bold text-foreground'>
 								{formatStat(prompt.stats?.likes ?? 0)}
 							</span>
-							<span className='hidden sm:inline'>likes</span>
+							<span className='hidden sm:inline'>
+								{isFavorite ? 'In Favorites' : 'Add to Favorites'}
+							</span>
 						</button>
 					</div>
 
