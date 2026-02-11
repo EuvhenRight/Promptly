@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge'
 import { useCategories } from '@/hooks/use-categories'
 import type { Prompt, UserProfile } from '@/lib/types'
-import { Eye, Heart, ShoppingCart } from 'lucide-react'
+import { Eye, Heart, ShoppingBag, ShoppingCart } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Skeleton } from '../ui/skeleton'
@@ -16,6 +16,7 @@ import React from 'react'
 
 type PromptCardProps = {
 	prompt: Prompt
+	isInCart?: boolean
 }
 
 const formatStat = (num: number): string => {
@@ -24,7 +25,7 @@ const formatStat = (num: number): string => {
 	return num.toString()
 }
 
-export default function PromptCard({ prompt }: PromptCardProps) {
+export default function PromptCard({ prompt, isInCart }: PromptCardProps) {
 	const imageUrl = prompt.images?.[0]
 	const { getNames } = useCategories()
 	const categoryId = prompt.categoryId ?? prompt.categories?.[0]
@@ -110,6 +111,12 @@ export default function PromptCard({ prompt }: PromptCardProps) {
 					</div>
 				</div>
 
+				{isInCart && (
+					<span className='absolute top-3 left-3 z-10 flex items-center gap-1 rounded-md bg-primary/90 px-2 py-1 text-xs font-medium text-primary-foreground backdrop-blur-sm'>
+						<ShoppingBag className='h-3.5 w-3.5' />
+						In cart
+					</span>
+				)}
 				{user && (
 					<button
 						onClick={handleToggleFavorite}

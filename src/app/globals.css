@@ -4,6 +4,9 @@
 
 @layer base {
   :root {
+    /* Search-bar: title and results text always use light-theme colors (unchanged in dark mode) */
+    --search-title: 210 29% 24%;
+    --search-subtitle: 210 29% 45%;
     --background: 210 20% 96.1%;
     --foreground: 210 29% 24%;
     --card: 210 20% 100%;
@@ -83,5 +86,13 @@
   /* Each item in a column */
   .prompt-feed-grid_column > div {
     margin-bottom: 1rem; /* vertical gap (16px) */
+  }
+
+  /* Search-bar: always light-theme text (title + count line) */
+  .search-bar-title {
+    color: hsl(var(--search-title));
+  }
+  .search-bar-subtitle {
+    color: hsl(var(--search-subtitle));
   }
 }
