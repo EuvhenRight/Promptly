@@ -4,14 +4,6 @@
 import * as cheerio from 'cheerio';
 import { adminStorage, adminDb } from '@/firebase/admin';
 import type { ScrapeResult } from '@/lib/types';
-import { initializeFirebase } from '@/firebase/init';
-
-// Ensure Firebase Admin is initialized for server-side operations
-try {
-  initializeFirebase();
-} catch (e) {
-  // Initialization errors are handled within initializeFirebase
-}
 
 async function uploadImageToAdminStorage(buffer: Buffer, fileName: string): Promise<string> {
   if (!adminStorage) {

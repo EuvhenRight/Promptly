@@ -11,6 +11,7 @@ export type Cart = {
 export type UserProfile = {
 	uid: string
 	email: string
+	username?: string
 	displayName: string
 	photoURL: string
 	coverImageURL?: string
@@ -35,16 +36,28 @@ export type UserProfile = {
 	}
 }
 
+export type PublicProfile = Pick<
+	UserProfile,
+	| 'uid'
+	| 'username'
+	| 'displayName'
+	| 'photoURL'
+	| 'coverImageURL'
+	| 'description'
+>
+
 export type Prompt = {
 	id: string
 	authorId: string
 	authorDisplayName?: string
 	authorPhotoURL?: string
+	authorUsername?: string
 	title: string
 	titleLowercase: string
 	searchTerms: string[]
 	description: string
 	price: number
+	isPrivate?: boolean
 	images: string[] // URLs to images in Firebase Storage
 	rating: {
 		average: number

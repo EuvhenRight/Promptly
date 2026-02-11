@@ -15,7 +15,7 @@ export default function StreaksSection() {
 				{COMMUNITY_STREAKS.map(member => (
 					<Link
 						key={member.uid}
-						href='#'
+						href={`/user/${member.username}`}
 						className='flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors group'
 					>
 						<Avatar className='h-14 w-14 group-hover:ring-2 group-hover:ring-primary'>

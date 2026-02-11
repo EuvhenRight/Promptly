@@ -9,6 +9,10 @@
           "type": "string",
           "description": "The unique identifier for the user, matching the Firebase Auth UID."
         },
+        "username": {
+          "type": "string",
+          "description": "The user's unique, public-facing username for URLs."
+        },
         "email": {
           "type": "string",
           "format": "email",
@@ -47,6 +51,38 @@
         "role"
       ]
     },
+    "PublicProfile": {
+      "title": "Public User Profile",
+      "type": "object",
+      "description": "Stores only the public-facing information for a user.",
+      "properties": {
+        "uid": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "photoURL": {
+          "type": "string",
+          "format": "uri"
+        },
+        "description": {
+          "type": "string"
+        },
+        "coverImageURL": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "uid",
+        "username",
+        "displayName"
+      ]
+    },
     "Prompt": {
       "title": "Prompt",
       "type": "object",
@@ -66,6 +102,10 @@
         },
         "price": {
           "type": "number"
+        },
+        "isPrivate": {
+          "type": "boolean",
+          "description": "If true, this prompt is only visible to users with a PRO subscription."
         },
         "images": {
           "type": "array",
@@ -248,6 +288,22 @@
             "$ref": "#/backend/entities/UserProfile"
           },
           "description": "Stores user profile information, including roles and purchases.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/public-profiles/{userId}",
+        "definition": {
+          "entityName": "PublicProfile",
+          "schema": {
+            "$ref": "#/backend/entities/PublicProfile"
+          },
+          "description": "Stores public-facing user profile information.",
           "params": [
             {
               "name": "userId",

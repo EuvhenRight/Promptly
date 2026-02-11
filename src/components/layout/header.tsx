@@ -14,8 +14,10 @@ import { doc } from 'firebase/firestore'
 import {
 	Bell,
 	Bot,
+	Coins,
 	LogOut,
 	Menu,
+	PlusCircle,
 	Settings,
 	ShieldCheck,
 	ShoppingCart,
@@ -34,27 +36,6 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '../ui/dropdown-menu'
-
-const GoogleIcon = () => (
-	<svg viewBox='0 0 48' className='h-5 w-5'>
-		<path
-			fill='#FFC107'
-			d='M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039L38.802 8.922C34.962 5.518 29.8 3.5 24 3.5C11.31 3.5 1.5 13.31 1.5 26S11.31 48.5 24 48.5c11.438 0 20.286-8.38 21.6-19.199l.011-.217z'
-		/>
-		<path
-			fill='#FF3D00'
-			d='M6.306 14.691c2.242-2.85 5.484-4.691 9.194-4.691c3.059 0 5.842 1.154 7.961 3.039L29.263 12.2C25.423 8.796 20.262 6.5 15.5 6.5C9.933 6.5 4.952 9.658 1.453 14.168L6.306 14.691z'
-		/>
-		<path
-			fill='#4CAF50'
-			d='M24 48.5c5.757 0 10.938-2.117 14.7-5.571L32.5 36.93C30.01 39.205 27.205 40.5 24 40.5c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l6.04-6.04C34.963 5.518 29.802 3.5 24 3.5c-12.69 0-22.5 9.81-22.5 22.5S11.31 48.5 24 48.5z'
-		/>
-		<path
-			fill='#1976D2'
-			d='M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039L38.802 8.922C34.962 5.518 29.8 3.5 24 3.5C11.31 3.5 1.5 13.31 1.5 26S11.31 48.5 24 48.5c11.438 0 20.286-8.38 21.6-19.199l.011-.217z'
-		/>
-	</svg>
-)
 
 export default function Header() {
 	const { user, isUserLoading } = useUser()
@@ -99,7 +80,7 @@ export default function Header() {
 							<div className='mt-8 flex flex-col gap-4'>
 								<nav className='mt-4 flex flex-col gap-2'>
 									<Button variant='ghost' asChild className='justify-start'>
-										<Link href='#'>Pricing</Link>
+										<Link href='/account/plans'>Pricing</Link>
 									</Button>
 									<Button variant='ghost' asChild className='justify-start'>
 										<Link href='/community'>Community</Link>
@@ -113,7 +94,7 @@ export default function Header() {
 				<div className='hidden md:flex items-center gap-6 ml-10'>
 					<nav className='flex items-center gap-6 text-sm'>
 						<Link
-							href='#'
+							href='/account/plans'
 							className='transition-colors hover:text-foreground/80 text-foreground/60 font-medium'
 						>
 							Pricing
@@ -140,94 +121,111 @@ export default function Header() {
 					{isUserLoading ? (
 						<div className='h-10 w-24 animate-pulse rounded-md bg-muted' />
 					) : user ? (
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button
-									variant='ghost'
-									className='relative h-10 w-10 rounded-full'
-								>
-									<Avatar className='h-10 w-10'>
-										<AvatarImage
-											src={user.photoURL ?? ''}
-											alt={user.displayName ?? 'User'}
-										/>
-										<AvatarFallback>
-											{user.displayName?.charAt(0) ?? 'U'}
-										</AvatarFallback>
-									</Avatar>
-								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent className='w-64' align='end' forceMount>
-								<DropdownMenuLabel className='font-normal'>
-									<div className='flex items-center gap-3'>
+						<>
+							<Button asChild>
+								<Link href='/submit'>
+									<PlusCircle className='mr-2 h-4 w-4' />
+									Create
+								</Link>
+							</Button>
+							<Button
+								variant='ghost'
+								asChild
+								className='hidden sm:inline-flex'
+							>
+								<Link href='/account/plans'>
+									<Coins className='mr-2 h-4 w-4 text-amber-500' />
+									10
+								</Link>
+							</Button>
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button
+										variant='ghost'
+										className='relative h-10 w-10 rounded-full'
+									>
 										<Avatar className='h-10 w-10'>
 											<AvatarImage
-												src={userProfile?.photoURL ?? user.photoURL ?? ''}
+												src={user.photoURL ?? ''}
 												alt={user.displayName ?? 'User'}
 											/>
 											<AvatarFallback>
-												{(
-													userProfile?.displayName ??
-													user.displayName ??
-													'U'
-												).charAt(0)}
+												{user.displayName?.charAt(0) ?? 'U'}
 											</AvatarFallback>
 										</Avatar>
-										<div className='flex flex-col space-y-0.5'>
-											<p className='text-sm font-medium leading-none'>
-												{user.email}
-											</p>
-											<p className='text-xs leading-none text-muted-foreground'>
-												{userProfile?.displayName ?? user.displayName}
-											</p>
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent className='w-64' align='end' forceMount>
+									<DropdownMenuLabel className='font-normal'>
+										<div className='flex items-center gap-3'>
+											<Avatar className='h-10 w-10'>
+												<AvatarImage
+													src={userProfile?.photoURL ?? user.photoURL ?? ''}
+													alt={user.displayName ?? 'User'}
+												/>
+												<AvatarFallback>
+													{(
+														userProfile?.displayName ??
+														user.displayName ??
+														'U'
+													).charAt(0)}
+												</AvatarFallback>
+											</Avatar>
+											<div className='flex flex-col space-y-0.5'>
+												<p className='text-sm font-medium leading-none'>
+													{user.email}
+												</p>
+												<p className='text-xs leading-none text-muted-foreground'>
+													{userProfile?.displayName ?? user.displayName}
+												</p>
+											</div>
 										</div>
-									</div>
-								</DropdownMenuLabel>
-								<DropdownMenuSeparator />
-								<DropdownMenuItem onSelect={() => router.push('/account')}>
-									<Settings className='mr-2 h-4 w-4' />
-									<span>Account</span>
-								</DropdownMenuItem>
-								<DropdownMenuItem onSelect={() => router.push('/account/plans')}>
-									<Star className='mr-2 h-4 w-4' />
-									<span>Plans</span>
-								</DropdownMenuItem>
-								<DropdownMenuItem
-									onSelect={() => router.push('/notifications')}
-								>
-									<Bell className='mr-2 h-4 w-4' />
-									<span>Notifications</span>
-								</DropdownMenuItem>
-								<DropdownMenuItem onSelect={() => router.push('/profile')}>
-									<User className='mr-2 h-4 w-4' />
-									<span>Profile</span>
-								</DropdownMenuItem>
-								{userProfile?.role === 'admin' && (
-									<>
-										<DropdownMenuItem
-											onSelect={() => router.push('/admin/prompts/new')}
-										>
-											<Upload className='mr-2 h-4 w-4' />
-											<span>Publish existing prompt</span>
-										</DropdownMenuItem>
+									</DropdownMenuLabel>
+									<DropdownMenuSeparator />
+									<DropdownMenuItem onSelect={() => router.push('/account')}>
+										<Settings className='mr-2 h-4 w-4' />
+										<span>Account Settings</span>
+									</DropdownMenuItem>
+									<DropdownMenuItem onSelect={() => router.push('/account/plans')}>
+										<Star className='mr-2 h-4 w-4' />
+										<span>Plans & Credits</span>
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										onSelect={() => router.push('/account/notifications')}
+									>
+										<Bell className='mr-2 h-4 w-4' />
+										<span>Notifications</span>
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										onSelect={() => router.push('/account/profile')}
+									>
+										<User className='mr-2 h-4 w-4' />
+										<span>My Profile</span>
+									</DropdownMenuItem>
+									<DropdownMenuItem onSelect={() => router.push('/submit')}>
+										<Upload className='mr-2 h-4 w-4' />
+										<span>Submit a Prompt</span>
+									</DropdownMenuItem>
+									{userProfile?.role === 'admin' && (
 										<DropdownMenuItem onSelect={() => router.push('/admin')}>
 											<ShieldCheck className='mr-2 h-4 w-4' />
 											<span>Admin Panel</span>
 										</DropdownMenuItem>
-									</>
-								)}
-								<DropdownMenuSeparator />
-								<DropdownMenuItem onClick={async () => await signOutUser()}>
-									<LogOut className='mr-2 h-4 w-4' />
-									<span>Log out</span>
-								</DropdownMenuItem>
-							</DropdownMenuContent>
-						</DropdownMenu>
+									)}
+									<DropdownMenuSeparator />
+									<DropdownMenuItem
+										onClick={async () => {
+											await signOutUser()
+										}}
+									>
+										<LogOut className='mr-2 h-4 w-4' />
+										<span>Log out</span>
+									</DropdownMenuItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
+						</>
 					) : (
-						<Button onClick={() => signInWithGoogle()}>
-							<GoogleIcon />
-							Sign In
-						</Button>
+						<Button onClick={() => signInWithGoogle()}>Sign In</Button>
 					)}
 				</div>
 			</div>

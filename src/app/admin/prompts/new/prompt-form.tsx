@@ -36,6 +36,7 @@ const promptFormSchema = z.object({
 		.number({ invalid_type_error: 'Price must be a number.' })
 		.min(0, 'Price cannot be negative.')
 		.default(1),
+	isPrivate: z.boolean().default(false),
 	categoryId: z.string().min(1, 'Please select a category.'),
 	typeId: z.string().optional(),
 	modelId: z.string().optional(),
@@ -69,6 +70,7 @@ export function PromptForm({
 			title: '',
 			description: '',
 			price: 1,
+			isPrivate: false,
 			categoryId: '',
 			typeId: '',
 			modelId: '',
@@ -130,6 +132,7 @@ export function PromptForm({
 				title: initialData.title || '',
 				description: initialData.description || '',
 				price: initialData.price ?? 1,
+				isPrivate: initialData.isPrivate ?? false,
 				categoryId: initialData.categoryId || '',
 				typeId: initialData.typeId || '',
 				modelId: initialData.modelId || '',
@@ -221,9 +224,52 @@ export function PromptForm({
 					<div className='space-y-6'>
 						<Card>
 							<CardHeader>
-								<CardTitle>Metadata & Pricing</CardTitle>
+								<CardTitle>Properties</CardTitle>
 							</CardHeader>
-							<CardContent className='space-y-4'>
+							<CardContent className='space-y-6'>
+								<FormField
+									control={form.control}
+									name='image'
+									render={({ field: { value, onChange, ...fieldProps } }) => (
+										<FormItem>
+											<FormLabel>
+												{imagePreview ? 'Replace Image' : 'Display Image'}
+											</FormLabel>
+											{imagePreview && (
+												<div className='w-full overflow-hidden rounded-md border bg-muted aspect-video relative mt-2'>
+													<Image
+														src={imagePreview}
+														alt='Current image preview'
+														fill
+														className='object-contain'
+														unoptimized
+													/>
+												</div>
+											)}
+											<FormControl>
+												<Input
+													{...fieldProps}
+													ref={fileInputRef}
+													type='file'
+													accept='image/png, image/jpeg, image/gif, image/webp'
+													disabled={isSubmitting}
+													onChange={event => {
+														const file = event.target.files?.[0]
+														onChange(file)
+														if (file) {
+															setImagePreview(URL.createObjectURL(file))
+														}
+													}}
+												/>
+											</FormControl>
+											<FormDescription>
+												Upload an example image. Max 4MB.
+											</FormDescription>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+
 								<FormField
 									control={form.control}
 									name='price'
@@ -246,6 +292,34 @@ export function PromptForm({
 										</FormItem>
 									)}
 								/>
+
+								<FormField
+									control={form.control}
+									name='isPrivate'
+									render={({ field }) => (
+										<FormItem>
+											<div className='flex items-center space-x-2'>
+												<Checkbox
+													id='isPrivate'
+													checked={field.value}
+													onCheckedChange={field.onChange}
+													disabled={isSubmitting}
+												/>
+												<label
+													htmlFor='isPrivate'
+													className='text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
+												>
+													Make this prompt private
+												</label>
+											</div>
+											<FormDescription>
+												Only users with a PRO plan will be able to see this
+												prompt.
+											</FormDescription>
+										</FormItem>
+									)}
+								/>
+
 								<FormField
 									control={form.control}
 									name='categoryId'
@@ -282,9 +356,6 @@ export function PromptForm({
 														)}
 													</SelectContent>
 												</Select>
-												<FormDescription>
-													One category per prompt (category has many prompts).
-												</FormDescription>
 												<FormMessage />
 											</FormItem>
 										)
@@ -331,9 +402,6 @@ export function PromptForm({
 														)}
 													</SelectContent>
 												</Select>
-												<FormDescription>
-													Content type (Video, Images, Audio).
-												</FormDescription>
 												<FormMessage />
 											</FormItem>
 										)
@@ -380,9 +448,6 @@ export function PromptForm({
 														)}
 													</SelectContent>
 												</Select>
-												<FormDescription>
-													AI Model (Gemini, Flux, etc.).
-												</FormDescription>
 												<FormMessage />
 											</FormItem>
 										)
@@ -436,64 +501,10 @@ export function PromptForm({
 														</div>
 													)}
 												</div>
-												<FormDescription>
-													Select one or more tags from the list.
-												</FormDescription>
 												<FormMessage />
 											</FormItem>
 										)
 									}}
-								/>
-							</CardContent>
-						</Card>
-
-						<Card>
-							<CardHeader>
-								<CardTitle>Display Image</CardTitle>
-							</CardHeader>
-							<CardContent className='space-y-4'>
-								{imagePreview && (
-									<div className='w-full overflow-hidden rounded-md border bg-muted'>
-										<Image
-											src={imagePreview}
-											alt='Current image preview'
-											width={720}
-											height={1280}
-											className='w-full h-auto object-contain'
-											unoptimized
-										/>
-									</div>
-								)}
-								<FormField
-									control={form.control}
-									name='image'
-									render={({ field: { value, onChange, ...fieldProps } }) => (
-										<FormItem>
-											<FormLabel>
-												{imagePreview ? 'Replace Image' : 'Image'}
-											</FormLabel>
-											<FormControl>
-												<Input
-													{...fieldProps}
-													ref={fileInputRef}
-													type='file'
-													accept='image/png, image/jpeg, image/gif, image/webp'
-													disabled={isSubmitting}
-													onChange={event => {
-														const file = event.target.files?.[0]
-														onChange(file)
-														if (file) {
-															setImagePreview(URL.createObjectURL(file))
-														}
-													}}
-												/>
-											</FormControl>
-											<FormDescription>
-												Upload an example image. Max 4MB.
-											</FormDescription>
-											<FormMessage />
-										</FormItem>
-									)}
 								/>
 							</CardContent>
 						</Card>

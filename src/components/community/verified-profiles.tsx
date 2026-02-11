@@ -15,7 +15,7 @@ export default function VerifiedProfiles() {
 				{VERIFIED_PROFILES.map(member => (
 					<Link
 						key={member.uid}
-						href='#'
+						href={`/user/${member.username}`}
 						className='flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted/50 transition-colors group'
 					>
 						<Avatar className='h-8 w-8'>

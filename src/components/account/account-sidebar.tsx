@@ -8,8 +8,8 @@ import { cn } from '@/lib/utils'
 const navItems = [
 	{ href: '/account', label: 'Account', icon: Settings },
 	{ href: '/account/plans', label: 'Plans', icon: Star },
-	{ href: '/notifications', label: 'Notifications', icon: Bell },
-	{ href: '/profile', label: 'Profile', icon: User },
+	{ href: '/account/notifications', label: 'Notifications', icon: Bell },
+	{ href: '/account/profile', label: 'Profile', icon: User },
 ]
 
 type AccountSidebarProps = {
@@ -20,16 +20,14 @@ export default function AccountSidebar({ credits = 0 }: AccountSidebarProps) {
 	const pathname = usePathname()
 
 	return (
-		<aside className='w-full lg:w-56 shrink-0 space-y-6'>
+		<aside className='w-full lg:w-56 shrink-0 space-y-6 lg:sticky lg:top-24 self-start'>
 			<div>
-				<p className='text-xs font-medium text-muted-foreground mb-3'>
+				<h3 className='mb-2 px-3 text-sm font-semibold tracking-tight'>
 					Dashboard
-				</p>
+				</h3>
 				<nav className='flex flex-row lg:flex-col gap-1 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0'>
 					{navItems.map(({ href, label, icon: Icon }) => {
-						const isActive =
-							pathname === href ||
-							(href === '/account/plans' && pathname.startsWith('/account/plans'))
+						const isActive = pathname === href
 						return (
 							<Link
 								key={href}

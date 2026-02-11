@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import type { Metadata } from 'next'
 import { Inter, Space_Grotesk } from 'next/font/google'
 import './globals.css'
+import { ThemeProvider } from '@/components/theme-provider'
 
 const fontInter = Inter({
 	subsets: ['latin'],
@@ -39,18 +40,25 @@ export default function RootLayout({
 					fontSpaceGrotesk.variable,
 				)}
 			>
-				<FirebaseClientProvider config={firebaseConfig}>
-					<CategoriesProvider>
-						<TagsProvider>
-							<TypesProvider>
-								<ModelsProvider>
-									{children}
-									<Toaster />
-								</ModelsProvider>
-							</TypesProvider>
-						</TagsProvider>
-					</CategoriesProvider>
-				</FirebaseClientProvider>
+				<ThemeProvider
+					attribute='class'
+					defaultTheme='system'
+					enableSystem
+					disableTransitionOnChange
+				>
+					<FirebaseClientProvider config={firebaseConfig}>
+						<CategoriesProvider>
+							<TagsProvider>
+								<TypesProvider>
+									<ModelsProvider>
+										{children}
+										<Toaster />
+									</ModelsProvider>
+								</TypesProvider>
+							</TagsProvider>
+						</CategoriesProvider>
+					</FirebaseClientProvider>
+				</ThemeProvider>
 			</body>
 		</html>
 	)
