@@ -69,7 +69,8 @@ service cloud.firestore {
     match /public-profiles/{userId} {
       allow get: if true;
       allow list: if true;
-      allow write: if isOwner(userId);
+      allow create: if request.auth.uid == userId;
+      allow update: if request.auth.uid == userId;
     }
 
     match /users/{userId}/carts/{cartId} {
