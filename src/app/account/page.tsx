@@ -38,6 +38,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import AccountSidebar from '@/components/account/account-sidebar'
 import { ThemeSwitcher } from '@/components/account/theme-switcher'
 import { useToast } from '@/hooks/use-toast'
+import { Badge } from '@/components/ui/badge'
 
 function AccountPageSkeleton() {
 	return (
@@ -563,7 +564,15 @@ export default function AccountPage() {
 											htmlFor='featured-image-switch'
 											className='flex flex-col space-y-1'
 										>
-											<span>Show Featured Image</span>
+											<div className='flex items-center gap-2'>
+												<span>Show Featured Image</span>
+												<Badge
+													variant='outline'
+													className='border-primary text-primary font-bold'
+												>
+													PRO
+												</Badge>
+											</div>
 											<span className='font-normal leading-snug text-muted-foreground'>
 												Toggle visibility of the featured image editor.
 											</span>
