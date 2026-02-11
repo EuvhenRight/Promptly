@@ -39,21 +39,32 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 function PublicProfileSkeleton() {
 	return (
-		<div className='space-y-8'>
-			<div className='relative h-64 w-full bg-muted rounded-lg'></div>
-			<div className='-mt-20 px-8'>
-				<div className='flex items-end gap-4'>
-					<Skeleton className='h-32 w-32 rounded-full border-4 border-background' />
-					<div className='pb-4 space-y-2'>
-						<Skeleton className='h-8 w-48' />
-						<Skeleton className='h-5 w-32' />
+		<div className='flex min-h-screen flex-col'>
+			<Header />
+			<main className='flex-grow pb-12'>
+				<Skeleton className='h-48 sm:h-56 md:h-64 w-full bg-muted' />
+				<div className='container mx-auto px-4 sm:px-6 lg:px-8'>
+					<div className='relative -mt-16 sm:-mt-20'>
+						<div className='flex flex-col sm:flex-row sm:items-end gap-4'>
+							<Skeleton className='h-28 w-28 sm:h-32 sm:w-32 rounded-full border-4 border-background shrink-0' />
+							<div className='py-4 flex-grow space-y-2'>
+								<Skeleton className='h-8 w-48' />
+								<Skeleton className='h-5 w-32' />
+							</div>
+						</div>
+					</div>
+					<div className='mt-6 border-t pt-6 space-y-8'>
+						<Skeleton className='h-6 w-3/4' />
+						<Skeleton className='h-24 w-full' />
+						<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+							<Skeleton className='h-48' />
+							<Skeleton className='h-48' />
+							<Skeleton className='h-48' />
+						</div>
 					</div>
 				</div>
-			</div>
-			<div className='px-8 space-y-4'>
-				<Skeleton className='h-24 w-full' />
-				<Skeleton className='h-48 w-full' />
-			</div>
+			</main>
+			<Footer />
 		</div>
 	)
 }
@@ -163,15 +174,7 @@ export default function PublicProfilePage() {
 	}
 
 	if (profileLoading) {
-		return (
-			<div className='flex min-h-screen flex-col'>
-				<Header />
-				<main className='flex-grow container mx-auto px-4 py-8 max-w-4xl'>
-					<PublicProfileSkeleton />
-				</main>
-				<Footer />
-			</div>
-		)
+		return <PublicProfileSkeleton />
 	}
 
 	if (!userProfile) {
@@ -253,18 +256,15 @@ export default function PublicProfilePage() {
 							</div>
 							<div className='pb-4 flex gap-2'>
 								{!isOwnProfile && loggedInUser && (
-									<>
-										<Button
-											onClick={handleFollowToggle}
-											disabled={isFollowLoading}
-										>
-											{isFollowLoading ? (
-												<Loader2 className='mr-2 h-4 w-4 animate-spin' />
-											) : null}
-											{isFollowing ? 'Unfollow' : 'Follow'}
-										</Button>
-										<Button variant='outline'>Message</Button>
-									</>
+									<Button
+										onClick={handleFollowToggle}
+										disabled={isFollowLoading}
+									>
+										{isFollowLoading ? (
+											<Loader2 className='mr-2 h-4 w-4 animate-spin' />
+										) : null}
+										{isFollowing ? 'Unfollow' : 'Follow'}
+									</Button>
 								)}
 							</div>
 						</div>

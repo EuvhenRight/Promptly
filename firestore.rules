@@ -62,32 +62,31 @@ service cloud.firestore {
       allow update: if
         (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])) ||
         isAdmin() ||
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views']) && request.resource.data.views == (resource.data.views || 0) + 1) ||
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers']) && request.resource.data.followers == (resource.data.followers || 0) + 1) ||
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers']) && request.resource.data.followers == (resource.data.followers || 0) - 1) ||
-        (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['following']) && request.resource.data.following == (resource.data.following || 0) + 1) ||
-        (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['following']) && request.resource.data.following == (resource.data.following || 0) - 1);
+        (isOnlyChanging('views') && isIncrementing('views', 1)) ||
+        (isOnlyChanging('followers') && isIncrementing('followers', 1)) ||
+        (isOnlyChanging('followers') && isIncrementing('followers', -1)) ||
+        (isOwner(userId) && isOnlyChanging('following') && isIncrementing('following', 1)) ||
+        (isOwner(userId) && isOnlyChanging('following') && isIncrementing('following', -1));
       allow delete: if isAdmin();
 
       match /followers/{followerId} {
-        allow get, list: if true;
+        allow read: if isSignedIn();
         allow create, delete: if request.auth.uid == followerId;
       }
       match /following/{followingId} {
-        allow get, list: if true;
+        allow read: if isSignedIn();
         allow create, delete: if request.auth.uid == userId;
       }
     }
 
     match /public-profiles/{userId} {
-      allow get: if true;
-      allow list: if true;
+      allow get, list: if true;
       allow create: if request.auth.uid == userId;
       allow update: if
         request.auth.uid == userId ||
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views']) && request.resource.data.views == (resource.data.views || 0) + 1) ||
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers']) && request.resource.data.followers == (resource.data.followers || 0) + 1) ||
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers']) && request.resource.data.followers == (resource.data.followers || 0) - 1);
+        (isOnlyChanging('views') && isIncrementing('views', 1)) ||
+        (isOnlyChanging('followers') && isIncrementing('followers', 1)) ||
+        (isOnlyChanging('followers') && isIncrementing('followers', -1));
     }
 
     match /users/{userId}/carts/{cartId} {
