@@ -118,7 +118,7 @@ export default function PublicProfilePage() {
 					<div className='absolute inset-0 bg-gradient-to-t from-black/20 to-transparent' />
 				</div>
 				<div className='container mx-auto px-4 sm:px-6 lg:px-8'>
-					<div className='-mt-16 sm:-mt-20'>
+					<div className='relative -mt-16 sm:-mt-20'>
 						<div className='flex flex-col sm:flex-row sm:items-end gap-4'>
 							<Avatar className='h-28 w-28 sm:h-32 sm:w-32 border-4 border-background bg-background shrink-0'>
 								<AvatarImage
