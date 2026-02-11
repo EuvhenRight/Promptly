@@ -386,7 +386,7 @@ export function PromptsTable({ prompts }: PromptsTableProps) {
 					</DropdownMenu>
 				</div>
 			</div>
-			<div className='rounded-md border overflow-auto'>
+			<div className='rounded-md border'>
 				<Table>
 					<TableHeader>
 						{table.getHeaderGroups().map(headerGroup => (
