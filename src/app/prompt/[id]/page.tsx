@@ -173,6 +173,8 @@ export default function PromptDetailPage() {
 		[comments, user],
 	)
 
+	const hasUserComment = !!userComment
+
 	const otherComments = useMemo(
 		() => comments?.filter(comment => comment.userId !== user?.uid) ?? [],
 		[comments, user],
