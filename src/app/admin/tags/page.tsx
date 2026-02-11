@@ -15,6 +15,7 @@ import {
 	Card,
 	CardContent,
 	CardDescription,
+	CardFooter,
 	CardHeader,
 	CardTitle,
 } from '@/components/ui/card'
@@ -27,6 +28,21 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+	Pagination,
+	PaginationContent,
+	PaginationItem,
+	PaginationLink,
+	PaginationNext,
+	PaginationPrevious,
+} from '@/components/ui/pagination'
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select'
 import {
 	Table,
 	TableBody,
@@ -52,6 +68,8 @@ export default function AdminTagsPage() {
 	const [savingEdit, setSavingEdit] = useState(false)
 	const [deleteTag, setDeleteTag] = useState<TagItem | null>(null)
 	const [deleting, setDeleting] = useState(false)
+	const [itemsPerPage, setItemsPerPage] = useState(10)
+	const [currentPage, setCurrentPage] = useState(1)
 
 	const fetchTags = async () => {
 		setLoading(true)
@@ -157,6 +175,12 @@ export default function AdminTagsPage() {
 		}
 	}
 
+	const pageCount = Math.ceil(tags.length / itemsPerPage)
+	const paginatedTags = tags.slice(
+		(currentPage - 1) * itemsPerPage,
+		currentPage * itemsPerPage,
+	)
+
 	return (
 		<div className='space-y-6'>
 			<div className='flex items-center justify-between gap-4'>
@@ -191,17 +215,40 @@ export default function AdminTagsPage() {
 
 			<Card>
 				<CardHeader>
-					<CardTitle>All tags</CardTitle>
-					<CardDescription>
-						Edit or delete tags. Use POST /api/tags (no body) to seed defaults.
-					</CardDescription>
+					<div className='flex items-start justify-between gap-4'>
+						<div>
+							<CardTitle>All tags</CardTitle>
+							<CardDescription>
+								Edit or delete tags. Use POST /api/tags (no body) to seed
+								defaults.
+							</CardDescription>
+						</div>
+						<Select
+							value={`${itemsPerPage}`}
+							onValueChange={value => {
+								setItemsPerPage(Number(value))
+								setCurrentPage(1)
+							}}
+						>
+							<SelectTrigger className='w-auto gap-2'>
+								<SelectValue placeholder='Items per page' />
+							</SelectTrigger>
+							<SelectContent>
+								{[10, 20, 50].map(pageSize => (
+									<SelectItem key={pageSize} value={`${pageSize}`}>
+										{pageSize} per page
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
 				</CardHeader>
 				<CardContent>
 					{loading ? (
 						<div className='flex justify-center py-8'>
 							<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
 						</div>
-					) : tags.length === 0 ? (
+					) : paginatedTags.length === 0 ? (
 						<p className='text-muted-foreground py-4'>
 							No tags yet. Add one above or seed defaults with: POST /api/tags
 							(no body).
@@ -216,7 +263,7 @@ export default function AdminTagsPage() {
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{tags.map(tag => (
+								{paginatedTags.map(tag => (
 									<TableRow key={tag.id}>
 										<TableCell className='font-mono text-sm'>
 											{tag.id}
@@ -250,6 +297,43 @@ export default function AdminTagsPage() {
 						</Table>
 					)}
 				</CardContent>
+				{pageCount > 1 && (
+					<CardFooter className='justify-between'>
+						<div className='text-sm text-muted-foreground'>
+							Page {currentPage} of {pageCount}
+						</div>
+						<Pagination>
+							<PaginationContent>
+								<PaginationItem>
+									<PaginationPrevious
+										onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+										disabled={currentPage === 1}
+									/>
+								</PaginationItem>
+								{Array.from({ length: pageCount }, (_, i) => i + 1).map(
+									page => (
+										<PaginationItem key={page}>
+											<PaginationLink
+												onClick={() => setCurrentPage(page)}
+												isActive={currentPage === page}
+											>
+												{page}
+											</PaginationLink>
+										</PaginationItem>
+									),
+								)}
+								<PaginationItem>
+									<PaginationNext
+										onClick={() =>
+											setCurrentPage(p => Math.min(pageCount, p + 1))
+										}
+										disabled={currentPage === pageCount}
+									/>
+								</PaginationItem>
+							</PaginationContent>
+						</Pagination>
+					</CardFooter>
+				)}
 			</Card>
 
 			<Dialog open={!!editTag} onOpenChange={open => !open && setEditTag(null)}>
