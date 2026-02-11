@@ -202,19 +202,15 @@ export default function Header() {
 									<User className='mr-2 h-4 w-4' />
 									<span>My Profile</span>
 								</DropdownMenuItem>
+								<DropdownMenuItem onSelect={() => router.push('/submit')}>
+									<Upload className='mr-2 h-4 w-4' />
+									<span>Submit a Prompt</span>
+								</DropdownMenuItem>
 								{userProfile?.role === 'admin' && (
-									<>
-										<DropdownMenuItem
-											onSelect={() => router.push('/admin/prompts/new')}
-										>
-											<Upload className='mr-2 h-4 w-4' />
-											<span>Publish existing prompt</span>
-										</DropdownMenuItem>
-										<DropdownMenuItem onSelect={() => router.push('/admin')}>
-											<ShieldCheck className='mr-2 h-4 w-4' />
-											<span>Admin Panel</span>
-										</DropdownMenuItem>
-									</>
+									<DropdownMenuItem onSelect={() => router.push('/admin')}>
+										<ShieldCheck className='mr-2 h-4 w-4' />
+										<span>Admin Panel</span>
+									</DropdownMenuItem>
 								)}
 								<DropdownMenuSeparator />
 								<DropdownMenuItem
