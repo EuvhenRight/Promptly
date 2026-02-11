@@ -166,7 +166,8 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 								// Existing user: ensure public profile is created and/or synced.
 								const userProfile = userDocSnap.data() as UserProfile
 
-								const publicProfileData: PublicProfile = {
+								// Only sync fields that are managed by the user, not counters.
+								const fieldsToSync: Partial<PublicProfile> = {
 									uid: firebaseUser.uid,
 									username:
 										userProfile.username ||
@@ -176,22 +177,19 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 									photoURL: userProfile.photoURL,
 									description: userProfile.description || '',
 									coverImageURL: userProfile.coverImageURL || '',
-									followers: userProfile.followers ?? 0,
-									following: userProfile.following ?? 0,
-									views: userProfile.views ?? 0,
 									xProfile: userProfile.xProfile ?? '',
 									instagramProfile: userProfile.instagramProfile ?? '',
 									facebookProfile: userProfile.facebookProfile ?? '',
 								}
 								// Use set with merge: true to safely create or update the public profile.
-								transaction.set(publicProfileRef, publicProfileData, {
+								transaction.set(publicProfileRef, fieldsToSync, {
 									merge: true,
 								})
 
 								// Also ensure the username exists on the main user profile if it's missing.
 								if (!userProfile.username) {
 									transaction.update(userDocRef, {
-										username: publicProfileData.username,
+										username: fieldsToSync.username,
 									})
 								}
 							}
