@@ -122,77 +122,78 @@ export default function AdminDashboardPage() {
 			<div className='flex items-center'>
 				<h1 className='font-headline text-3xl font-bold'>Dashboard</h1>
 			</div>
-			<div className='grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-3'>
-				<StatCard
-					title='Total Users'
-					value={users?.length ?? 0}
-					icon={Users}
-					isLoading={usersLoading}
-				/>
-				<StatCard
-					title='Total Prompts'
-					value={prompts?.length ?? 0}
-					icon={FileText}
-					isLoading={promptsLoading}
-				/>
-				<StatCard
-					title='Total Sales'
-					value={totalSales}
-					icon={DollarSign}
-					isLoading={false}
-				/>
-			</div>
-
-			<Card>
-				<CardHeader>
-					<CardTitle>Review Ratings</CardTitle>
-					<CardDescription>
-						A summary of all ratings given by users.
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					{commentsLoading ? (
-						<div className='flex justify-center items-center h-48'>
-							<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
-						</div>
-					) : (
-						<ChartContainer
-							config={chartConfig}
-							className='min-h-[200px] w-full'
-						>
-							<BarChart
-								accessibilityLayer
-								data={chartData}
-								layout='vertical'
-								margin={{
-									left: 10,
-								}}
+			<div className='grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-7'>
+				<Card className='lg:col-span-4'>
+					<CardHeader>
+						<CardTitle>Review Ratings</CardTitle>
+						<CardDescription>
+							A summary of all ratings given by users.
+						</CardDescription>
+					</CardHeader>
+					<CardContent>
+						{commentsLoading ? (
+							<div className='flex justify-center items-center h-48'>
+								<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
+							</div>
+						) : (
+							<ChartContainer
+								config={chartConfig}
+								className='min-h-[280px] w-full'
 							>
-								<CartesianGrid horizontal={false} />
-								<YAxis
-									dataKey='rating'
-									type='category'
-									tickLine={false}
-									tickMargin={10}
-									axisLine={false}
-									className='text-sm'
-								/>
-								<XAxis dataKey='count' type='number' hide />
-								<ChartTooltip
-									cursor={false}
-									content={<ChartTooltipContent indicator='dot' />}
-								/>
-								<Bar
-									dataKey='count'
-									fill='var(--color-count)'
-									radius={4}
-									barSize={32}
-								/>
-							</BarChart>
-						</ChartContainer>
-					)}
-				</CardContent>
-			</Card>
+								<BarChart
+									accessibilityLayer
+									data={chartData}
+									layout='vertical'
+									margin={{
+										left: 10,
+									}}
+								>
+									<CartesianGrid horizontal={false} />
+									<YAxis
+										dataKey='rating'
+										type='category'
+										tickLine={false}
+										tickMargin={10}
+										axisLine={false}
+										className='text-sm'
+									/>
+									<XAxis dataKey='count' type='number' hide />
+									<ChartTooltip
+										cursor={false}
+										content={<ChartTooltipContent indicator='dot' />}
+									/>
+									<Bar
+										dataKey='count'
+										fill='var(--color-count)'
+										radius={4}
+										barSize={24}
+									/>
+								</BarChart>
+							</ChartContainer>
+						)}
+					</CardContent>
+				</Card>
+				<div className='lg:col-span-3 space-y-4'>
+					<StatCard
+						title='Total Users'
+						value={users?.length ?? 0}
+						icon={Users}
+						isLoading={usersLoading}
+					/>
+					<StatCard
+						title='Total Prompts'
+						value={prompts?.length ?? 0}
+						icon={FileText}
+						isLoading={promptsLoading}
+					/>
+					<StatCard
+						title='Total Sales'
+						value={totalSales}
+						icon={DollarSign}
+						isLoading={false}
+					/>
+				</div>
+			</div>
 		</>
 	)
 }
