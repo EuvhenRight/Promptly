@@ -79,7 +79,7 @@ export type PromptComment = {
 	userId: string
 	authorDisplayName?: string
 	authorPhotoURL?: string
-	timestamp: Timestamp
+	timestamp?: Timestamp
 }
 
 export type AdminComment = PromptComment & {
