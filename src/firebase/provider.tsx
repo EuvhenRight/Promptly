@@ -147,6 +147,27 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 							batch.set(userDocRef, newUserProfile)
 							batch.set(publicProfileRef, publicProfileData)
 							await batch.commit()
+						} else {
+							// Existing user, check if username is missing and add it.
+							const userProfile = userDocSnap.data() as UserProfile
+							if (!userProfile.username) {
+								const email = firebaseUser.email ?? ''
+								const username = email.split('@')[0] || firebaseUser.uid
+								const publicProfileRef = doc(
+									firestore,
+									'public-profiles',
+									firebaseUser.uid,
+								)
+								const batch = writeBatch(firestore)
+								batch.update(userDocRef, { username: username })
+								// Use set with merge in case the public profile doesn't exist yet for some reason
+								batch.set(
+									publicProfileRef,
+									{ username: username },
+									{ merge: true },
+								)
+								await batch.commit()
+							}
 						}
 					} catch (error) {
 						console.error(
