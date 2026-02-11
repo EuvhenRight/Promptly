@@ -1,5 +1,6 @@
 'use client'
 
+import AccountSidebar from '@/components/account/account-sidebar'
 import Footer from '@/components/layout/footer'
 import Header from '@/components/layout/header'
 import { Button } from '@/components/ui/button'
@@ -36,6 +37,7 @@ function NotificationsSkeleton() {
 export default function NotificationsPage() {
 	const { user, isUserLoading } = useUser()
 	const router = useRouter()
+	const credits = 10 // Placeholder
 
 	useEffect(() => {
 		if (!isUserLoading && !user) {
@@ -48,7 +50,14 @@ export default function NotificationsPage() {
 			<div className='flex min-h-screen flex-col'>
 				<Header />
 				<main className='flex-grow container mx-auto px-4 py-8'>
-					<NotificationsSkeleton />
+					<div className='flex flex-col lg:flex-row gap-8'>
+						<div className='w-full lg:w-56 shrink-0'>
+							<Skeleton className='h-48 w-full' />
+						</div>
+						<div className='flex-1 min-w-0'>
+							<NotificationsSkeleton />
+						</div>
+					</div>
 				</main>
 				<Footer />
 			</div>
@@ -62,27 +71,30 @@ export default function NotificationsPage() {
 		<div className='flex min-h-screen flex-col'>
 			<Header />
 			<main className='flex-grow container mx-auto px-4 py-8 sm:px-6 lg:px-8'>
-				{/* Main heading */}
-				<h1 className='font-headline text-3xl md:text-4xl font-bold mb-2'>
-					Notifications
-				</h1>
-				<p className='text-muted-foreground mb-8'>
-					Stay updated with your activity
-				</p>
+				<div className='flex flex-col lg:flex-row gap-8'>
+					<AccountSidebar credits={credits} />
+					<div className='flex-1 min-w-0'>
+						{/* Main heading */}
+						<h1 className='font-headline text-3xl md:text-4xl font-bold mb-2'>
+							Notifications
+						</h1>
+						<p className='text-muted-foreground mb-8'>
+							Stay updated with your activity
+						</p>
 
-				{/* Content */}
-				{hasNotifications ? (
-					<Card>
-						<CardHeader>
-							<CardTitle>Recent activity</CardTitle>
-							<CardDescription>
-								Likes, comments, and follows from other users
-							</CardDescription>
-						</CardHeader>
-						<CardContent>
-							{/* Notification items would render here */}
-							<div className='space-y-4'>
-								{/* Example structure for future notifications:
+						{/* Content */}
+						{hasNotifications ? (
+							<Card>
+								<CardHeader>
+									<CardTitle>Recent activity</CardTitle>
+									<CardDescription>
+										Likes, comments, and follows from other users
+									</CardDescription>
+								</CardHeader>
+								<CardContent>
+									{/* Notification items would render here */}
+									<div className='space-y-4'>
+										{/* Example structure for future notifications:
 								<div className="flex items-start gap-4 p-4 rounded-lg hover:bg-muted/50">
 									<Heart className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
 									<div>
@@ -91,28 +103,30 @@ export default function NotificationsPage() {
 									</div>
 								</div>
 								*/}
-							</div>
-						</CardContent>
-					</Card>
-				) : (
-					<Card>
-						<CardContent className='flex flex-col items-center justify-center py-16 text-center'>
-							<div className='rounded-full bg-muted p-6 mb-4'>
-								<Bell className='h-14 w-14 text-muted-foreground' />
-							</div>
-							<h3 className='text-xl font-semibold mb-2'>
-								No notifications yet
-							</h3>
-							<p className='text-muted-foreground max-w-sm mb-6'>
-								When you receive likes, comments, or followers, they&apos;ll
-								appear here
-							</p>
-							<Button asChild variant='outline'>
-								<Link href='/'>Explore prompts</Link>
-							</Button>
-						</CardContent>
-					</Card>
-				)}
+									</div>
+								</CardContent>
+							</Card>
+						) : (
+							<Card>
+								<CardContent className='flex flex-col items-center justify-center py-16 text-center'>
+									<div className='rounded-full bg-muted p-6 mb-4'>
+										<Bell className='h-14 w-14 text-muted-foreground' />
+									</div>
+									<h3 className='text-xl font-semibold mb-2'>
+										No notifications yet
+									</h3>
+									<p className='text-muted-foreground max-w-sm mb-6'>
+										When you receive likes, comments, or followers, they&apos;ll
+										appear here
+									</p>
+									<Button asChild variant='outline'>
+										<Link href='/'>Explore prompts</Link>
+									</Button>
+								</CardContent>
+							</Card>
+						)}
+					</div>
+				</div>
 			</main>
 			<Footer />
 		</div>
