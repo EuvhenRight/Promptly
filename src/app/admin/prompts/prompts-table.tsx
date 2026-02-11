@@ -62,6 +62,8 @@ import {
 } from '@tanstack/react-table'
 import { format } from 'date-fns'
 import {
+	ArrowDown,
+	ArrowUp,
 	ArrowUpDown,
 	ChevronDown,
 	MoreHorizontal,
@@ -183,7 +185,13 @@ export const columns: ColumnDef<Prompt>[] = [
 				onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
 			>
 				Title
-				<ArrowUpDown className='ml-2 h-4 w-4' />
+				{column.getIsSorted() === 'asc' ? (
+					<ArrowUp className='ml-2 h-4 w-4' />
+				) : column.getIsSorted() === 'desc' ? (
+					<ArrowDown className='ml-2 h-4 w-4' />
+				) : (
+					<ArrowUpDown className='ml-2 h-4 w-4' />
+				)}
 			</Button>
 		),
 		cell: ({ row }) => {
@@ -207,7 +215,13 @@ export const columns: ColumnDef<Prompt>[] = [
 				onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
 			>
 				Price
-				<ArrowUpDown className='ml-2 h-4 w-4' />
+				{column.getIsSorted() === 'asc' ? (
+					<ArrowUp className='ml-2 h-4 w-4' />
+				) : column.getIsSorted() === 'desc' ? (
+					<ArrowDown className='ml-2 h-4 w-4' />
+				) : (
+					<ArrowUpDown className='ml-2 h-4 w-4' />
+				)}
 			</Button>
 		),
 		cell: ({ row }) => {
@@ -227,7 +241,13 @@ export const columns: ColumnDef<Prompt>[] = [
 				onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
 			>
 				Views
-				<ArrowUpDown className='ml-2 h-4 w-4' />
+				{column.getIsSorted() === 'asc' ? (
+					<ArrowUp className='ml-2 h-4 w-4' />
+				) : column.getIsSorted() === 'desc' ? (
+					<ArrowDown className='ml-2 h-4 w-4' />
+				) : (
+					<ArrowUpDown className='ml-2 h-4 w-4' />
+				)}
 			</Button>
 		),
 		cell: ({ row }) => (
@@ -244,7 +264,13 @@ export const columns: ColumnDef<Prompt>[] = [
 				onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
 			>
 				Sales
-				<ArrowUpDown className='ml-2 h-4 w-4' />
+				{column.getIsSorted() === 'asc' ? (
+					<ArrowUp className='ml-2 h-4 w-4' />
+				) : column.getIsSorted() === 'desc' ? (
+					<ArrowDown className='ml-2 h-4 w-4' />
+				) : (
+					<ArrowUpDown className='ml-2 h-4 w-4' />
+				)}
 			</Button>
 		),
 		cell: ({ row }) => (
@@ -261,7 +287,13 @@ export const columns: ColumnDef<Prompt>[] = [
 				onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
 			>
 				Likes
-				<ArrowUpDown className='ml-2 h-4 w-4' />
+				{column.getIsSorted() === 'asc' ? (
+					<ArrowUp className='ml-2 h-4 w-4' />
+				) : column.getIsSorted() === 'desc' ? (
+					<ArrowDown className='ml-2 h-4 w-4' />
+				) : (
+					<ArrowUpDown className='ml-2 h-4 w-4' />
+				)}
 			</Button>
 		),
 		cell: ({ row }) => (
@@ -278,7 +310,13 @@ export const columns: ColumnDef<Prompt>[] = [
 				onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
 			>
 				Created At
-				<ArrowUpDown className='ml-2 h-4 w-4' />
+				{column.getIsSorted() === 'asc' ? (
+					<ArrowUp className='ml-2 h-4 w-4' />
+				) : column.getIsSorted() === 'desc' ? (
+					<ArrowDown className='ml-2 h-4 w-4' />
+				) : (
+					<ArrowUpDown className='ml-2 h-4 w-4' />
+				)}
 			</Button>
 		),
 		cell: ({ row }) => {
@@ -386,7 +424,7 @@ export function PromptsTable({ prompts }: PromptsTableProps) {
 					</DropdownMenu>
 				</div>
 			</div>
-			<div className='rounded-md border'>
+			<div className='relative w-full overflow-auto'>
 				<Table>
 					<TableHeader>
 						{table.getHeaderGroups().map(headerGroup => (
