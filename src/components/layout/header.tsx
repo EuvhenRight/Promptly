@@ -99,7 +99,7 @@ export default function Header() {
 							<div className='mt-8 flex flex-col gap-4'>
 								<nav className='mt-4 flex flex-col gap-2'>
 									<Button variant='ghost' asChild className='justify-start'>
-										<Link href='#'>Pricing</Link>
+										<Link href='/account/plans'>Pricing</Link>
 									</Button>
 									<Button variant='ghost' asChild className='justify-start'>
 										<Link href='/community'>Community</Link>
@@ -113,7 +113,7 @@ export default function Header() {
 				<div className='hidden md:flex items-center gap-6 ml-10'>
 					<nav className='flex items-center gap-6 text-sm'>
 						<Link
-							href='#'
+							href='/account/plans'
 							className='transition-colors hover:text-foreground/80 text-foreground/60 font-medium'
 						>
 							Pricing
@@ -217,7 +217,11 @@ export default function Header() {
 									</>
 								)}
 								<DropdownMenuSeparator />
-								<DropdownMenuItem onClick={async () => await signOutUser()}>
+								<DropdownMenuItem
+									onClick={async () => {
+										await signOutUser()
+									}}
+								>
 									<LogOut className='mr-2 h-4 w-4' />
 									<span>Log out</span>
 								</DropdownMenuItem>
