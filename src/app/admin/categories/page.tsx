@@ -15,6 +15,7 @@ import {
 	Card,
 	CardContent,
 	CardDescription,
+	CardFooter,
 	CardHeader,
 	CardTitle,
 } from '@/components/ui/card'
@@ -27,6 +28,21 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+	Pagination,
+	PaginationContent,
+	PaginationItem,
+	PaginationLink,
+	PaginationNext,
+	PaginationPrevious,
+} from '@/components/ui/pagination'
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select'
 import {
 	Table,
 	TableBody,
@@ -54,6 +70,8 @@ export default function AdminCategoriesPage() {
 		null,
 	)
 	const [deleting, setDeleting] = useState(false)
+	const [itemsPerPage, setItemsPerPage] = useState(10)
+	const [currentPage, setCurrentPage] = useState(1)
 
 	const fetchCategories = async () => {
 		setLoading(true)
@@ -162,6 +180,12 @@ export default function AdminCategoriesPage() {
 		}
 	}
 
+	const pageCount = Math.ceil(categories.length / itemsPerPage)
+	const paginatedCategories = categories.slice(
+		(currentPage - 1) * itemsPerPage,
+		currentPage * itemsPerPage,
+	)
+
 	return (
 		<div className='space-y-6'>
 			<div className='flex items-center justify-between gap-4'>
@@ -197,17 +221,39 @@ export default function AdminCategoriesPage() {
 
 			<Card>
 				<CardHeader>
-					<CardTitle>All categories</CardTitle>
-					<CardDescription>
-						Edit or delete categories. Used in the prompt dropdown.
-					</CardDescription>
+					<div className='flex items-start justify-between gap-4'>
+						<div>
+							<CardTitle>All categories</CardTitle>
+							<CardDescription>
+								Edit or delete categories. Used in the prompt dropdown.
+							</CardDescription>
+						</div>
+						<Select
+							value={`${itemsPerPage}`}
+							onValueChange={value => {
+								setItemsPerPage(Number(value))
+								setCurrentPage(1)
+							}}
+						>
+							<SelectTrigger className='w-auto gap-2'>
+								<SelectValue placeholder='Items per page' />
+							</SelectTrigger>
+							<SelectContent>
+								{[10, 20, 50].map(pageSize => (
+									<SelectItem key={pageSize} value={`${pageSize}`}>
+										{pageSize} per page
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
 				</CardHeader>
 				<CardContent>
 					{loading ? (
 						<div className='flex justify-center py-8'>
 							<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
 						</div>
-					) : categories.length === 0 ? (
+					) : paginatedCategories.length === 0 ? (
 						<p className='text-muted-foreground py-4'>
 							No categories yet. Add one above or seed defaults with: POST
 							/api/categories (no body).
@@ -222,7 +268,7 @@ export default function AdminCategoriesPage() {
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{categories.map(cat => (
+								{paginatedCategories.map(cat => (
 									<TableRow key={cat.id}>
 										<TableCell className='font-mono text-sm'>
 											{cat.id}
@@ -256,6 +302,40 @@ export default function AdminCategoriesPage() {
 						</Table>
 					)}
 				</CardContent>
+				{pageCount > 1 && (
+					<CardFooter className='justify-end'>
+						<Pagination>
+							<PaginationContent>
+								<PaginationItem>
+									<PaginationPrevious
+										onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+										disabled={currentPage === 1}
+									/>
+								</PaginationItem>
+								{Array.from({ length: pageCount }, (_, i) => i + 1).map(
+									page => (
+										<PaginationItem key={page}>
+											<PaginationLink
+												onClick={() => setCurrentPage(page)}
+												isActive={currentPage === page}
+											>
+												{page}
+											</PaginationLink>
+										</PaginationItem>
+									),
+								)}
+								<PaginationItem>
+									<PaginationNext
+										onClick={() =>
+											setCurrentPage(p => Math.min(pageCount, p + 1))
+										}
+										disabled={currentPage === pageCount}
+									/>
+								</PaginationItem>
+							</PaginationContent>
+						</Pagination>
+					</CardFooter>
+				)}
 			</Card>
 
 			<Dialog

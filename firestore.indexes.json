@@ -224,6 +224,13 @@
 				{ "fieldPath": "rating", "order": "ASCENDING" },
 				{ "fieldPath": "timestamp", "order": "DESCENDING" }
 			]
+		},
+		{
+			"collectionGroup": "comments",
+			"queryScope": "COLLECTION_GROUP",
+			"fields": [
+				{ "fieldPath": "timestamp", "order": "DESCENDING" }
+			]
 		}
 	],
 	"fieldOverrides": []
