@@ -77,15 +77,25 @@ service cloud.firestore {
     match /prompts/{promptId} {
       allow get, list: if true;
       allow create, delete: if isAdmin();
-      // Allow admins to update anything.
-      // Allow users to trigger a rating update via a comment, by ensuring
-      // no other critical fields are being changed in the same transaction.
-      allow update: if isAdmin() || (
-        (hasPurchased(promptId) || get(/databases/$(database)/documents/prompts/$(promptId)).data.price == 0) &&
-        request.resource.data.title == resource.data.title &&
-        request.resource.data.price == resource.data.price &&
-        request.resource.data.authorId == resource.data.authorId
-      );
+      // More granular update rules for specific actions.
+      allow update: if 
+        // Admins can update any field.
+        isAdmin() ||
+        // Any signed-in user can update the 'likes' count (increment/decrement by 1).
+        (
+          isSignedIn() &&
+          request.resource.data.stats.likes == resource.data.stats.likes + 1 ||
+          request.resource.data.stats.likes == resource.data.stats.likes - 1
+        ) ||
+        // Any user can increment the view count.
+        (
+          request.resource.data.stats.views == resource.data.stats.views + 1
+        ) ||
+        // Users who have purchased (or it's a free prompt) can update the rating.
+        (
+          (hasPurchased(promptId) || resource.data.price == 0) &&
+          request.resource.data.rating != resource.data.rating
+        );
 
       match /private/{docId} {
         allow get: if docId == 'content' && (isAdmin() || hasPurchased(promptId));
