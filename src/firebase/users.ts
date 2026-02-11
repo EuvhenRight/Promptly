@@ -1,6 +1,6 @@
 'use client'
 
-import type { Prompt, UserProfile } from '@/lib/types'
+import type { PublicProfile, UserProfile } from '@/lib/types'
 import { getAuth, updateProfile } from 'firebase/auth'
 import {
 	Firestore,
@@ -10,6 +10,7 @@ import {
 	getDoc,
 	updateDoc,
 	runTransaction,
+	setDoc,
 } from 'firebase/firestore'
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
 
@@ -17,6 +18,7 @@ export type UpdateUserData = Partial<
 	Pick<
 		UserProfile,
 		| 'displayName'
+		| 'username'
 		| 'role'
 		| 'photoURL'
 		| 'coverImageURL'
@@ -76,6 +78,7 @@ export async function uploadCoverImage(
 
 /**
  * Updates a user's profile in Firestore and optionally Firebase Auth.
+ * Also syncs public data to the `public-profiles` collection.
  */
 export async function updateUserProfile(
 	firestore: Firestore,
@@ -85,30 +88,54 @@ export async function updateUserProfile(
 	if (!userId) throw new Error('User ID is required.')
 
 	const userRef = doc(firestore, 'users', userId)
+	const publicProfileRef = doc(firestore, 'public-profiles', userId)
 
 	try {
-		const firestoreData: Record<string, unknown> = {}
-		if (data.displayName !== undefined)
-			firestoreData.displayName = data.displayName
-		if (data.role !== undefined) firestoreData.role = data.role
-		if (data.photoURL !== undefined) firestoreData.photoURL = data.photoURL
-		if (data.description !== undefined)
-			firestoreData.description = data.description
-		if (data.coverImageURL !== undefined)
-			firestoreData.coverImageURL = data.coverImageURL
-		if (data.headline !== undefined) firestoreData.headline = data.headline
-		if (data.aiTools !== undefined) firestoreData.aiTools = data.aiTools
-		if (data.xProfile !== undefined) firestoreData.xProfile = data.xProfile
-		if (data.instagramProfile !== undefined)
-			firestoreData.instagramProfile = data.instagramProfile
-		if (data.facebookProfile !== undefined)
-			firestoreData.facebookProfile = data.facebookProfile
+		// Run as a transaction to ensure both private and public profiles are updated together
+		await runTransaction(firestore, async transaction => {
+			const userDoc = await transaction.get(userRef)
+			if (!userDoc.exists()) {
+				throw new Error('User profile does not exist.')
+			}
 
-		if (Object.keys(firestoreData).length > 0) {
-			await updateDoc(userRef, firestoreData as Record<string, string | undefined>)
-		}
+			const userProfileData = userDoc.data() as UserProfile
 
-		// Sync displayName and photoURL to Firebase Auth
+			const firestoreData: Record<string, unknown> = {}
+			if (data.displayName !== undefined)
+				firestoreData.displayName = data.displayName
+			if (data.username !== undefined) firestoreData.username = data.username
+			if (data.role !== undefined) firestoreData.role = data.role
+			if (data.photoURL !== undefined) firestoreData.photoURL = data.photoURL
+			if (data.description !== undefined)
+				firestoreData.description = data.description
+			if (data.coverImageURL !== undefined)
+				firestoreData.coverImageURL = data.coverImageURL
+			if (data.headline !== undefined) firestoreData.headline = data.headline
+			if (data.aiTools !== undefined) firestoreData.aiTools = data.aiTools
+			if (data.xProfile !== undefined) firestoreData.xProfile = data.xProfile
+			if (data.instagramProfile !== undefined)
+				firestoreData.instagramProfile = data.instagramProfile
+			if (data.facebookProfile !== undefined)
+				firestoreData.facebookProfile = data.facebookProfile
+
+			// Update the main user profile document
+			if (Object.keys(firestoreData).length > 0) {
+				transaction.update(userRef, firestoreData)
+			}
+
+			// Prepare and update the public profile document
+			const publicProfileData: PublicProfile = {
+				uid: userId,
+				displayName: data.displayName ?? userProfileData.displayName,
+				username: data.username ?? userProfileData.username ?? '',
+				photoURL: data.photoURL ?? userProfileData.photoURL,
+				description: data.description ?? userProfileData.description,
+				coverImageURL: data.coverImageURL ?? userProfileData.coverImageURL,
+			}
+			transaction.set(publicProfileRef, publicProfileData, { merge: true })
+		})
+
+		// Sync displayName and photoURL to Firebase Auth (can be done outside the transaction)
 		const auth = getAuth()
 		const currentUser = auth.currentUser
 		if (currentUser && currentUser.uid === userId) {
@@ -143,10 +170,8 @@ export async function toggleFavoritePrompt(
 	const promptRef = doc(firestore, 'prompts', promptId)
 
 	await runTransaction(firestore, async transaction => {
-		const [userDoc, promptDoc] = await Promise.all([
-			transaction.get(userRef),
-			transaction.get(promptRef),
-		])
+		const userDoc = await transaction.get(userRef)
+		const promptDoc = await transaction.get(promptRef)
 
 		if (!userDoc.exists()) {
 			throw new Error('User profile not found.')
@@ -161,8 +186,7 @@ export async function toggleFavoritePrompt(
 		})
 
 		// Update prompt's like count
-		const promptData = promptDoc.data() as Prompt
-		const currentLikes = promptData.stats?.likes ?? 0
+		const currentLikes = promptDoc.data()?.stats?.likes ?? 0
 		const newLikes = isFavorite ? currentLikes - 1 : currentLikes + 1
 
 		transaction.update(promptRef, {

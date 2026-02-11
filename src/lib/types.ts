@@ -11,6 +11,7 @@ export type Cart = {
 export type UserProfile = {
 	uid: string
 	email: string
+	username?: string
 	displayName: string
 	photoURL: string
 	coverImageURL?: string
@@ -34,6 +35,16 @@ export type UserProfile = {
 		reputation: number
 	}
 }
+
+export type PublicProfile = Pick<
+	UserProfile,
+	| 'uid'
+	| 'username'
+	| 'displayName'
+	| 'photoURL'
+	| 'coverImageURL'
+	| 'description'
+>
 
 export type Prompt = {
 	id: string

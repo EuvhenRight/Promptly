@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 
 const navItems = [
 	{ href: '/account', label: 'Account', icon: Settings },
-	{ href: '/account/plans', label: 'Plans', icon: Star },
+	{ href: '/plans', label: 'Plans', icon: Star },
 	{ href: '/notifications', label: 'Notifications', icon: Bell },
 	{ href: '/profile', label: 'Profile', icon: User },
 ]
@@ -29,7 +29,7 @@ export default function AccountSidebar({ credits = 0 }: AccountSidebarProps) {
 					{navItems.map(({ href, label, icon: Icon }) => {
 						const isActive =
 							pathname === href ||
-							(href === '/account/plans' && pathname.startsWith('/account/plans'))
+							(href === '/plans' && pathname.startsWith('/plans'))
 						return (
 							<Link
 								key={href}
@@ -57,7 +57,7 @@ export default function AccountSidebar({ credits = 0 }: AccountSidebarProps) {
 					</p>
 				</div>
 				<Link
-					href='/account/plans#credits'
+					href='/plans#credits'
 					className='ml-auto text-xs font-medium text-primary hover:underline shrink-0'
 				>
 					Buy more

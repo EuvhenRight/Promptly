@@ -60,6 +60,7 @@ export default function AccountPage() {
 	const avatarInputRef = useRef<HTMLInputElement>(null)
 	const coverInputRef = useRef<HTMLInputElement>(null)
 	const [displayName, setDisplayName] = useState('')
+	const [username, setUsername] = useState('')
 	const [headline, setHeadline] = useState('')
 	const [aiTools, setAiTools] = useState('')
 	const [xProfile, setXProfile] = useState('')
@@ -79,6 +80,7 @@ export default function AccountPage() {
 
 	useEffect(() => {
 		setDisplayName(userProfile?.displayName ?? user?.displayName ?? '')
+		setUsername(userProfile?.username ?? '')
 		setHeadline(userProfile?.headline ?? '')
 		setAiTools(userProfile?.aiTools ?? '')
 		setXProfile(userProfile?.xProfile ?? '')
@@ -98,6 +100,7 @@ export default function AccountPage() {
 		try {
 			await updateUserProfile(firestore, user.uid, {
 				displayName: (displayName.trim() || user.displayName) ?? 'User',
+				username: username.trim() || undefined,
 				headline: headline.trim() || undefined,
 				aiTools: aiTools.trim() || undefined,
 				xProfile: xProfile.trim() || undefined,
@@ -113,6 +116,7 @@ export default function AccountPage() {
 		user,
 		firestore,
 		displayName,
+		username,
 		headline,
 		aiTools,
 		xProfile,
@@ -362,15 +366,29 @@ export default function AccountPage() {
 									)}
 								</div>
 
+								{/* Display Name */}
+								<div className='space-y-2'>
+									<Label htmlFor='displayName'>Display Name</Label>
+									<Input
+										id='displayName'
+										value={displayName}
+										onChange={e => setDisplayName(e.target.value)}
+										placeholder='Enter your display name'
+									/>
+								</div>
+
 								{/* Username */}
 								<div className='space-y-2'>
 									<Label htmlFor='username'>Username</Label>
 									<Input
 										id='username'
-										value={displayName}
-										onChange={e => setDisplayName(e.target.value)}
-										placeholder='Enter your username'
+										value={username}
+										onChange={e => setUsername(e.target.value)}
+										placeholder='Enter your unique username'
 									/>
+									<p className='text-xs text-muted-foreground'>
+										This will be used for your public profile URL.
+									</p>
 								</div>
 
 								{/* Headline */}
