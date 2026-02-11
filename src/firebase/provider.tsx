@@ -5,8 +5,16 @@ import { errorEmitter } from '@/firebase/error-emitter'
 import { FirestorePermissionError } from '@/firebase/errors'
 import type { PublicProfile, UserProfile } from '@/lib/types'
 import { FirebaseApp } from 'firebase/app'
-import { Auth, User, onAuthStateChanged } from 'firebase/auth'
-import { Firestore, doc, getDoc, setDoc, writeBatch } from 'firebase/firestore'
+import {
+	Auth,
+	User,
+	onAuthStateChanged,
+} from 'firebase/auth'
+import {
+	Firestore,
+	doc,
+	runTransaction,
+} from 'firebase/firestore'
 import React, {
 	DependencyList,
 	ReactNode,
@@ -104,71 +112,64 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 					const userDocRef = doc(firestore, 'users', firebaseUser.uid)
 
 					try {
-						const userDocSnap = await getDoc(userDocRef)
-
-						if (!userDocSnap.exists()) {
-							// This is a new user. Create their profile document in Firestore.
-							const email = firebaseUser.email ?? ''
-							// Generate username from email, or fallback to uid if email is empty
-							const username = email.split('@')[0] || firebaseUser.uid
-
-							const newUserProfile: UserProfile = {
-								uid: firebaseUser.uid,
-								email: email || 'no-email@promptly.com',
-								displayName: firebaseUser.displayName ?? 'Anonymous User',
-								username: username,
-								photoURL: firebaseUser.photoURL ?? '',
-								coverImageURL: '',
-								description: '',
-								role: 'user', // Assign 'user' role by default
-								purchasedPrompts: [],
-								favoritePrompts: [],
-								followers: 0,
-								following: 0,
-								views: 0,
-							}
-
+						await runTransaction(firestore, async transaction => {
+							const userDocSnap = await transaction.get(userDocRef)
 							const publicProfileRef = doc(
 								firestore,
 								'public-profiles',
 								firebaseUser.uid,
 							)
-							const publicProfileData: PublicProfile = {
-								uid: firebaseUser.uid,
-								username: username,
-								displayName: newUserProfile.displayName,
-								photoURL: newUserProfile.photoURL,
-								description: newUserProfile.description,
-								coverImageURL: newUserProfile.coverImageURL,
-							}
 
-							// Use a batch to write both documents atomically.
-							const batch = writeBatch(firestore)
-							batch.set(userDocRef, newUserProfile)
-							batch.set(publicProfileRef, publicProfileData)
-							await batch.commit()
-						} else {
-							// Existing user, check if username is missing and add it.
-							const userProfile = userDocSnap.data() as UserProfile
-							if (!userProfile.username) {
+							if (!userDocSnap.exists()) {
+								// This is a new user. Create their profile document in Firestore.
 								const email = firebaseUser.email ?? ''
+								// Generate username from email, or fallback to uid if email is empty
 								const username = email.split('@')[0] || firebaseUser.uid
-								const publicProfileRef = doc(
-									firestore,
-									'public-profiles',
-									firebaseUser.uid,
-								)
-								const batch = writeBatch(firestore)
-								batch.update(userDocRef, { username: username })
-								// Use set with merge in case the public profile doesn't exist yet for some reason
-								batch.set(
-									publicProfileRef,
-									{ username: username },
-									{ merge: true },
-								)
-								await batch.commit()
+
+								const newUserProfile: UserProfile = {
+									uid: firebaseUser.uid,
+									email: email || 'no-email@promptly.com',
+									displayName: firebaseUser.displayName ?? 'Anonymous User',
+									username: username,
+									photoURL: firebaseUser.photoURL ?? '',
+									coverImageURL: '',
+									description: '',
+									role: 'user', // Assign 'user' role by default
+									purchasedPrompts: [],
+									favoritePrompts: [],
+									followers: 0,
+									following: 0,
+									views: 0,
+								}
+
+								const publicProfileData: PublicProfile = {
+									uid: firebaseUser.uid,
+									username: username,
+									displayName: newUserProfile.displayName,
+									photoURL: newUserProfile.photoURL,
+									description: newUserProfile.description,
+									coverImageURL: newUserProfile.coverImageURL,
+								}
+
+								transaction.set(userDocRef, newUserProfile)
+								transaction.set(publicProfileRef, publicProfileData)
+							} else {
+								// Existing user, check if username is missing and add it.
+								const userProfile = userDocSnap.data() as UserProfile
+								if (!userProfile.username) {
+									const email = firebaseUser.email ?? ''
+									const username = email.split('@')[0] || firebaseUser.uid
+									
+									transaction.update(userDocRef, { username: username })
+									// Use set with merge in case the public profile doesn't exist yet for some reason
+									transaction.set(
+										publicProfileRef,
+										{ username: username },
+										{ merge: true },
+									)
+								}
 							}
-						}
+						})
 					} catch (error) {
 						console.error(
 							'FirebaseProvider: Error checking or creating user profile:',
