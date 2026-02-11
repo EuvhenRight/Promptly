@@ -9,6 +9,7 @@ import { Star } from 'lucide-react'
 interface CommentListProps {
 	comments: PromptComment[]
 	isLoading: boolean
+	hasUserComment?: boolean
 }
 
 const CommentSkeleton = () => (
@@ -22,7 +23,11 @@ const CommentSkeleton = () => (
 	</div>
 )
 
-export function CommentList({ comments, isLoading }: CommentListProps) {
+export function CommentList({
+	comments,
+	isLoading,
+	hasUserComment,
+}: CommentListProps) {
 	if (isLoading && comments.length === 0) {
 		return (
 			<div className='space-y-4'>
@@ -33,10 +38,11 @@ export function CommentList({ comments, isLoading }: CommentListProps) {
 	}
 
 	if (comments.length === 0) {
+		if (hasUserComment) {
+			return null // If user has commented, don't show "no other reviews"
+		}
 		return (
-			<p className='text-muted-foreground text-center py-4'>
-				No other reviews yet.
-			</p>
+			<p className='text-muted-foreground text-center py-4'>No reviews yet.</p>
 		)
 	}
 

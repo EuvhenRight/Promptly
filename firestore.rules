@@ -24,14 +24,6 @@ service cloud.firestore {
       return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('purchasedPrompts', []).hasAny([promptId]);
     }
     
-    function isOnlyChanging(key) {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([key]);
-    }
-
-    function isIncrementing(field, by) {
-      return request.resource.data[field] == (resource.data[field] || 0) + by;
-    }
-    
     function isOnlyChangingStat(stat, by) {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats']) &&
              request.resource.data.stats.diff(resource.data.stats).affectedKeys().hasOnly([stat]) &&
@@ -56,16 +48,35 @@ service cloud.firestore {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
       allow create: if isOwner(userId);
-      // Allow a user to update their own profile, but NOT their role.
-      allow update: if (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])) || isAdmin();
+      // Allow a user to update their own profile, but NOT their role or stats.
+      // Stats like followers/views are managed via public-profiles and other functions.
+      allow update: if
+        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'followers', 'following', 'views'])) ||
+        isAdmin();
       allow delete: if isAdmin();
+
+      match /followers/{followerId} {
+        allow get, list: if true;
+        allow create, delete: if isSignedIn() && request.auth.uid == followerId;
+      }
+      match /following/{followingId} {
+        allow get, list: if true;
+        allow create, delete: if isSignedIn() && request.auth.uid == userId;
+      }
     }
 
     match /public-profiles/{userId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if request.auth.uid == userId;
-      allow update: if request.auth.uid == userId;
+      allow get, list: if true;
+      allow create: if isOwner(userId);
+      allow update: if
+        // Owner can update non-counter fields
+        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['views', 'followers', 'following']))
+        // Anyone can increment view count
+        || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views']) && request.resource.data.views == (resource.data.get('views', 0) + 1))
+        // Signed-in users can update follower count by +/- 1
+        || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers']) && (request.resource.data.followers == (resource.data.get('followers', 0)) + 1 || request.resource.data.followers == (resource.data.get('followers', 0) - 1)))
+        // Owner can update their following count by +/- 1
+        || (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['following']) && (request.resource.data.following == (resource.data.get('following', 0) + 1) || request.resource.data.following == (resource.data.get('following', 0) - 1)));
     }
 
     match /users/{userId}/carts/{cartId} {
@@ -106,7 +117,7 @@ service cloud.firestore {
         (isOnlyChangingStat('views', 1)) ||
         (
           (hasPurchased(promptId) || resource.data.price == 0) &&
-          request.resource.data.rating != resource.data.rating && isOnlyChanging('rating')
+          request.resource.data.rating != resource.data.rating && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating'])
         );
 
       match /private/{docId} {

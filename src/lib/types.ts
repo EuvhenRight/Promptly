@@ -44,6 +44,12 @@ export type PublicProfile = Pick<
 	| 'photoURL'
 	| 'coverImageURL'
 	| 'description'
+	| 'followers'
+	| 'following'
+	| 'views'
+	| 'xProfile'
+	| 'instagramProfile'
+	| 'facebookProfile'
 >
 
 export type Prompt = {
