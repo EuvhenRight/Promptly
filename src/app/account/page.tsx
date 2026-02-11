@@ -77,18 +77,22 @@ export default function AccountPage() {
 	const [isSaving, setIsSaving] = useState(false)
 	const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
 	const [isUploadingCover, setIsUploadingCover] = useState(false)
-	const [showFeaturedImage, setShowFeaturedImage] = useState(true)
+	const [showFeaturedImage, setShowFeaturedImage] = useState<boolean | null>(null)
 
 	// Load and save the featured image toggle preference from/to localStorage
 	useEffect(() => {
 		const storedPreference = localStorage.getItem('showFeaturedImage')
-		if (storedPreference !== null) {
-			setShowFeaturedImage(JSON.parse(storedPreference))
-		}
+		// Set state based on stored value, defaulting to true if not found
+		setShowFeaturedImage(
+			storedPreference !== null ? JSON.parse(storedPreference) : true,
+		)
 	}, [])
 
 	useEffect(() => {
-		localStorage.setItem('showFeaturedImage', JSON.stringify(showFeaturedImage))
+		// Only save to localStorage if the state has been initialized
+		if (showFeaturedImage !== null) {
+			localStorage.setItem('showFeaturedImage', JSON.stringify(showFeaturedImage))
+		}
 	}, [showFeaturedImage])
 
 	const userProfileRef = useMemoFirebase(
@@ -460,22 +464,24 @@ export default function AccountPage() {
 							</CardHeader>
 							<CardContent>
 								<ThemeSwitcher />
-								<div className='mt-4 flex items-center justify-between rounded-lg border p-4'>
-									<Label
-										htmlFor='featured-image-switch'
-										className='flex flex-col space-y-1'
-									>
-										<span>Show Featured Image</span>
-										<span className='font-normal leading-snug text-muted-foreground'>
-											Toggle visibility of the featured image editor.
-										</span>
-									</Label>
-									<Switch
-										id='featured-image-switch'
-										checked={showFeaturedImage}
-										onCheckedChange={setShowFeaturedImage}
-									/>
-								</div>
+								{showFeaturedImage !== null && (
+									<div className='mt-4 flex items-center justify-between rounded-lg border p-4'>
+										<Label
+											htmlFor='featured-image-switch'
+											className='flex flex-col space-y-1'
+										>
+											<span>Show Featured Image</span>
+											<span className='font-normal leading-snug text-muted-foreground'>
+												Toggle visibility of the featured image editor.
+											</span>
+										</Label>
+										<Switch
+											id='featured-image-switch'
+											checked={showFeaturedImage}
+											onCheckedChange={setShowFeaturedImage}
+										/>
+									</div>
+								)}
 							</CardContent>
 						</Card>
 

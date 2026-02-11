@@ -143,6 +143,14 @@ export default function ProfilePage() {
 	const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
 	const [isUploadingCover, setIsUploadingCover] = useState(false)
 	const credits = 10 // Placeholder
+	const [showFeaturedImage, setShowFeaturedImage] = useState<boolean | null>(null)
+
+	useEffect(() => {
+		const storedPreference = localStorage.getItem('showFeaturedImage')
+		setShowFeaturedImage(
+			storedPreference !== null ? JSON.parse(storedPreference) : true,
+		)
+	}, [])
 
 	const userProfileRef = useMemoFirebase(
 		() => (user ? doc(firestore, 'users', user.uid) : null),
@@ -321,42 +329,44 @@ export default function ProfilePage() {
 			<Header />
 			<main className='flex-grow'>
 				{/* Cover Image Banner */}
-				<div className='relative h-48 sm:h-64 md:h-80 w-full overflow-hidden bg-muted'>
-					{userProfile?.coverImageURL ? (
-						<Image
-							src={userProfile.coverImageURL}
-							alt='Profile cover'
-							fill
-							className='object-cover'
-							unoptimized
-							priority
+				{showFeaturedImage && (
+					<div className='relative h-48 sm:h-64 md:h-80 w-full overflow-hidden bg-muted'>
+						{userProfile?.coverImageURL ? (
+							<Image
+								src={userProfile.coverImageURL}
+								alt='Profile cover'
+								fill
+								className='object-cover'
+								unoptimized
+								priority
+							/>
+						) : (
+							<div className='absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5' />
+						)}
+						{isEditing && (
+							<div className='absolute inset-0 flex items-center justify-center bg-black/40'>
+								<button
+									type='button'
+									onClick={() => coverInputRef.current?.click()}
+									disabled={isUploadingCover}
+									className='flex flex-col items-center gap-2 rounded-lg bg-background/90 px-6 py-4 text-foreground shadow-lg transition-colors hover:bg-background disabled:opacity-50'
+								>
+									<Camera className='h-8 w-8' />
+									<span className='text-sm font-medium'>
+										{isUploadingCover ? 'Uploading...' : 'Add cover image'}
+									</span>
+								</button>
+							</div>
+						)}
+						<input
+							ref={coverInputRef}
+							type='file'
+							accept='image/*'
+							className='hidden'
+							onChange={handleCoverChange}
 						/>
-					) : (
-						<div className='absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5' />
-					)}
-					{isEditing && (
-						<div className='absolute inset-0 flex items-center justify-center bg-black/40'>
-							<button
-								type='button'
-								onClick={() => coverInputRef.current?.click()}
-								disabled={isUploadingCover}
-								className='flex flex-col items-center gap-2 rounded-lg bg-background/90 px-6 py-4 text-foreground shadow-lg transition-colors hover:bg-background disabled:opacity-50'
-							>
-								<Camera className='h-8 w-8' />
-								<span className='text-sm font-medium'>
-									{isUploadingCover ? 'Uploading...' : 'Add cover image'}
-								</span>
-							</button>
-						</div>
-					)}
-					<input
-						ref={coverInputRef}
-						type='file'
-						accept='image/*'
-						className='hidden'
-						onChange={handleCoverChange}
-					/>
-				</div>
+					</div>
+				)}
 
 				<div className='container mx-auto px-4 py-8 sm:px-6 lg:px-8'>
 					<div className='flex flex-col lg:flex-row gap-8'>
