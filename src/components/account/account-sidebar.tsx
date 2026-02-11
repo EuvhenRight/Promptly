@@ -9,7 +9,7 @@ const navItems = [
 	{ href: '/account', label: 'Account', icon: Settings },
 	{ href: '/account/plans', label: 'Plans', icon: Star },
 	{ href: '/account/notifications', label: 'Notifications', icon: Bell },
-	{ href: '/profile', label: 'Profile', icon: User },
+	{ href: '/account/profile', label: 'Profile', icon: User },
 ]
 
 type AccountSidebarProps = {
