@@ -149,6 +149,9 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 									photoURL: newUserProfile.photoURL,
 									description: newUserProfile.description,
 									coverImageURL: newUserProfile.coverImageURL,
+									followers: 0,
+									following: 0,
+									views: 0,
 								}
 
 								transaction.set(userDocRef, newUserProfile)
@@ -167,6 +170,9 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 										photoURL: userProfile.photoURL,
 										description: userProfile.description || '',
 										coverImageURL: userProfile.coverImageURL || '',
+										followers: userProfile.followers ?? 0,
+										following: userProfile.following ?? 0,
+										views: userProfile.views ?? 0,
 									}
 									transaction.set(publicProfileRef, publicProfileData)
 								} else {

@@ -162,6 +162,9 @@ export async function updateUserProfile(
 				description: data.description ?? userProfileData.description ?? '',
 				coverImageURL:
 					data.coverImageURL ?? userProfileData.coverImageURL ?? '',
+				followers: userProfileData.followers ?? 0,
+				following: userProfileData.following ?? 0,
+				views: userProfileData.views ?? 0,
 			}
 			transaction.set(publicProfileRef, publicProfileData, { merge: true })
 		})

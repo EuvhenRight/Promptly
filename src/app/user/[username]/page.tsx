@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase'
 import type { Prompt, PublicProfile } from '@/lib/types'
 import { collection, query, where, limit } from 'firebase/firestore'
-import { Eye, Globe } from 'lucide-react'
+import { Eye, Globe, Package, UserPlus, Users } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
@@ -102,6 +102,10 @@ export default function PublicProfilePage() {
 	}
 
 	const isOwnProfile = loggedInUser && loggedInUser.uid === userProfile.uid
+	const followers = userProfile?.followers ?? 0
+	const following = userProfile?.following ?? 0
+	const views = userProfile?.views ?? 0
+	const promptCount = prompts?.length ?? 0
 
 	return (
 		<div className='flex min-h-screen flex-col bg-muted/20'>
@@ -145,6 +149,31 @@ export default function PublicProfilePage() {
 										<Button variant='outline'>Message</Button>
 									</>
 								)}
+							</div>
+						</div>
+					</div>
+
+					<div className='mt-6 border-t pt-6'>
+						<div className='flex flex-wrap items-center gap-6 text-sm'>
+							<div className='flex items-center gap-1.5'>
+								<Users className='h-4 w-4 text-muted-foreground' />
+								<span className='font-bold'>{followers}</span>
+								<span className='text-muted-foreground'>Followers</span>
+							</div>
+							<div className='flex items-center gap-1.5'>
+								<UserPlus className='h-4 w-4 text-muted-foreground' />
+								<span className='font-bold'>{following}</span>
+								<span className='text-muted-foreground'>Following</span>
+							</div>
+							<div className='flex items-center gap-1.5'>
+								<Eye className='h-4 w-4 text-muted-foreground' />
+								<span className='font-bold'>{views}</span>
+								<span className='text-muted-foreground'>Profile Views</span>
+							</div>
+							<div className='flex items-center gap-1.5'>
+								<Package className='h-4 w-4 text-muted-foreground' />
+								<span className='font-bold'>{promptCount}</span>
+								<span className='text-muted-foreground'>Prompts</span>
 							</div>
 						</div>
 					</div>
