@@ -186,9 +186,18 @@ export const columns: ColumnDef<Prompt>[] = [
 				<ArrowUpDown className='ml-2 h-4 w-4' />
 			</Button>
 		),
-		cell: ({ row }) => (
-			<div className='font-medium'>{row.getValue('title')}</div>
-		),
+		cell: ({ row }) => {
+			const title = row.getValue('title') as string
+			return (
+				<Link
+					href={`/prompt/${row.original.id}`}
+					className='block max-w-xs truncate font-medium hover:underline'
+					title={title}
+				>
+					{title}
+				</Link>
+			)
+		},
 	},
 	{
 		accessorKey: 'price',
@@ -257,7 +266,7 @@ export const columns: ColumnDef<Prompt>[] = [
 		),
 		cell: ({ row }) => (
 			<div className='text-center'>
-				{row.original.stats?.likes?.toLocaleString() ?? 0}
+				{Math.max(0, row.original.stats?.likes ?? 0).toLocaleString()}
 			</div>
 		),
 	},
