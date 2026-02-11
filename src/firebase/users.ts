@@ -16,6 +16,9 @@ import {
 	query,
 	where,
 	limit,
+	increment,
+	writeBatch,
+	serverTimestamp,
 } from 'firebase/firestore'
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
 
@@ -227,4 +230,128 @@ export async function toggleFavoritePrompt(
 			'stats.likes': Math.max(0, newLikes),
 		})
 	})
+}
+
+/**
+ * Increments the view count of a user's profile.
+ * Non-blocking "fire and forget" operation.
+ */
+export function incrementProfileView(firestore: Firestore, userId: string) {
+	if (!userId) return
+	const userRef = doc(firestore, 'users', userId)
+	const publicProfileRef = doc(firestore, 'public-profiles', userId)
+
+	// Increment user profile views
+	updateDoc(userRef, {
+		views: increment(1),
+	}).catch(err =>
+		console.warn(`Failed to increment user views for ${userId}:`, err),
+	)
+
+	// Increment public profile views
+	updateDoc(publicProfileRef, {
+		views: increment(1),
+	}).catch(err =>
+		console.warn(`Failed to increment public profile views for ${userId}:`, err),
+	)
+}
+
+/**
+ * Makes the current user follow a target user.
+ * Creates documents in subcollections to represent the relationship.
+ * Also updates the follower/following counts on the main profile documents.
+ */
+export async function followUser(
+	firestore: Firestore,
+	currentUserId: string,
+	targetUserId: string,
+) {
+	if (!currentUserId || !targetUserId || currentUserId === targetUserId) {
+		throw new Error('Invalid user IDs provided.')
+	}
+
+	const batch = writeBatch(firestore)
+
+	// Add target to current user's 'following' list
+	const followingRef = doc(
+		firestore,
+		'users',
+		currentUserId,
+		'following',
+		targetUserId,
+	)
+	batch.set(followingRef, { followedAt: serverTimestamp() })
+
+	// Add current user to target's 'followers' list
+	const followerRef = doc(
+		firestore,
+		'users',
+		targetUserId,
+		'followers',
+		currentUserId,
+	)
+	batch.set(followerRef, { followedAt: serverTimestamp() })
+
+	// Increment counts
+	const currentUserRef = doc(firestore, 'users', currentUserId)
+	const targetUserRef = doc(firestore, 'users', targetUserId)
+	const currentUserPublicRef = doc(firestore, 'public-profiles', currentUserId)
+	const targetUserPublicRef = doc(firestore, 'public-profiles', targetUserId)
+
+	batch.update(currentUserRef, { following: increment(1) })
+	batch.update(currentUserPublicRef, { following: increment(1) })
+	batch.update(targetUserRef, { followers: increment(1) })
+	batch.update(targetUserPublicRef, { followers: increment(1) })
+
+	await batch.commit()
+}
+
+/**
+ * Makes the current user unfollow a target user.
+ * Removes documents from subcollections.
+ * Also updates the follower/following counts on the main profile documents.
+ */
+export async function unfollowUser(
+	firestore: Firestore,
+	currentUserId: string,
+	targetUserId: string,
+) {
+	if (!currentUserId || !targetUserId || currentUserId === targetUserId) {
+		throw new Error('Invalid user IDs provided.')
+	}
+
+	const batch = writeBatch(firestore)
+
+	// Remove target from current user's 'following' list
+	const followingRef = doc(
+		firestore,
+		'users',
+		currentUserId,
+		'following',
+		targetUserId,
+	)
+	batch.delete(followingRef)
+
+	// Remove current user from target's 'followers' list
+	const followerRef = doc(
+		firestore,
+		'users',
+		targetUserId,
+		'followers',
+		currentUserId,
+	)
+	batch.delete(followerRef)
+
+	// Decrement counts
+	const currentUserRef = doc(firestore, 'users', currentUserId)
+	const targetUserRef = doc(firestore, 'users', targetUserId)
+	const currentUserPublicRef = doc(firestore, 'public-profiles', currentUserId)
+	const targetUserPublicRef = doc(firestore, 'public-profiles', targetUserId)
+
+	batch.update(currentUserRef, { following: increment(-1) })
+	batch.update(currentUserPublicRef, { following: increment(-1) })
+	batch.update(targetUserRef, { followers: increment(-1) })
+	batch.update(targetUserPublicRef, { followers: increment(-1) })
+
+	await batch.commit()
 }

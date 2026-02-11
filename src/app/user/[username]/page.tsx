@@ -7,13 +7,26 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase'
+import {
+	useCollection,
+	useDoc,
+	useFirestore,
+	useMemoFirebase,
+	useUser,
+} from '@/firebase'
+import {
+	followUser,
+	incrementProfileView,
+	unfollowUser,
+} from '@/firebase/users'
+import { useToast } from '@/hooks/use-toast'
 import type { Prompt, PublicProfile } from '@/lib/types'
-import { collection, query, where, limit } from 'firebase/firestore'
-import { Eye, Globe, Package, UserPlus, Users } from 'lucide-react'
+import { collection, query, where, limit, doc } from 'firebase/firestore'
+import { Eye, Globe, Loader2, Package, UserPlus, Users } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 function PublicProfileSkeleton() {
 	return (
@@ -40,6 +53,9 @@ export default function PublicProfilePage() {
 	const params = useParams<{ username: string }>()
 	const firestore = useFirestore()
 	const { user: loggedInUser } = useUser()
+	const { toast } = useToast()
+	const viewIncremented = useRef(false)
+	const [isFollowLoading, setIsFollowLoading] = useState(false)
 
 	const profileQuery = useMemoFirebase(
 		() =>
@@ -55,7 +71,6 @@ export default function PublicProfilePage() {
 
 	const { data: profiles, isLoading: profileLoading } =
 		useCollection<PublicProfile>(profileQuery)
-
 	const userProfile = profiles?.[0]
 
 	const promptsQuery = useMemoFirebase(
@@ -70,6 +85,73 @@ export default function PublicProfilePage() {
 	)
 	const { data: prompts, isLoading: promptsLoading } =
 		useCollection<Prompt>(promptsQuery)
+
+	// Increment view count
+	useEffect(() => {
+		if (
+			userProfile?.uid &&
+			loggedInUser?.uid !== userProfile.uid &&
+			!viewIncremented.current
+		) {
+			incrementProfileView(firestore, userProfile.uid)
+			viewIncremented.current = true
+		}
+	}, [firestore, userProfile, loggedInUser])
+
+	// --- Follow/Unfollow State & Logic ---
+	const amIFollowingRef = useMemoFirebase(() => {
+		if (!firestore || !userProfile?.uid || !loggedInUser?.uid) return null
+		return doc(
+			firestore,
+			'users',
+			userProfile.uid,
+			'followers',
+			loggedInUser.uid,
+		)
+	}, [firestore, userProfile, loggedInUser])
+	const { data: amIFollowingDoc } = useDoc(amIFollowingRef)
+	const isFollowing = !!amIFollowingDoc
+
+	const followersQuery = useMemoFirebase(() => {
+		if (!firestore || !userProfile?.uid) return null
+		return collection(firestore, 'users', userProfile.uid, 'followers')
+	}, [firestore, userProfile])
+	const { data: followersList } = useCollection(followersQuery)
+
+	const followingQuery = useMemoFirebase(() => {
+		if (!firestore || !userProfile?.uid) return null
+		return collection(firestore, 'users', userProfile.uid, 'following')
+	}, [firestore, userProfile])
+	const { data: followingList } = useCollection(followingQuery)
+
+	const handleFollowToggle = async () => {
+		if (!loggedInUser || !userProfile) {
+			toast({
+				variant: 'destructive',
+				title: 'Please sign in',
+				description: 'You need to be logged in to follow users.',
+			})
+			return
+		}
+		setIsFollowLoading(true)
+		try {
+			if (isFollowing) {
+				await unfollowUser(firestore, loggedInUser.uid, userProfile.uid)
+				toast({ title: `You unfollowed ${userProfile.displayName}` })
+			} else {
+				await followUser(firestore, loggedInUser.uid, userProfile.uid)
+				toast({ title: `You are now following ${userProfile.displayName}` })
+			}
+		} catch (error: any) {
+			toast({
+				variant: 'destructive',
+				title: 'Error',
+				description: error.message || 'Could not update follow status.',
+			})
+		} finally {
+			setIsFollowLoading(false)
+		}
+	}
 
 	if (profileLoading) {
 		return (
@@ -102,9 +184,9 @@ export default function PublicProfilePage() {
 	}
 
 	const isOwnProfile = loggedInUser && loggedInUser.uid === userProfile.uid
-	const followers = userProfile?.followers ?? 0
-	const following = userProfile?.following ?? 0
-	const views = userProfile?.views ?? 0
+	const followersCount = followersList?.length ?? userProfile.followers ?? 0
+	const followingCount = followingList?.length ?? userProfile.following ?? 0
+	const views = userProfile.views ?? 0
 	const promptCount = prompts?.length ?? 0
 
 	return (
@@ -143,9 +225,17 @@ export default function PublicProfilePage() {
 								<p className='text-muted-foreground'>@{userProfile.username}</p>
 							</div>
 							<div className='pb-4 flex gap-2'>
-								{!isOwnProfile && (
+								{!isOwnProfile && loggedInUser && (
 									<>
-										<Button>Follow</Button>
+										<Button
+											onClick={handleFollowToggle}
+											disabled={isFollowLoading}
+										>
+											{isFollowLoading ? (
+												<Loader2 className='mr-2 h-4 w-4 animate-spin' />
+											) : null}
+											{isFollowing ? 'Unfollow' : 'Follow'}
+										</Button>
 										<Button variant='outline'>Message</Button>
 									</>
 								)}
@@ -157,12 +247,12 @@ export default function PublicProfilePage() {
 						<div className='flex flex-wrap items-center gap-6 text-sm'>
 							<div className='flex items-center gap-1.5'>
 								<Users className='h-4 w-4 text-muted-foreground' />
-								<span className='font-bold'>{followers}</span>
+								<span className='font-bold'>{followersCount}</span>
 								<span className='text-muted-foreground'>Followers</span>
 							</div>
 							<div className='flex items-center gap-1.5'>
 								<UserPlus className='h-4 w-4 text-muted-foreground' />
-								<span className='font-bold'>{following}</span>
+								<span className='font-bold'>{followingCount}</span>
 								<span className='text-muted-foreground'>Following</span>
 							</div>
 							<div className='flex items-center gap-1.5'>

@@ -38,6 +38,11 @@ service cloud.firestore {
              request.resource.data.stats[stat] == (resource.data.stats[stat] || 0) + by;
     }
 
+    function isOnlyChangingUserStat(stat, by) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([stat]) &&
+             request.resource.data[stat] == (resource.data[stat] || 0) + by;
+    }
+
 
     // ----------------------------------------------------------------------
     // Collection Group Rules
@@ -57,15 +62,37 @@ service cloud.firestore {
       allow list: if isAdmin();
       allow create: if isOwner(userId);
       // Allow a user to update their own profile, but NOT their role.
-      allow update: if (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])) || isAdmin();
+      // Allow anyone to increment views or follower counts.
+      // Allow owner to increment their own following count.
+      allow update: if
+        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])) ||
+        isAdmin() ||
+        isOnlyChangingUserStat('views', 1) ||
+        isOnlyChangingUserStat('followers', 1) ||
+        isOnlyChangingUserStat('followers', -1) ||
+        (isOwner(userId) && isOnlyChangingUserStat('following', 1)) ||
+        (isOwner(userId) && isOnlyChangingUserStat('following', -1));
       allow delete: if isAdmin();
+
+      match /followers/{followerId} {
+        allow read: if true;
+        allow create, delete: if request.auth.uid == followerId;
+      }
+      match /following/{followingId} {
+        allow read: if true;
+        allow create, delete: if request.auth.uid == userId;
+      }
     }
 
     match /public-profiles/{userId} {
       allow get: if true;
       allow list: if true;
       allow create: if request.auth.uid == userId;
-      allow update: if request.auth.uid == userId;
+      allow update: if
+        request.auth.uid == userId ||
+        isOnlyChangingUserStat('views', 1) ||
+        isOnlyChangingUserStat('followers', 1) ||
+        isOnlyChangingUserStat('followers', -1);
     }
 
     match /users/{userId}/carts/{cartId} {
