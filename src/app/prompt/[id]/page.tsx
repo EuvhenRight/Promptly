@@ -485,7 +485,9 @@ export default function PromptDetailPage() {
 								)}
 							</div>
 						</div>
-						<Button variant='outline'>Follow</Button>
+						{user && user.uid !== prompt.authorId && (
+							<Button variant='outline'>Follow</Button>
+						)}
 					</div>
 
 					<div className='flex flex-wrap items-center gap-4 text-sm text-muted-foreground'>
