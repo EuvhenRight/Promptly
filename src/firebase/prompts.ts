@@ -95,7 +95,6 @@ export async function createPrompt(
 		const authorData = authorSnap.data() as UserProfile
 
 		const publicData = {
-			id: newPromptRef.id,
 			authorId: adminId,
 			authorDisplayName: authorData.displayName,
 			authorPhotoURL: authorData.photoURL,
