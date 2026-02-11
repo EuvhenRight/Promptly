@@ -118,43 +118,77 @@ export default function PromptDetailPage() {
 	const viewIncremented = useRef(false)
 
 	// --- Data Fetching ---
+	const [finalAuthorProfile, setFinalAuthorProfile] =
+		useState<PublicProfile | null>(null)
 	const promptRef = useMemoFirebase(
 		() =>
 			firestore && params.id ? doc(firestore, 'prompts', params.id) : null,
 		[firestore, params.id],
 	)
 	const { data: prompt, isLoading: isPromptLoading } = useDoc<Prompt>(promptRef)
-	console.log(
-		'[1] Prompt data loaded:',
-		prompt ? { id: prompt.id, authorId: prompt.authorId } : 'null',
-	)
 
 	const authorProfileRef = useMemoFirebase(
 		() => {
 			if (firestore && prompt?.authorId) {
-				console.log(
-					`[2] Creating author profile ref for authorId: ${prompt.authorId}`,
-				)
 				return doc(firestore, 'public-profiles', prompt.authorId)
 			}
-			console.log(
-				'[2] Not creating author profile ref, no firestore or authorId.',
-			)
 			return null
 		},
 		[firestore, prompt?.authorId],
 	)
-	const { data: authorProfile, isLoading: isAuthorProfileLoading } =
+	const { data: authorProfileFromHook, isLoading: isAuthorProfileLoading } =
 		useDoc<PublicProfile>(authorProfileRef)
-	console.log('[3] Author profile hook state:', {
-		data: authorProfile,
-		isLoading: isAuthorProfileLoading,
-	})
 
-	console.log('[4] Final Combined Author Data', {
-		promptData: prompt,
-		authorProfileData: authorProfile,
-	})
+	useEffect(() => {
+		if (isAuthorProfileLoading) {
+			console.log('[Fallback Effect] Waiting for primary hook to finish...')
+			return
+		}
+		if (authorProfileFromHook) {
+			console.log(
+				"[Fallback Effect] Primary hook succeeded. Using data from 'public-profiles'.",
+				authorProfileFromHook,
+			)
+			setFinalAuthorProfile(authorProfileFromHook)
+			return
+		}
+		if (!authorProfileFromHook && prompt?.authorId && firestore) {
+			console.warn(
+				`[Fallback Effect] public-profile not found for ${prompt.authorId}. Attempting fallback to 'users' collection.`,
+			)
+			const fallback = async () => {
+				const userDocRef = doc(firestore, 'users', prompt.authorId!)
+				try {
+					const userDocSnap = await getDoc(userDocRef)
+					if (userDocSnap.exists()) {
+						const userData = userDocSnap.data() as UserProfile
+						console.log(
+							'[Fallback Effect] Fallback SUCCESS. Found user data:',
+							userData,
+						)
+						const profileData: PublicProfile = {
+							uid: userData.uid,
+							username: userData.username,
+							displayName: userData.displayName,
+							photoURL: userData.photoURL,
+							description: userData.description,
+							coverImageURL: userData.coverImageURL,
+						}
+						setFinalAuthorProfile(profileData)
+					} else {
+						console.error(
+							`[Fallback Effect] Fallback FAILED. Document users/${prompt.authorId} does not exist.`,
+						)
+						setFinalAuthorProfile(null)
+					}
+				} catch (err) {
+					console.error('[Fallback Effect] Error during fallback fetch:', err)
+					setFinalAuthorProfile(null)
+				}
+			}
+			fallback()
+		}
+	}, [authorProfileFromHook, isAuthorProfileLoading, prompt?.authorId, firestore])
 
 	const userProfileRef = useMemoFirebase(
 		() => (user ? doc(firestore, 'users', user.uid) : null),
@@ -356,7 +390,8 @@ export default function PromptDetailPage() {
 	const { getNames } = useCategories()
 	const { getNames: getTagNames } = useTags()
 	const { getNames: getModelNames } = useModels()
-	const isLoading = isPromptLoading || (prompt && isAuthorProfileLoading)
+	const isLoading =
+		isPromptLoading || (prompt && !finalAuthorProfile && isAuthorProfileLoading)
 
 	// --- Render Methods ---
 	const renderUserReviewSection = () => {
@@ -471,9 +506,9 @@ export default function PromptDetailPage() {
 			return <p>Prompt not found.</p>
 		}
 
-		const authorUsername = authorProfile?.username
-		const authorDisplayName = authorProfile?.displayName ?? 'Anonymous'
-		const authorPhotoURL = authorProfile?.photoURL ?? ''
+		const authorUsername = finalAuthorProfile?.username
+		const authorDisplayName = finalAuthorProfile?.displayName ?? 'Anonymous'
+		const authorPhotoURL = finalAuthorProfile?.photoURL ?? ''
 		const authorInitial = authorDisplayName.charAt(0)
 
 		const promptImage = prompt.images?.[0]
