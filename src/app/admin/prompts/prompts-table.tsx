@@ -121,7 +121,7 @@ export function PromptsTable({ prompts }: PromptsTableProps) {
 									<div className='flex flex-col text-sm'>
 										<span>Views: {prompt.stats?.views ?? 0}</span>
 										<span>Sales: {prompt.stats?.sales ?? 0}</span>
-										<span>Likes: {prompt.rating.count ?? 0}</span>
+										<span>Likes: {prompt.stats?.likes ?? 0}</span>
 									</div>
 								</TableCell>
 								<TableCell className='hidden md:table-cell'>
