@@ -41,6 +41,7 @@ import {
 	getDocs,
 	query,
 	where,
+	Timestamp,
 } from 'firebase/firestore'
 import { format, formatDistanceToNow } from 'date-fns'
 import { MoreHorizontal, Pencil, Star, Trash } from 'lucide-react'
@@ -167,10 +168,13 @@ export function CommentsTable({ comments }: CommentsTableProps) {
 											<div className='flex items-center gap-2'>
 												{renderRating(comment.rating)}
 												<span className='text-xs text-muted-foreground'>
-													{comment.timestamp
-														? formatDistanceToNow(comment.timestamp.toDate(), {
-																addSuffix: true,
-															})
+													{comment.timestamp instanceof Timestamp
+														? formatDistanceToNow(
+																comment.timestamp.toDate(),
+																{
+																	addSuffix: true,
+																},
+															)
 														: 'N/A'}
 												</span>
 											</div>
@@ -281,7 +285,7 @@ export function CommentsTable({ comments }: CommentsTableProps) {
 									</div>
 								</TableCell>
 								<TableCell>
-									{comment.timestamp
+									{comment.timestamp instanceof Timestamp
 										? format(comment.timestamp.toDate(), 'PPP')
 										: 'N/A'}
 								</TableCell>

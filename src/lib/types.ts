@@ -4,8 +4,8 @@ export type Cart = {
 	id: string
 	userId: string
 	promptIds: string[]
-	createdAt: Timestamp
-	updatedAt: Timestamp
+	createdAt?: Timestamp
+	updatedAt?: Timestamp
 }
 
 export type UserProfile = {

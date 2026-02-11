@@ -39,6 +39,7 @@ import {
 	orderBy,
 	query,
 	type Firestore,
+	Timestamp,
 } from 'firebase/firestore'
 import {
 	Copy,
@@ -348,7 +349,7 @@ export default function PromptDetailPage() {
 									{userComment.authorDisplayName ?? 'Anonymous'}
 								</span>
 								<span className='text-xs text-muted-foreground'>
-									{userComment.timestamp
+									{userComment.timestamp instanceof Timestamp
 										? formatDistanceToNow(userComment.timestamp.toDate(), {
 												addSuffix: true,
 											})
