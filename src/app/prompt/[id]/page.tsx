@@ -176,6 +176,17 @@ export default function PromptDetailPage() {
 	}, [params.id, firestore])
 
 	useEffect(() => {
+		if (prompt) {
+			console.log('Author data from prompt object:', {
+				authorId: prompt.authorId,
+				authorDisplayName: prompt.authorDisplayName,
+				authorPhotoURL: prompt.authorPhotoURL,
+				authorUsername: prompt.authorUsername,
+			})
+		}
+	}, [prompt])
+
+	useEffect(() => {
 		if (canViewContent && firestore && params.id && !privateContent) {
 			setIsLoadingPrivateContent(true)
 			const fetchPrivateContent = async (db: Firestore, promptId: string) => {
