@@ -23,6 +23,26 @@ service cloud.firestore {
     function hasPurchased(promptId) {
       return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('purchasedPrompts', []).hasAny([promptId]);
     }
+    
+    function isOnlyChanging(key) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([key]);
+    }
+
+    function isIncrementing(field, by) {
+      return request.resource.data[field] == resource.data[field] + by;
+    }
+    
+    function isOnlyChangingStat(stat, by) {
+      let diff = request.resource.data.diff(resource.data);
+      if (diff.affectedKeys().hasOnly(['stats'])) {
+        let statsDiff = request.resource.data.stats.diff(resource.data.stats);
+        if (statsDiff.affectedKeys().hasOnly([stat])) {
+          return request.resource.data.stats[stat] == resource.data.stats[stat] + by;
+        }
+      }
+      return false;
+    }
+
 
     // ----------------------------------------------------------------------
     // Collection Group Rules
@@ -77,15 +97,15 @@ service cloud.firestore {
     match /prompts/{promptId} {
       allow get, list: if true;
       allow create, delete: if isAdmin();
-      // Allow admins to update anything.
-      // Allow users to trigger a rating update via a comment, by ensuring
-      // no other critical fields are being changed in the same transaction.
-      allow update: if isAdmin() || (
-        (hasPurchased(promptId) || get(/databases/$(database)/documents/prompts/$(promptId)).data.price == 0) &&
-        request.resource.data.title == resource.data.title &&
-        request.resource.data.price == resource.data.price &&
-        request.resource.data.authorId == resource.data.authorId
-      );
+      allow update: if 
+        isAdmin() ||
+        (isSignedIn() && isOnlyChangingStat('likes', 1)) ||
+        (isSignedIn() && isOnlyChangingStat('likes', -1)) ||
+        (isOnlyChangingStat('views', 1)) ||
+        (
+          (hasPurchased(promptId) || resource.data.price == 0) &&
+          request.resource.data.rating != resource.data.rating && isOnlyChanging('rating')
+        );
 
       match /private/{docId} {
         allow get: if docId == 'content' && (isAdmin() || hasPurchased(promptId));

@@ -1,6 +1,6 @@
 'use client'
 
-import type { UserProfile } from '@/lib/types'
+import type { Prompt, UserProfile } from '@/lib/types'
 import { getAuth, updateProfile } from 'firebase/auth'
 import {
 	Firestore,
@@ -9,6 +9,7 @@ import {
 	doc,
 	getDoc,
 	updateDoc,
+	runTransaction,
 } from 'firebase/firestore'
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
 
@@ -128,7 +129,7 @@ export async function updateUserProfile(
 }
 
 /**
- * Adds or removes a prompt from the user's favorites.
+ * Adds or removes a prompt from the user's favorites and updates the prompt's like count.
  */
 export async function toggleFavoritePrompt(
 	firestore: Firestore,
@@ -137,11 +138,35 @@ export async function toggleFavoritePrompt(
 	isFavorite: boolean,
 ): Promise<void> {
 	if (!userId) throw new Error('User ID is required.')
-	const userRef = doc(firestore, 'users', userId)
-	const userSnap = await getDoc(userRef)
-	if (!userSnap.exists()) throw new Error('User profile not found.')
 
-	await updateDoc(userRef, {
-		favoritePrompts: isFavorite ? arrayRemove(promptId) : arrayUnion(promptId),
+	const userRef = doc(firestore, 'users', userId)
+	const promptRef = doc(firestore, 'prompts', promptId)
+
+	await runTransaction(firestore, async transaction => {
+		const [userDoc, promptDoc] = await Promise.all([
+			transaction.get(userRef),
+			transaction.get(promptRef),
+		])
+
+		if (!userDoc.exists()) {
+			throw new Error('User profile not found.')
+		}
+		if (!promptDoc.exists()) {
+			throw new Error('Prompt not found.')
+		}
+
+		// Update user's favorite prompts array
+		transaction.update(userRef, {
+			favoritePrompts: isFavorite ? arrayRemove(promptId) : arrayUnion(promptId),
+		})
+
+		// Update prompt's like count
+		const promptData = promptDoc.data() as Prompt
+		const currentLikes = promptData.stats?.likes ?? 0
+		const newLikes = isFavorite ? currentLikes - 1 : currentLikes + 1
+
+		transaction.update(promptRef, {
+			'stats.likes': Math.max(0, newLikes),
+		})
 	})
 }
