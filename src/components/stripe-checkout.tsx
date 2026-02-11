@@ -40,6 +40,8 @@ export type StripeCheckoutProps = {
 	description?: string
 	/** Product image URL */
 	imageUrl?: string
+	/** Label under price (e.g. "per year", "per month") */
+	priceLabel?: string
 }
 
 export function StripeCheckout({
@@ -52,6 +54,7 @@ export function StripeCheckout({
 	currency = 'usd',
 	description,
 	imageUrl,
+	priceLabel,
 }: StripeCheckoutProps) {
 	const displayPrice =
 		productPrice != null && Number.isFinite(productPrice)
@@ -141,7 +144,9 @@ export function StripeCheckout({
 							{displayPrice}
 						</p>
 					)}
-					<p className='text-zinc-400 text-sm mb-8'>One-time purchase</p>
+					<p className='text-zinc-400 text-sm mb-8'>
+						{priceLabel ?? 'One-time purchase'}
+					</p>
 
 					{/* Product line with image */}
 					<div className='flex gap-3 mb-6'>

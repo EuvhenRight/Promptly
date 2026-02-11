@@ -28,66 +28,111 @@ function getOrigin(req: NextRequest): string {
 		: 'http://localhost:9002'
 }
 
+/** Plan prices in main unit (e.g. 296 = 296 EUR/USD). Yearly = per year total. */
+const PLAN_PRICES = {
+	starter: { monthly: 10, yearly: 108 },
+	pro: { monthly: 22, yearly: 296 },
+} as const
+
+/** Credits pack prices in main unit. */
+const CREDITS_PRICES: Record<number, number> = {
+	1000: 10,
+	2000: 18,
+}
+
 type CheckoutBody = {
+	type?: 'prompt' | 'credits' | 'plan'
 	promptId?: string
 	title?: string
 	price?: number
 	description?: string
 	image?: string
+	credits?: number
+	plan?: 'starter' | 'pro'
+	billing?: 'monthly' | 'yearly'
 }
 
 export async function POST(req: NextRequest) {
 	try {
 		const body = (await req.json()) as CheckoutBody
+		const type = body.type ?? (body.promptId ? 'prompt' : undefined)
 		const {
 			promptId,
 			title: bodyTitle,
 			price: bodyPrice,
 			description: bodyDesc,
 			image: bodyImage,
+			credits: bodyCredits,
+			plan: bodyPlan,
+			billing: bodyBilling,
 		} = body
-
-		if (!promptId) {
-			return Response.json({ error: 'Missing promptId' }, { status: 400 })
-		}
 
 		let title: string
 		let description: string
 		let amountCents: number
 		let image: string | undefined
+		let metadata: Record<string, string> = {}
 
-		if (adminDb) {
-			const promptSnap = await adminDb.collection('prompts').doc(promptId).get()
-			if (!promptSnap.exists) {
-				return Response.json({ error: 'Prompt not found' }, { status: 404 })
-			}
-			const data = promptSnap.data()!
-			title = (data.title as string) || 'Prompt'
-			description = (data.description as string) || ''
-			const price = Number(data.price)
-			amountCents = Math.round((Number.isFinite(price) ? price : 0) * 100)
-			image =
-				Array.isArray(data.images) && data.images[0]
-					? data.images[0]
-					: undefined
+		if (type === 'credits') {
+			const credits = bodyCredits === 2000 ? 2000 : 1000
+			const price = CREDITS_PRICES[credits] ?? 10
+			amountCents = Math.round(price * 100)
+			title = `${credits.toLocaleString()} credits for image generation`
+			description = 'Use these credits to generate images or videos.'
+			metadata = { type: 'credits', credits: String(credits) }
+		} else if (type === 'plan') {
+			const plan = bodyPlan === 'pro' ? 'pro' : 'starter'
+			const billing = bodyBilling === 'monthly' ? 'monthly' : 'yearly'
+			const prices = PLAN_PRICES[plan]
+			const price = billing === 'yearly' ? prices.yearly : prices.monthly
+			amountCents = Math.round(price * 100)
+			const planName = plan === 'pro' ? 'Promptly PRO' : 'Promptly Starter'
+			title = planName
+			description =
+				billing === 'yearly'
+					? 'With annual billing'
+					: 'With monthly billing'
+			metadata = { type: 'plan', plan, billing }
 		} else {
-			// Firebase Admin not available: accept prompt details in the request body.
-			// Required: title, price. Optional: description, image.
-			// If missing or invalid (price < $0.50), return 503.
-			if (bodyTitle == null || bodyTitle === '' || bodyPrice == null) {
+			// prompt (default)
+			if (!promptId) {
 				return Response.json(
-					{
-						error:
-							'Firebase Admin not available. Add service-account.json to the project root, or send prompt details (title, price, and optionally description, image) in the request body.',
-					},
-					{ status: 503 },
+					{ error: 'Missing promptId or checkout type (type=credits|plan)' },
+					{ status: 400 },
 				)
 			}
-			title = String(bodyTitle).trim() || 'Prompt'
-			description = bodyDesc != null ? String(bodyDesc) : ''
-			const price = Number(bodyPrice)
-			amountCents = Math.round((Number.isFinite(price) ? price : 0) * 100)
-			image = bodyImage ? String(bodyImage) : undefined
+			metadata = { promptId, type: 'prompt' }
+
+			if (adminDb) {
+				const promptSnap = await adminDb.collection('prompts').doc(promptId).get()
+				if (!promptSnap.exists) {
+					return Response.json({ error: 'Prompt not found' }, { status: 404 })
+				}
+				const data = promptSnap.data()!
+				title = (data.title as string) || 'Prompt'
+				description = (data.description as string) || ''
+				const price = Number(data.price)
+				amountCents = Math.round((Number.isFinite(price) ? price : 0) * 100)
+				image =
+					Array.isArray(data.images) && data.images[0]
+						? data.images[0]
+						: undefined
+			} else {
+				if (bodyTitle == null || bodyTitle === '' || bodyPrice == null) {
+					return Response.json(
+						{
+							error:
+								'Firebase Admin not available. Send prompt details (title, price) or use type=credits|plan.',
+						},
+						{ status: 503 },
+					)
+				}
+				title = String(bodyTitle).trim() || 'Prompt'
+				description = bodyDesc != null ? String(bodyDesc) : ''
+				const price = Number(bodyPrice)
+				amountCents = Math.round((Number.isFinite(price) ? price : 0) * 100)
+				image = bodyImage ? String(bodyImage) : undefined
+			}
 		}
 
 		const minLabel = STRIPE_CURRENCY === 'eur' ? '€0.50' : '$0.50'
@@ -99,6 +144,16 @@ export async function POST(req: NextRequest) {
 		}
 
 		const origin = getOrigin(req)
+		const baseReturn = `${origin}/checkout/return?session_id={CHECKOUT_SESSION_ID}`
+		const extraParams: string[] = []
+		if (metadata.promptId) extraParams.push(`promptId=${encodeURIComponent(metadata.promptId)}`)
+		if (metadata.type) extraParams.push(`type=${encodeURIComponent(metadata.type)}`)
+		if (metadata.credits) extraParams.push(`credits=${metadata.credits}`)
+		if (metadata.plan) {
+			extraParams.push(`plan=${metadata.plan}`, `billing=${metadata.billing}`)
+		}
+		const returnUrl = extraParams.length ? `${baseReturn}&${extraParams.join('&')}` : baseReturn
+
 		const stripe = getStripe()
 		const session = await stripe.checkout.sessions.create({
 			ui_mode: 'embedded',
@@ -118,8 +173,8 @@ export async function POST(req: NextRequest) {
 					quantity: 1,
 				},
 			],
-			return_url: `${origin}/checkout/return?session_id={CHECKOUT_SESSION_ID}&promptId=${encodeURIComponent(promptId)}`,
-			metadata: { promptId },
+			return_url: returnUrl,
+			metadata,
 		})
 
 		return Response.json({
