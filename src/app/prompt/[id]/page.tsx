@@ -215,6 +215,15 @@ export default function PromptDetailPage() {
 		}
 	}, [canViewContent, firestore, params.id, privateContent])
 
+	useEffect(() => {
+		if (prompt || authorProfile) {
+			console.log('Author Data:', {
+				promptData: prompt,
+				authorProfileData: authorProfile,
+			})
+		}
+	}, [prompt, authorProfile])
+
 	// --- Handlers ---
 	const handleAddToCart = () => {
 		if (!user || !firestore || !prompt) {
@@ -674,11 +683,17 @@ export default function PromptDetailPage() {
 					<h2 className='font-headline text-2xl font-bold mb-6'>Reviews</h2>
 					<div className='space-y-8'>
 						{renderUserReviewSection()}
-						<CommentList
-							comments={otherComments}
-							isLoading={areCommentsLoading}
-							hasUserComment={!!userComment}
-						/>
+						{otherComments.length > 0 && (
+							<CommentList
+								comments={otherComments}
+								isLoading={areCommentsLoading}
+							/>
+						)}
+						{otherComments.length === 0 && !hasUserComment && !areCommentsLoading && (
+							<p className='text-muted-foreground text-center py-4'>
+								No reviews yet.
+							</p>
+						)}
 					</div>
 				</div>
 			</main>
