@@ -21,7 +21,7 @@ import {
 	useMemoFirebase,
 	useUser,
 } from '@/firebase'
-import type { Prompt, UserProfile } from '@/lib/types'
+import type { Prompt, PublicProfile, UserProfile } from '@/lib/types'
 import { collection, doc, documentId, query, where } from 'firebase/firestore'
 import {
 	CreditCard,
@@ -141,7 +141,15 @@ export default function ProfilePage() {
 		() => (user ? doc(firestore, 'users', user.uid) : null),
 		[firestore, user],
 	)
-	const { data: userProfile } = useDoc<UserProfile>(userProfileRef)
+	const { data: userProfile, isLoading: isUserProfileLoading } =
+		useDoc<UserProfile>(userProfileRef)
+
+	const publicProfileRef = useMemoFirebase(
+		() => (user ? doc(firestore, 'public-profiles', user.uid) : null),
+		[firestore, user],
+	)
+	const { data: publicProfile, isLoading: isPublicProfileLoading } =
+		useDoc<PublicProfile>(publicProfileRef)
 
 	const purchasedPromptsQuery = useMemoFirebase(() => {
 		if (
@@ -194,7 +202,13 @@ export default function ProfilePage() {
 		}
 	}, [user, isUserLoading, router])
 
-	if (isUserLoading || !user || !userProfile) {
+	if (
+		isUserLoading ||
+		isUserProfileLoading ||
+		isPublicProfileLoading ||
+		!user ||
+		!userProfile
+	) {
 		return (
 			<div className='flex min-h-screen flex-col'>
 				<Header />
@@ -213,9 +227,9 @@ export default function ProfilePage() {
 
 	const stats = userProfile?.stats
 	const isSeller = userProfile?.isSeller ?? false
-	const followers = userProfile?.followers ?? 0
-	const following = userProfile?.following ?? 0
-	const views = userProfile?.views ?? 0
+	const followers = publicProfile?.followers ?? 0
+	const following = publicProfile?.following ?? 0
+	const views = publicProfile?.views ?? 0
 
 	return (
 		<div className='flex min-h-screen flex-col'>
