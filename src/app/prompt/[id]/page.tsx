@@ -342,8 +342,7 @@ export default function PromptDetailPage() {
 	const { getNames: getModelNames } = useModels()
 	const isLoading =
 		isPromptLoading ||
-		areCommentsLoading ||
-		(prompt && !prompt.authorDisplayName && isAuthorProfileLoading)
+		(prompt && isAuthorProfileLoading)
 
 	// --- Render Methods ---
 	const renderUserReviewSection = () => {
@@ -458,10 +457,9 @@ export default function PromptDetailPage() {
 			return <p>Prompt not found.</p>
 		}
 
-		const authorUsername = prompt.authorUsername ?? authorProfile?.username
-		const authorDisplayName =
-			prompt.authorDisplayName ?? authorProfile?.displayName ?? 'Anonymous'
-		const authorPhotoURL = prompt.authorPhotoURL ?? authorProfile?.photoURL ?? ''
+		const authorUsername = authorProfile?.username
+		const authorDisplayName = authorProfile?.displayName ?? 'Anonymous'
+		const authorPhotoURL = authorProfile?.photoURL ?? ''
 		const authorInitial = authorDisplayName.charAt(0)
 
 		const promptImage = prompt.images?.[0]
