@@ -14,7 +14,6 @@ import {
 	Card,
 	CardContent,
 	CardDescription,
-	CardFooter,
 	CardHeader,
 	CardTitle,
 } from '@/components/ui/card'
@@ -22,32 +21,9 @@ import Link from 'next/link'
 import { Loader2, PlusCircle } from 'lucide-react'
 import { PromptsTable } from './prompts-table'
 import { Scraper } from './scraper'
-import { useState } from 'react'
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from '@/components/ui/select'
-import {
-	Pagination,
-	PaginationContent,
-	PaginationItem,
-	PaginationLink,
-	PaginationNext,
-	PaginationPrevious,
-} from '@/components/ui/pagination'
 
 export default function AdminPromptsPage() {
 	const firestore = useFirestore()
-	const [itemsPerPage, setItemsPerPage] = useState(10)
-	const [currentPage, setCurrentPage] = useState(1)
-
-	// Since useCollection doesn't support pagination out of the box for this app's
-	// structure, we'll fetch all and paginate on the client. This is suitable for
-	// admin panels with a moderate number of documents. For very large collections,
-	// a more complex server-side pagination hook would be needed.
 	const promptsQuery = useMemoFirebase(
 		() =>
 			firestore
@@ -56,12 +32,6 @@ export default function AdminPromptsPage() {
 		[firestore],
 	)
 	const { data: prompts, isLoading, error } = useCollection<Prompt>(promptsQuery)
-
-	const pageCount = prompts ? Math.ceil(prompts.length / itemsPerPage) : 0
-	const paginatedPrompts = prompts?.slice(
-		(currentPage - 1) * itemsPerPage,
-		currentPage * itemsPerPage,
-	)
 
 	const renderContent = () => {
 		if (isLoading) {
@@ -78,11 +48,11 @@ export default function AdminPromptsPage() {
 			)
 		}
 
-		if (!paginatedPrompts || paginatedPrompts.length === 0) {
+		if (!prompts || prompts.length === 0) {
 			return <p>No prompts found. Add one to get started!</p>
 		}
 
-		return <PromptsTable prompts={paginatedPrompts} />
+		return <PromptsTable prompts={prompts} />
 	}
 
 	return (
@@ -101,69 +71,12 @@ export default function AdminPromptsPage() {
 
 			<Card>
 				<CardHeader>
-					<div className='flex items-start justify-between gap-4'>
-						<div>
-							<CardTitle>All Prompts</CardTitle>
-							<CardDescription>
-								A list of all prompts in the marketplace. You can edit or delete
-								them here.
-							</CardDescription>
-						</div>
-						<Select
-							value={`${itemsPerPage}`}
-							onValueChange={value => {
-								setItemsPerPage(Number(value))
-								setCurrentPage(1)
-							}}
-						>
-							<SelectTrigger className='w-auto gap-2'>
-								<SelectValue placeholder='Items per page' />
-							</SelectTrigger>
-							<SelectContent>
-								{[10, 20, 50].map(pageSize => (
-									<SelectItem key={pageSize} value={`${pageSize}`}>
-										{pageSize} per page
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
+					<CardTitle>All Prompts</CardTitle>
+					<CardDescription>
+						Manage, filter, and sort all prompts in the marketplace.
+					</CardDescription>
 				</CardHeader>
 				<CardContent>{renderContent()}</CardContent>
-				{pageCount > 1 && (
-					<CardFooter className='justify-end'>
-						<Pagination>
-							<PaginationContent>
-								<PaginationItem>
-									<PaginationPrevious
-										onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-										disabled={currentPage === 1}
-									/>
-								</PaginationItem>
-								{Array.from({ length: pageCount }, (_, i) => i + 1).map(
-									page => (
-										<PaginationItem key={page}>
-											<PaginationLink
-												onClick={() => setCurrentPage(page)}
-												isActive={currentPage === page}
-											>
-												{page}
-											</PaginationLink>
-										</PaginationItem>
-									),
-								)}
-								<PaginationItem>
-									<PaginationNext
-										onClick={() =>
-											setCurrentPage(p => Math.min(pageCount, p + 1))
-										}
-										disabled={currentPage === pageCount}
-									/>
-								</PaginationItem>
-							</PaginationContent>
-						</Pagination>
-					</CardFooter>
-				)}
 			</Card>
 		</div>
 	)
