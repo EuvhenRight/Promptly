@@ -48,6 +48,7 @@ import {
 	Eye,
 	Heart,
 	Loader2,
+	MoreHorizontal,
 	ShoppingCart,
 	Star,
 	Trash2,
@@ -66,6 +67,12 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Card } from '@/components/ui/card'
 import { formatDistanceToNow } from 'date-fns'
 import { Separator } from '@/components/ui/separator'
@@ -363,47 +370,61 @@ export default function PromptDetailPage() {
 							</AvatarFallback>
 						</Avatar>
 						<div className='flex-1'>
-							<div className='flex items-center justify-between'>
-								<span className='font-semibold'>
-									{userComment.authorDisplayName ?? 'Anonymous'}
-								</span>
-								<span className='text-xs text-muted-foreground'>
-									{userComment.timestamp instanceof Timestamp
-										? formatDistanceToNow(userComment.timestamp.toDate(), {
-												addSuffix: true,
-											})
-										: ''}
-								</span>
+							<div className='flex items-start justify-between'>
+								<div>
+									<div className='flex items-center gap-2'>
+										<span className='font-semibold'>
+											{userComment.authorDisplayName ?? 'Anonymous'}
+										</span>
+										<span className='text-xs text-muted-foreground'>
+											{userComment.timestamp instanceof Timestamp
+												? formatDistanceToNow(userComment.timestamp.toDate(), {
+														addSuffix: true,
+													})
+												: ''}
+										</span>
+									</div>
+									<div className='flex items-center gap-1 my-1'>
+										{[1, 2, 3, 4, 5].map(star => (
+											<Star
+												key={star}
+												className={`h-4 w-4 ${
+													userComment.rating >= star
+														? 'text-yellow-500 fill-yellow-400'
+														: 'text-muted-foreground'
+												}`}
+											/>
+										))}
+									</div>
+								</div>
+								<DropdownMenu>
+									<DropdownMenuTrigger asChild>
+										<Button
+											variant='ghost'
+											size='icon'
+											className='h-8 w-8 flex-shrink-0'
+										>
+											<MoreHorizontal className='h-4 w-4' />
+										</Button>
+									</DropdownMenuTrigger>
+									<DropdownMenuContent align='end'>
+										<DropdownMenuItem onClick={() => setIsEditingComment(true)}>
+											<Edit className='mr-2 h-4 w-4' />
+											<span>Edit</span>
+										</DropdownMenuItem>
+										<DropdownMenuItem
+											onClick={() => setShowDeleteConfirm(true)}
+											className='text-destructive focus:text-destructive'
+										>
+											<Trash2 className='mr-2 h-4 w-4' />
+											<span>Delete</span>
+										</DropdownMenuItem>
+									</DropdownMenuContent>
+								</DropdownMenu>
 							</div>
-							<div className='flex items-center gap-1 my-1'>
-								{[1, 2, 3, 4, 5].map(star => (
-									<Star
-										key={star}
-										className={`h-4 w-4 ${
-											userComment.rating >= star
-												? 'text-yellow-500 fill-yellow-400'
-												: 'text-muted-foreground'
-										}`}
-									/>
-								))}
-							</div>
-							<p className='text-sm text-foreground/80'>{userComment.text}</p>
-							<div className='flex gap-2 mt-2'>
-								<Button
-									variant='outline'
-									size='sm'
-									onClick={() => setIsEditingComment(true)}
-								>
-									<Edit className='mr-2 h-3 w-3' /> Edit
-								</Button>
-								<Button
-									variant='destructive'
-									size='sm'
-									onClick={() => setShowDeleteConfirm(true)}
-								>
-									<Trash2 className='mr-2 h-3 w-3' /> Delete
-								</Button>
-							</div>
+							<p className='text-sm text-foreground/80 mt-1'>
+								{userComment.text}
+							</p>
 						</div>
 					</div>
 				</Card>
@@ -653,7 +674,11 @@ export default function PromptDetailPage() {
 					<h2 className='font-headline text-2xl font-bold mb-6'>Reviews</h2>
 					<div className='space-y-8'>
 						{renderUserReviewSection()}
-						<CommentList comments={otherComments} isLoading={areCommentsLoading} />
+						<CommentList
+							comments={otherComments}
+							isLoading={areCommentsLoading}
+							hasUserComment={!!userComment}
+						/>
 					</div>
 				</div>
 			</main>
