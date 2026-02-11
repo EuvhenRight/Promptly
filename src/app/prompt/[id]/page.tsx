@@ -449,7 +449,7 @@ export default function PromptDetailPage() {
 						</div>
 					</div>
 
-					<div className='flex items-center gap-4 text-sm text-muted-foreground'>
+					<div className='flex flex-wrap items-center gap-4 text-sm text-muted-foreground'>
 						<div className='flex items-center gap-1'>
 							<Star className='h-5 w-5 fill-yellow-400 text-yellow-500' />
 							<span className='font-bold text-foreground'>
@@ -464,23 +464,25 @@ export default function PromptDetailPage() {
 							</span>
 							<span>views</span>
 						</div>
-						{user && (
-							<Button
-								variant='ghost'
-								size='icon'
-								onClick={handleToggleFavorite}
-								aria-label='Toggle Favorite'
-							>
-								<Heart
-									className={cn(
-										'h-6 w-6 transition-colors',
-										isFavorite
-											? 'fill-red-500 text-red-500'
-											: 'text-muted-foreground',
-									)}
-								/>
-							</Button>
-						)}
+						<button
+							onClick={handleToggleFavorite}
+							disabled={!user}
+							className='flex items-center gap-1 disabled:cursor-not-allowed group'
+							aria-label='Toggle Favorite'
+						>
+							<Heart
+								className={cn(
+									'h-5 w-5 transition-colors group-hover:text-red-500/80',
+									isFavorite
+										? 'fill-red-500 text-red-500'
+										: 'text-muted-foreground',
+								)}
+							/>
+							<span className='font-bold text-foreground'>
+								{formatStat(prompt.stats?.likes ?? 0)}
+							</span>
+							<span className='hidden sm:inline'>likes</span>
+						</button>
 					</div>
 
 					<div className='flex flex-wrap gap-2'>
@@ -504,7 +506,7 @@ export default function PromptDetailPage() {
 							<>
 								<div className='flex flex-wrap items-center justify-between gap-4'>
 									<h2 className='text-2xl font-bold'>
-										{`€${(Number(prompt.price) ?? 0).toFixed(2)}`}
+										{`$${(Number(prompt.price) ?? 0).toFixed(2)}`}
 									</h2>
 									<div className='flex flex-grow justify-end items-center gap-2 sm:flex-grow-0'>
 										<Button
