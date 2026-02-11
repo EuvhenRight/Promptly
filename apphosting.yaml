@@ -1,0 +1,22 @@
+# Settings to manage and configure a Firebase App Hosting backend.
+# https://firebase.google.com/docs/app-hosting/configure
+# Stripe vars are synced from .env by: ./scripts/sync-stripe-to-firebase.sh
+
+runConfig:
+  maxInstances: 1
+
+env:
+  - variable: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+    value: pk_test_51Sv0wvLNMP4OpKJBDCBq1jlhUjUGAcTKzLaKmZ8FyR9AOtWJnnixDGjCBwiQRRHBDRrLQ0yc1Ly95UsiJRPLfkEZ005qrvaxAm
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: STRIPE_SECRET_KEY
+    secret: STRIPE_SECRET_KEY
+    availability:
+      - RUNTIME
+  - variable: STRIPE_CURRENCY
+    value: eur
+    availability:
+      - BUILD
+      - RUNTIME
