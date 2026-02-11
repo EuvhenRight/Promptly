@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
 import {
+	checkUsernameExists,
 	updateUserProfile,
 	uploadAvatar,
 	uploadCoverImage,
@@ -36,6 +37,7 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import AccountSidebar from '@/components/account/account-sidebar'
 import { ThemeSwitcher } from '@/components/account/theme-switcher'
+import { useToast } from '@/hooks/use-toast'
 
 function AccountPageSkeleton() {
 	return (
@@ -65,8 +67,11 @@ export default function AccountPage() {
 	const { user, isUserLoading } = useUser()
 	const firestore = useFirestore()
 	const router = useRouter()
+	const { toast } = useToast()
+
 	const avatarInputRef = useRef<HTMLInputElement>(null)
 	const coverInputRef = useRef<HTMLInputElement>(null)
+
 	const [displayName, setDisplayName] = useState('')
 	const [username, setUsername] = useState('')
 	const [headline, setHeadline] = useState('')
@@ -74,9 +79,11 @@ export default function AccountPage() {
 	const [xProfile, setXProfile] = useState('')
 	const [instagramProfile, setInstagramProfile] = useState('')
 	const [facebookProfile, setFacebookProfile] = useState('')
+
 	const [isSaving, setIsSaving] = useState(false)
 	const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
 	const [isUploadingCover, setIsUploadingCover] = useState(false)
+	const [isDirty, setIsDirty] = useState(false)
 	const [showFeaturedImage, setShowFeaturedImage] = useState<boolean | null>(null)
 
 	// Load and save the featured image toggle preference from/to localStorage
@@ -94,6 +101,22 @@ export default function AccountPage() {
 			localStorage.setItem('showFeaturedImage', JSON.stringify(showFeaturedImage))
 		}
 	}, [showFeaturedImage])
+
+	// Warn user about unsaved changes before leaving the page
+	useEffect(() => {
+		if (!isDirty) return
+
+		const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+			e.preventDefault()
+			e.returnValue = '' // Required for Chrome to show the prompt
+		}
+
+		window.addEventListener('beforeunload', handleBeforeUnload)
+
+		return () => {
+			window.removeEventListener('beforeunload', handleBeforeUnload)
+		}
+	}, [isDirty])
 
 	const userProfileRef = useMemoFirebase(
 		() => (user ? doc(firestore, 'users', user.uid) : null),
@@ -121,25 +144,69 @@ export default function AccountPage() {
 
 	const handleSave = useCallback(async () => {
 		if (!user?.uid || !firestore) return
+
+		const newUsername = username.trim()
+
+		// --- Validation ---
+		if (newUsername.length > 0 && newUsername !== userProfile?.username) {
+			if (newUsername.length < 3 || newUsername.length > 20) {
+				toast({
+					variant: 'destructive',
+					title: 'Invalid Username',
+					description: 'Username must be between 3 and 20 characters.',
+				})
+				return
+			}
+			if (!/^[a-zA-Z0-9_]+$/.test(newUsername)) {
+				toast({
+					variant: 'destructive',
+					title: 'Invalid Username',
+					description: 'Can only contain letters, numbers, and underscores.',
+				})
+				return
+			}
+			const isTaken = await checkUsernameExists(firestore, newUsername, user.uid)
+			if (isTaken) {
+				toast({
+					variant: 'destructive',
+					title: 'Username Taken',
+					description: 'This username is already in use.',
+				})
+				return
+			}
+		}
+
 		setIsSaving(true)
 		try {
 			await updateUserProfile(firestore, user.uid, {
 				displayName: displayName.trim() || user.displayName || 'User',
-				username: username.trim(),
+				username: newUsername,
 				headline: headline.trim(),
 				aiTools: aiTools.trim(),
 				xProfile: xProfile.trim(),
 				instagramProfile: instagramProfile.trim(),
 				facebookProfile: facebookProfile.trim(),
 			})
+			setIsDirty(false) // Reset dirty state on successful save
+			toast({
+				title: 'Profile Saved',
+				description: 'Your changes have been successfully saved.',
+			})
 		} catch (err) {
 			console.error(err)
+			toast({
+				variant: 'destructive',
+				title: 'Error Saving',
+				description:
+					err instanceof Error ? err.message : 'Could not save profile.',
+			})
 		} finally {
 			setIsSaving(false)
 		}
 	}, [
 		user,
 		firestore,
+		userProfile?.username,
 		displayName,
 		username,
 		headline,
@@ -147,6 +214,7 @@ export default function AccountPage() {
 		xProfile,
 		instagramProfile,
 		facebookProfile,
+		toast,
 	])
 
 	const handleAvatarChange = useCallback(
@@ -157,6 +225,7 @@ export default function AccountPage() {
 			try {
 				const url = await uploadAvatar(user.uid, file)
 				await updateUserProfile(firestore, user.uid, { photoURL: url })
+				setIsDirty(true)
 			} catch (err) {
 				console.error(err)
 			} finally {
@@ -171,6 +240,7 @@ export default function AccountPage() {
 		if (!user?.uid || !firestore) return
 		try {
 			await updateUserProfile(firestore, user.uid, { photoURL: '' })
+			setIsDirty(true)
 		} catch (err) {
 			console.error(err)
 		}
@@ -184,6 +254,7 @@ export default function AccountPage() {
 			try {
 				const url = await uploadCoverImage(user.uid, file)
 				await updateUserProfile(firestore, user.uid, { coverImageURL: url })
+				setIsDirty(true)
 			} catch (err) {
 				console.error(err)
 			} finally {
@@ -198,6 +269,7 @@ export default function AccountPage() {
 		if (!user?.uid || !firestore) return
 		try {
 			await updateUserProfile(firestore, user.uid, { coverImageURL: '' })
+			setIsDirty(true)
 		} catch (err) {
 			console.error(err)
 		}
@@ -354,7 +426,10 @@ export default function AccountPage() {
 										<Input
 											id='displayName'
 											value={displayName}
-											onChange={e => setDisplayName(e.target.value)}
+											onChange={e => {
+												setDisplayName(e.target.value)
+												setIsDirty(true)
+											}}
 											placeholder='Enter your display name'
 										/>
 									</div>
@@ -365,7 +440,10 @@ export default function AccountPage() {
 										<Input
 											id='username'
 											value={username}
-											onChange={e => setUsername(e.target.value)}
+											onChange={e => {
+												setUsername(e.target.value)
+												setIsDirty(true)
+											}}
 											placeholder='Enter your unique username'
 										/>
 										<p className='text-xs text-muted-foreground'>
@@ -379,7 +457,10 @@ export default function AccountPage() {
 									<Input
 										id='headline'
 										value={headline}
-										onChange={e => setHeadline(e.target.value)}
+										onChange={e => {
+											setHeadline(e.target.value)
+											setIsDirty(true)
+										}}
 										placeholder='e.g. AI Enthusiast & Prompt Creator'
 									/>
 									<p className='text-xs text-muted-foreground'>
@@ -395,7 +476,10 @@ export default function AccountPage() {
 									<Input
 										id='aiTools'
 										value={aiTools}
-										onChange={e => setAiTools(e.target.value)}
+										onChange={e => {
+											setAiTools(e.target.value)
+											setIsDirty(true)
+										}}
 										placeholder='Midjourney, Stable Diffusion, etc.'
 									/>
 									<p className='text-xs text-muted-foreground'>
@@ -423,7 +507,10 @@ export default function AccountPage() {
 										<Input
 											id='xProfile'
 											value={xProfile}
-											onChange={e => setXProfile(e.target.value)}
+											onChange={e => {
+												setXProfile(e.target.value)
+												setIsDirty(true)
+											}}
 											placeholder='https://x.com/yourhandle'
 										/>
 									</div>
@@ -432,7 +519,10 @@ export default function AccountPage() {
 										<Input
 											id='instagramProfile'
 											value={instagramProfile}
-											onChange={e => setInstagramProfile(e.target.value)}
+											onChange={e => {
+												setInstagramProfile(e.target.value)
+												setIsDirty(true)
+											}}
 											placeholder='https://instagram.com/yourhandle'
 										/>
 									</div>
@@ -443,7 +533,10 @@ export default function AccountPage() {
 										<Input
 											id='facebookProfile'
 											value={facebookProfile}
-											onChange={e => setFacebookProfile(e.target.value)}
+											onChange={e => {
+												setFacebookProfile(e.target.value)
+												setIsDirty(true)
+											}}
 											placeholder='https://facebook.com/yourhandle'
 										/>
 									</div>
@@ -486,7 +579,7 @@ export default function AccountPage() {
 						</Card>
 
 						<div className='flex justify-end'>
-							<Button onClick={handleSave} disabled={isSaving}>
+							<Button onClick={handleSave} disabled={isSaving || !isDirty}>
 								{isSaving ? 'Saving...' : 'Save All Changes'}
 							</Button>
 						</div>

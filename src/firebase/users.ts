@@ -11,6 +11,11 @@ import {
 	updateDoc,
 	runTransaction,
 	setDoc,
+	collection,
+	getDocs,
+	query,
+	where,
+	limit,
 } from 'firebase/firestore'
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
 
@@ -74,6 +79,31 @@ export async function uploadCoverImage(
 	const uploadResult = await uploadBytes(storageRef, file)
 	const downloadURL = await getDownloadURL(uploadResult.ref)
 	return downloadURL
+}
+
+/**
+ * Checks if a username is already taken by another user.
+ * @param firestore Firestore instance.
+ * @param username The username to check.
+ * @param userIdToExclude The current user's ID to exclude from the search.
+ * @returns A promise that resolves to true if the username is taken, false otherwise.
+ */
+export async function checkUsernameExists(
+	firestore: Firestore,
+	username: string,
+	userIdToExclude: string,
+): Promise<boolean> {
+	const q = query(
+		collection(firestore, 'public-profiles'),
+		where('username', '==', username),
+		limit(1),
+	)
+	const snapshot = await getDocs(q)
+	if (snapshot.empty) {
+		return false // Username does not exist, so it's available.
+	}
+	// Username exists, check if it belongs to a different user.
+	return snapshot.docs[0].id !== userIdToExclude
 }
 
 /**
