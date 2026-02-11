@@ -22,6 +22,21 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import {
+	Pagination,
+	PaginationContent,
+	PaginationItem,
+	PaginationLink,
+	PaginationNext,
+	PaginationPrevious,
+} from '@/components/ui/pagination'
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select'
+import {
 	Table,
 	TableBody,
 	TableCell,
@@ -46,7 +61,13 @@ import {
 	useReactTable,
 } from '@tanstack/react-table'
 import { format } from 'date-fns'
-import { ArrowUpDown, MoreHorizontal, Pencil, Trash } from 'lucide-react'
+import {
+	ArrowUpDown,
+	ChevronDown,
+	MoreHorizontal,
+	Pencil,
+	Trash,
+} from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import * as React from 'react'
@@ -273,6 +294,10 @@ export function PromptsTable({ prompts }: PromptsTableProps) {
 	const [columnVisibility, setColumnVisibility] =
 		React.useState<VisibilityState>({})
 	const [rowSelection, setRowSelection] = React.useState({})
+	const [pagination, setPagination] = React.useState({
+		pageIndex: 0,
+		pageSize: 10,
+	})
 
 	const table = useReactTable({
 		data: prompts,
@@ -285,17 +310,19 @@ export function PromptsTable({ prompts }: PromptsTableProps) {
 		getFilteredRowModel: getFilteredRowModel(),
 		onColumnVisibilityChange: setColumnVisibility,
 		onRowSelectionChange: setRowSelection,
+		onPaginationChange: setPagination,
 		state: {
 			sorting,
 			columnFilters,
 			columnVisibility,
 			rowSelection,
+			pagination,
 		},
 	})
 
 	return (
 		<div className='w-full'>
-			<div className='flex items-center py-4'>
+			<div className='flex items-center py-4 gap-4'>
 				<Input
 					placeholder='Filter by title...'
 					value={(table.getColumn('title')?.getFilterValue() as string) ?? ''}
@@ -304,30 +331,51 @@ export function PromptsTable({ prompts }: PromptsTableProps) {
 					}
 					className='max-w-sm'
 				/>
-				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<Button variant='outline' className='ml-auto'>
-							Columns <MoreHorizontal className='ml-2 h-4 w-4' />
-						</Button>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent align='end'>
-						{table
-							.getAllColumns()
-							.filter(column => column.getCanHide())
-							.map(column => {
-								return (
-									<DropdownMenuCheckboxItem
-										key={column.id}
-										className='capitalize'
-										checked={column.getIsVisible()}
-										onCheckedChange={value => column.toggleVisibility(!!value)}
-									>
-										{column.id.replace('stats.', '')}
-									</DropdownMenuCheckboxItem>
-								)
-							})}
-					</DropdownMenuContent>
-				</DropdownMenu>
+				<div className='ml-auto flex items-center gap-4'>
+					<Select
+						value={`${table.getState().pagination.pageSize}`}
+						onValueChange={value => {
+							table.setPageSize(Number(value))
+						}}
+					>
+						<SelectTrigger className='w-[140px]'>
+							<SelectValue placeholder='Select page size' />
+						</SelectTrigger>
+						<SelectContent>
+							{[10, 20, 30, 40, 50].map(pageSize => (
+								<SelectItem key={pageSize} value={`${pageSize}`}>
+									{pageSize} per page
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button variant='outline'>
+								Columns <ChevronDown className='ml-2 h-4 w-4' />
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align='end'>
+							{table
+								.getAllColumns()
+								.filter(column => column.getCanHide())
+								.map(column => {
+									return (
+										<DropdownMenuCheckboxItem
+											key={column.id}
+											className='capitalize'
+											checked={column.getIsVisible()}
+											onCheckedChange={value =>
+												column.toggleVisibility(!!value)
+											}
+										>
+											{column.id.replace('stats.', '')}
+										</DropdownMenuCheckboxItem>
+									)
+								})}
+						</DropdownMenuContent>
+					</DropdownMenu>
+				</div>
 			</div>
 			<div className='rounded-md border overflow-auto'>
 				<Table>
@@ -380,28 +428,34 @@ export function PromptsTable({ prompts }: PromptsTableProps) {
 				</Table>
 			</div>
 			<div className='flex items-center justify-end space-x-2 py-4'>
-				<div className='flex-1 text-sm text-muted-foreground'>
-					{table.getFilteredSelectedRowModel().rows.length} of{' '}
-					{table.getFilteredRowModel().rows.length} row(s) selected.
-				</div>
-				<div className='space-x-2'>
-					<Button
-						variant='outline'
-						size='sm'
-						onClick={() => table.previousPage()}
-						disabled={!table.getCanPreviousPage()}
-					>
-						Previous
-					</Button>
-					<Button
-						variant='outline'
-						size='sm'
-						onClick={() => table.nextPage()}
-						disabled={!table.getCanNextPage()}
-					>
-						Next
-					</Button>
-				</div>
+				<Pagination>
+					<PaginationContent>
+						<PaginationItem>
+							<PaginationPrevious
+								onClick={() => table.previousPage()}
+								disabled={!table.getCanPreviousPage()}
+							/>
+						</PaginationItem>
+						{Array.from({ length: table.getPageCount() }, (_, i) => i + 1).map(
+							page => (
+								<PaginationItem key={page}>
+									<PaginationLink
+										onClick={() => table.setPageIndex(page - 1)}
+										isActive={table.getState().pagination.pageIndex === page - 1}
+									>
+										{page}
+									</PaginationLink>
+								</PaginationItem>
+							),
+						)}
+						<PaginationItem>
+							<PaginationNext
+								onClick={() => table.nextPage()}
+								disabled={!table.getCanNextPage()}
+							/>
+						</PaginationItem>
+					</PaginationContent>
+				</Pagination>
 			</div>
 		</div>
 	)
