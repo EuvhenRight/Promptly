@@ -16,6 +16,9 @@ import {
 	query,
 	where,
 	limit,
+	increment,
+	writeBatch,
+	serverTimestamp,
 } from 'firebase/firestore'
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
 
@@ -124,11 +127,15 @@ export async function updateUserProfile(
 		// Run as a transaction to ensure both private and public profiles are updated together
 		await runTransaction(firestore, async transaction => {
 			const userDoc = await transaction.get(userRef)
+			const publicDoc = await transaction.get(publicProfileRef)
 			if (!userDoc.exists()) {
 				throw new Error('User profile does not exist.')
 			}
 
 			const userProfileData = userDoc.data() as UserProfile
+			const publicProfileDataOld = publicDoc.exists()
+				? (publicDoc.data() as PublicProfile)
+				: null
 
 			const firestoreData: Record<string, unknown> = {}
 			if (data.displayName !== undefined)
@@ -153,7 +160,7 @@ export async function updateUserProfile(
 				transaction.update(userRef, firestoreData)
 			}
 
-			// Prepare and update the public profile document
+			// Prepare and update the public profile document, preserving counters
 			const publicProfileData: PublicProfile = {
 				uid: userId,
 				displayName: data.displayName ?? userProfileData.displayName,
@@ -162,6 +169,17 @@ export async function updateUserProfile(
 				description: data.description ?? userProfileData.description ?? '',
 				coverImageURL:
 					data.coverImageURL ?? userProfileData.coverImageURL ?? '',
+				// Preserve existing counters from public profile, or default from private if public doesn't exist yet
+				followers:
+					publicProfileDataOld?.followers ?? userProfileData.followers ?? 0,
+				following:
+					publicProfileDataOld?.following ?? userProfileData.following ?? 0,
+				views: publicProfileDataOld?.views ?? userProfileData.views ?? 0,
+				xProfile: data.xProfile ?? userProfileData.xProfile ?? '',
+				instagramProfile:
+					data.instagramProfile ?? userProfileData.instagramProfile ?? '',
+				facebookProfile:
+					data.facebookProfile ?? userProfileData.facebookProfile ?? '',
 			}
 			transaction.set(publicProfileRef, publicProfileData, { merge: true })
 		})
@@ -224,4 +242,113 @@ export async function toggleFavoritePrompt(
 			'stats.likes': Math.max(0, newLikes),
 		})
 	})
+}
+
+/**
+ * Increments the view count of a user's profile.
+ * Non-blocking "fire and forget" operation.
+ */
+export function incrementProfileView(firestore: Firestore, userId: string) {
+	if (!userId) return
+	const publicProfileRef = doc(firestore, 'public-profiles', userId)
+
+	// Increment public profile views. This is a non-blocking "fire and forget" operation.
+	updateDoc(publicProfileRef, {
+		views: increment(1),
+	}).catch(err => {
+		// We don't want to bother the user if this fails. Log it for monitoring.
+		console.warn(`Failed to increment profile view count for ${userId}:`, err)
+	})
+}
+
+/**
+ * Makes the current user follow a target user.
+ * Creates documents in subcollections to represent the relationship.
+ * Also updates the follower/following counts on the main profile documents.
+ */
+export async function followUser(
+	firestore: Firestore,
+	currentUserId: string,
+	targetUserId: string,
+) {
+	if (!currentUserId || !targetUserId || currentUserId === targetUserId) {
+		throw new Error('Invalid user IDs provided.')
+	}
+
+	const batch = writeBatch(firestore)
+
+	// Add target to current user's 'following' list (subcollection)
+	const followingRef = doc(
+		firestore,
+		'users',
+		currentUserId,
+		'following',
+		targetUserId,
+	)
+	batch.set(followingRef, { followedAt: serverTimestamp() })
+
+	// Add current user to target's 'followers' list (subcollection)
+	const followerRef = doc(
+		firestore,
+		'users',
+		targetUserId,
+		'followers',
+		currentUserId,
+	)
+	batch.set(followerRef, { followedAt: serverTimestamp() })
+
+	// Increment counts on public profiles
+	const currentUserPublicRef = doc(firestore, 'public-profiles', currentUserId)
+	const targetUserPublicRef = doc(firestore, 'public-profiles', targetUserId)
+
+	batch.update(currentUserPublicRef, { following: increment(1) })
+	batch.update(targetUserPublicRef, { followers: increment(1) })
+
+	await batch.commit()
+}
+
+/**
+ * Makes the current user unfollow a target user.
+ * Removes documents from subcollections.
+ * Also updates the follower/following counts on the main profile documents.
+ */
+export async function unfollowUser(
+	firestore: Firestore,
+	currentUserId: string,
+	targetUserId: string,
+) {
+	if (!currentUserId || !targetUserId || currentUserId === targetUserId) {
+		throw new Error('Invalid user IDs provided.')
+	}
+
+	const batch = writeBatch(firestore)
+
+	// Remove target from current user's 'following' list
+	const followingRef = doc(
+		firestore,
+		'users',
+		currentUserId,
+		'following',
+		targetUserId,
+	)
+	batch.delete(followingRef)
+
+	// Remove current user from target's 'followers' list
+	const followerRef = doc(
+		firestore,
+		'users',
+		targetUserId,
+		'followers',
+		currentUserId,
+	)
+	batch.delete(followerRef)
+
+	// Decrement counts on public profiles
+	const currentUserPublicRef = doc(firestore, 'public-profiles', currentUserId)
+	const targetUserPublicRef = doc(firestore, 'public-profiles', targetUserId)
+
+	batch.update(currentUserPublicRef, { following: increment(-1) })
+	batch.update(targetUserPublicRef, { followers: increment(-1) })
+
+	await batch.commit()
 }

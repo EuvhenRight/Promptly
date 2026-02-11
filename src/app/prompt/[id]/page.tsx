@@ -29,6 +29,7 @@ import type {
 	Prompt,
 	PromptComment,
 	PromptPrivateContent,
+	PublicProfile,
 	UserProfile,
 } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -47,6 +48,7 @@ import {
 	Eye,
 	Heart,
 	Loader2,
+	MoreHorizontal,
 	ShoppingCart,
 	Star,
 	Trash2,
@@ -65,8 +67,17 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Card } from '@/components/ui/card'
 import { formatDistanceToNow } from 'date-fns'
+import { Separator } from '@/components/ui/separator'
+import { useTags } from '@/hooks/use-tags'
+import { useModels } from '@/hooks/use-models'
 
 const PromptDetailSkeleton = () => (
 	<div className='grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12'>
@@ -107,12 +118,77 @@ export default function PromptDetailPage() {
 	const viewIncremented = useRef(false)
 
 	// --- Data Fetching ---
+	const [finalAuthorProfile, setFinalAuthorProfile] =
+		useState<PublicProfile | null>(null)
 	const promptRef = useMemoFirebase(
 		() =>
 			firestore && params.id ? doc(firestore, 'prompts', params.id) : null,
 		[firestore, params.id],
 	)
 	const { data: prompt, isLoading: isPromptLoading } = useDoc<Prompt>(promptRef)
+
+	const authorProfileRef = useMemoFirebase(
+		() => {
+			if (firestore && prompt?.authorId) {
+				return doc(firestore, 'public-profiles', prompt.authorId)
+			}
+			return null
+		},
+		[firestore, prompt?.authorId],
+	)
+	const { data: authorProfileFromHook, isLoading: isAuthorProfileLoading } =
+		useDoc<PublicProfile>(authorProfileRef)
+
+	useEffect(() => {
+		if (isAuthorProfileLoading) {
+			console.log('[Fallback Effect] Waiting for primary hook to finish...')
+			return
+		}
+		if (authorProfileFromHook) {
+			console.log(
+				"[Fallback Effect] Primary hook succeeded. Using data from 'public-profiles'.",
+				authorProfileFromHook,
+			)
+			setFinalAuthorProfile(authorProfileFromHook)
+			return
+		}
+		if (!authorProfileFromHook && prompt?.authorId && firestore) {
+			console.warn(
+				`[Fallback Effect] public-profile not found for ${prompt.authorId}. Attempting fallback to 'users' collection.`,
+			)
+			const fallback = async () => {
+				const userDocRef = doc(firestore, 'users', prompt.authorId!)
+				try {
+					const userDocSnap = await getDoc(userDocRef)
+					if (userDocSnap.exists()) {
+						const userData = userDocSnap.data() as UserProfile
+						console.log(
+							'[Fallback Effect] Fallback SUCCESS. Found user data:',
+							userData,
+						)
+						const profileData: PublicProfile = {
+							uid: userData.uid,
+							username: userData.username,
+							displayName: userData.displayName,
+							photoURL: userData.photoURL,
+							description: userData.description,
+							coverImageURL: userData.coverImageURL,
+						}
+						setFinalAuthorProfile(profileData)
+					} else {
+						console.error(
+							`[Fallback Effect] Fallback FAILED. Document users/${prompt.authorId} does not exist.`,
+						)
+						setFinalAuthorProfile(null)
+					}
+				} catch (err) {
+					console.error('[Fallback Effect] Error during fallback fetch:', err)
+					setFinalAuthorProfile(null)
+				}
+			}
+			fallback()
+		}
+	}, [authorProfileFromHook, isAuthorProfileLoading, prompt?.authorId, firestore])
 
 	const userProfileRef = useMemoFirebase(
 		() => (user ? doc(firestore, 'users', user.uid) : null),
@@ -151,6 +227,8 @@ export default function PromptDetailPage() {
 		() => comments?.find(comment => comment.userId === user?.uid),
 		[comments, user],
 	)
+
+	const hasUserComment = !!userComment
 
 	const otherComments = useMemo(
 		() => comments?.filter(comment => comment.userId !== user?.uid) ?? [],
@@ -310,7 +388,10 @@ export default function PromptDetailPage() {
 	}
 
 	const { getNames } = useCategories()
-	const isLoading = isPromptLoading || areCommentsLoading
+	const { getNames: getTagNames } = useTags()
+	const { getNames: getModelNames } = useModels()
+	const isLoading =
+		isPromptLoading || (prompt && !finalAuthorProfile && isAuthorProfileLoading)
 
 	// --- Render Methods ---
 	const renderUserReviewSection = () => {
@@ -344,47 +425,61 @@ export default function PromptDetailPage() {
 							</AvatarFallback>
 						</Avatar>
 						<div className='flex-1'>
-							<div className='flex items-center justify-between'>
-								<span className='font-semibold'>
-									{userComment.authorDisplayName ?? 'Anonymous'}
-								</span>
-								<span className='text-xs text-muted-foreground'>
-									{userComment.timestamp instanceof Timestamp
-										? formatDistanceToNow(userComment.timestamp.toDate(), {
-												addSuffix: true,
-											})
-										: ''}
-								</span>
+							<div className='flex items-start justify-between'>
+								<div>
+									<div className='flex items-center gap-2'>
+										<span className='font-semibold'>
+											{userComment.authorDisplayName ?? 'Anonymous'}
+										</span>
+										<span className='text-xs text-muted-foreground'>
+											{userComment.timestamp instanceof Timestamp
+												? formatDistanceToNow(userComment.timestamp.toDate(), {
+														addSuffix: true,
+													})
+												: ''}
+										</span>
+									</div>
+									<div className='flex items-center gap-1 my-1'>
+										{[1, 2, 3, 4, 5].map(star => (
+											<Star
+												key={star}
+												className={`h-4 w-4 ${
+													userComment.rating >= star
+														? 'text-yellow-500 fill-yellow-400'
+														: 'text-muted-foreground'
+												}`}
+											/>
+										))}
+									</div>
+								</div>
+								<DropdownMenu>
+									<DropdownMenuTrigger asChild>
+										<Button
+											variant='ghost'
+											size='icon'
+											className='h-8 w-8 flex-shrink-0'
+										>
+											<MoreHorizontal className='h-4 w-4' />
+										</Button>
+									</DropdownMenuTrigger>
+									<DropdownMenuContent align='end'>
+										<DropdownMenuItem onClick={() => setIsEditingComment(true)}>
+											<Edit className='mr-2 h-4 w-4' />
+											<span>Edit</span>
+										</DropdownMenuItem>
+										<DropdownMenuItem
+											onClick={() => setShowDeleteConfirm(true)}
+											className='text-destructive focus:text-destructive'
+										>
+											<Trash2 className='mr-2 h-4 w-4' />
+											<span>Delete</span>
+										</DropdownMenuItem>
+									</DropdownMenuContent>
+								</DropdownMenu>
 							</div>
-							<div className='flex items-center gap-1 my-1'>
-								{[1, 2, 3, 4, 5].map(star => (
-									<Star
-										key={star}
-										className={`h-4 w-4 ${
-											userComment.rating >= star
-												? 'text-yellow-500 fill-yellow-400'
-												: 'text-muted-foreground'
-										}`}
-									/>
-								))}
-							</div>
-							<p className='text-sm text-foreground/80'>{userComment.text}</p>
-							<div className='flex gap-2 mt-2'>
-								<Button
-									variant='outline'
-									size='sm'
-									onClick={() => setIsEditingComment(true)}
-								>
-									<Edit className='mr-2 h-3 w-3' /> Edit
-								</Button>
-								<Button
-									variant='destructive'
-									size='sm'
-									onClick={() => setShowDeleteConfirm(true)}
-								>
-									<Trash2 className='mr-2 h-3 w-3' /> Delete
-								</Button>
-							</div>
+							<p className='text-sm text-foreground/80 mt-1'>
+								{userComment.text}
+							</p>
 						</div>
 					</div>
 				</Card>
@@ -411,31 +506,16 @@ export default function PromptDetailPage() {
 			return <p>Prompt not found.</p>
 		}
 
-		const authorUsername = prompt.authorUsername
-		const authorDisplayName = prompt.authorDisplayName ?? 'Anonymous'
-		const authorPhotoURL = prompt.authorPhotoURL ?? ''
+		const authorUsername = finalAuthorProfile?.username
+		const authorDisplayName = finalAuthorProfile?.displayName ?? 'Anonymous'
+		const authorPhotoURL = finalAuthorProfile?.photoURL ?? ''
 		const authorInitial = authorDisplayName.charAt(0)
+
 		const promptImage = prompt.images?.[0]
 		const categoryId = prompt.categoryId ?? prompt.categories?.[0]
 		const categoryNames = getNames(categoryId)
-
-		const authorLink = authorUsername ? (
-			<Link href={`/user/${authorUsername}`} className='flex items-center gap-4'>
-				<Avatar>
-					<AvatarImage src={authorPhotoURL} alt={authorDisplayName} />
-					<AvatarFallback>{authorInitial}</AvatarFallback>
-				</Avatar>
-				<span className='font-semibold hover:underline'>{authorDisplayName}</span>
-			</Link>
-		) : (
-			<div className='flex items-center gap-4'>
-				<Avatar>
-					<AvatarImage src={authorPhotoURL} alt={authorDisplayName} />
-					<AvatarFallback>{authorInitial}</AvatarFallback>
-				</Avatar>
-				<span className='font-semibold'>{authorDisplayName}</span>
-			</div>
-		)
+		const tagNames = getTagNames(prompt.tags)
+		const modelName = getModelNames(prompt.modelId)[0]
 
 		return (
 			<div className='grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12'>
@@ -456,11 +536,33 @@ export default function PromptDetailPage() {
 				</div>
 
 				<div className='space-y-6'>
-					<div className='space-y-2'>
-						<h1 className='font-headline text-3xl md:text-4xl font-bold'>
-							{prompt.title}
-						</h1>
-						{authorLink}
+					<h1 className='font-headline text-3xl md:text-4xl font-bold'>
+						{prompt.title}
+					</h1>
+
+					<div className='flex items-center justify-between'>
+						<div className='flex items-center gap-4'>
+							<Avatar>
+								<AvatarImage src={authorPhotoURL} alt={authorDisplayName} />
+								<AvatarFallback>{authorInitial}</AvatarFallback>
+							</Avatar>
+							<div>
+								<p className='font-semibold'>{authorDisplayName}</p>
+								{authorUsername ? (
+									<Link
+										href={`/user/${authorUsername}`}
+										className='text-sm text-muted-foreground hover:underline'
+									>
+										@{authorUsername}
+									</Link>
+								) : (
+									<p className='text-sm text-muted-foreground'>No username</p>
+								)}
+							</div>
+						</div>
+						{user && user.uid !== prompt.authorId && (
+							<Button variant='outline'>Follow</Button>
+						)}
 					</div>
 
 					<div className='flex flex-wrap items-center gap-4 text-sm text-muted-foreground'>
@@ -481,39 +583,60 @@ export default function PromptDetailPage() {
 						<button
 							onClick={handleToggleFavorite}
 							disabled={!user}
-							className='flex items-center gap-1 disabled:cursor-not-allowed group'
+							className='flex items-center gap-1.5 disabled:cursor-not-allowed group text-muted-foreground hover:text-primary transition-colors'
 							aria-label='Toggle Favorite'
 						>
 							<Heart
 								className={cn(
-									'h-5 w-5 transition-colors group-hover:text-red-500/80',
+									'h-5 w-5 transition-colors',
 									isFavorite
 										? 'fill-red-500 text-red-500'
-										: 'text-muted-foreground',
+										: 'text-muted-foreground group-hover:text-red-500/80',
 								)}
 							/>
 							<span className='font-bold text-foreground'>
 								{formatStat(prompt.stats?.likes ?? 0)}
 							</span>
-							<span className='hidden sm:inline'>likes</span>
+							<span className='hidden sm:inline'>
+								{isFavorite ? 'In Favorites' : 'Add to Favorites'}
+							</span>
 						</button>
 					</div>
 
-					<div className='flex flex-wrap gap-2'>
-						{categoryNames.map(name => (
-							<Badge key={name} variant='secondary'>
-								{name}
-							</Badge>
-						))}
-						{Array.isArray(prompt.tags) &&
-							prompt.tags.map(tag => (
-								<Badge key={tag} variant='outline'>
-									{tag}
-								</Badge>
-							))}
+					<Separator />
+
+					<div>
+						<div className='grid grid-cols-2 gap-y-4 gap-x-2 text-sm'>
+							{categoryId && (
+								<div>
+									<p className='text-muted-foreground'>Category</p>
+									<p className='font-medium'>{categoryNames.join(', ')}</p>
+								</div>
+							)}
+							{modelName && (
+								<div>
+									<p className='text-muted-foreground'>Model</p>
+									<p className='font-medium'>{modelName}</p>
+								</div>
+							)}
+						</div>
+						{tagNames.length > 0 && (
+							<div className='mt-4'>
+								<p className='text-sm text-muted-foreground'>Tags</p>
+								<div className='flex flex-wrap gap-2 mt-2'>
+									{tagNames.map(tag => (
+										<Badge key={tag} variant='outline'>
+											{tag}
+										</Badge>
+									))}
+								</div>
+							</div>
+						)}
 					</div>
 
 					<p className='text-muted-foreground'>{prompt.description}</p>
+
+					<Separator />
 
 					<div className='rounded-lg border bg-card text-card-foreground shadow-sm p-6 space-y-4'>
 						{!canViewContent ? (
@@ -605,7 +728,18 @@ export default function PromptDetailPage() {
 					<h2 className='font-headline text-2xl font-bold mb-6'>Reviews</h2>
 					<div className='space-y-8'>
 						{renderUserReviewSection()}
-						<CommentList comments={otherComments} isLoading={areCommentsLoading} />
+						{otherComments.length > 0 && (
+							<CommentList
+								comments={otherComments}
+								isLoading={areCommentsLoading}
+								hasUserComment={hasUserComment}
+							/>
+						)}
+						{otherComments.length === 0 && !hasUserComment && !areCommentsLoading && (
+							<p className='text-muted-foreground text-center py-4'>
+								No reviews yet.
+							</p>
+						)}
 					</div>
 				</div>
 			</main>

@@ -110,20 +110,20 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 				if (firebaseUser) {
 					// User is signed in. Ensure their Firestore document exists.
 					const userDocRef = doc(firestore, 'users', firebaseUser.uid)
+					const publicProfileRef = doc(
+						firestore,
+						'public-profiles',
+						firebaseUser.uid,
+					)
 
 					try {
 						await runTransaction(firestore, async transaction => {
 							const userDocSnap = await transaction.get(userDocRef)
-							const publicProfileRef = doc(
-								firestore,
-								'public-profiles',
-								firebaseUser.uid,
-							)
+							const publicProfileSnap = await transaction.get(publicProfileRef)
 
 							if (!userDocSnap.exists()) {
-								// This is a new user. Create their profile document in Firestore.
+								// This is a new user. Create both their private and public profiles.
 								const email = firebaseUser.email ?? ''
-								// Generate username from email, or fallback to uid if email is empty
 								const username = email.split('@')[0] || firebaseUser.uid
 
 								const newUserProfile: UserProfile = {
@@ -134,12 +134,15 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 									photoURL: firebaseUser.photoURL ?? '',
 									coverImageURL: '',
 									description: '',
-									role: 'user', // Assign 'user' role by default
+									role: 'user',
 									purchasedPrompts: [],
 									favoritePrompts: [],
 									followers: 0,
 									following: 0,
 									views: 0,
+									xProfile: '',
+									instagramProfile: '',
+									facebookProfile: '',
 								}
 
 								const publicProfileData: PublicProfile = {
@@ -149,30 +152,51 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 									photoURL: newUserProfile.photoURL,
 									description: newUserProfile.description,
 									coverImageURL: newUserProfile.coverImageURL,
+									// Initialize counters to 0 for new public profiles
+									followers: 0,
+									following: 0,
+									views: 0,
+									xProfile: '',
+									instagramProfile: '',
+									facebookProfile: '',
 								}
 
 								transaction.set(userDocRef, newUserProfile)
 								transaction.set(publicProfileRef, publicProfileData)
-							} else {
-								// Existing user, check if username is missing and add it.
+							} else if (!publicProfileSnap.exists()) {
+								// The user profile exists, but the public one is missing.
+								// Create the public profile from the existing user data, but
+								// initialize counters to 0, as they are managed separately.
 								const userProfile = userDocSnap.data() as UserProfile
+								const publicProfileData: PublicProfile = {
+									uid: firebaseUser.uid,
+									username:
+										userProfile.username ||
+										firebaseUser.email?.split('@')[0] ||
+										firebaseUser.uid,
+									displayName: userProfile.displayName,
+									photoURL: userProfile.photoURL,
+									description: userProfile.description || '',
+									coverImageURL: userProfile.coverImageURL || '',
+									followers: 0, // Initialize to 0
+									following: 0, // Initialize to 0
+									views: 0, // Initialize to 0
+									xProfile: userProfile.xProfile ?? '',
+									instagramProfile: userProfile.instagramProfile ?? '',
+									facebookProfile: userProfile.facebookProfile ?? '',
+								}
+								transaction.set(publicProfileRef, publicProfileData)
+								// Also update the main user document with the generated username if it's missing
 								if (!userProfile.username) {
-									const email = firebaseUser.email ?? ''
-									const username = email.split('@')[0] || firebaseUser.uid
-									
-									transaction.update(userDocRef, { username: username })
-									// Use set with merge in case the public profile doesn't exist yet for some reason
-									transaction.set(
-										publicProfileRef,
-										{ username: username },
-										{ merge: true },
-									)
+									transaction.update(userDocRef, {
+										username: publicProfileData.username,
+									})
 								}
 							}
 						})
 					} catch (error) {
 						console.error(
-							'FirebaseProvider: Error checking or creating user profile:',
+							'FirebaseProvider: Error in user profile transaction:',
 							error,
 						)
 						if (
@@ -184,7 +208,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 								'permission-error',
 								new FirestorePermissionError({
 									path: userDocRef.path,
-									operation: 'get', // or 'create' depending on where it failed
+									operation: 'write',
 								}),
 							)
 						}
