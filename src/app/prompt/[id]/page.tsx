@@ -135,6 +135,11 @@ export default function PromptDetailPage() {
 	const { data: authorProfile, isLoading: isAuthorProfileLoading } =
 		useDoc<PublicProfile>(authorProfileRef)
 
+	console.log('Author Data', {
+		promptData: prompt,
+		authorProfileData: authorProfile,
+	})
+
 	const userProfileRef = useMemoFirebase(
 		() => (user ? doc(firestore, 'users', user.uid) : null),
 		[firestore, user],
@@ -680,15 +685,14 @@ export default function PromptDetailPage() {
 							<CommentList
 								comments={otherComments}
 								isLoading={areCommentsLoading}
+								hasUserComment={hasUserComment}
 							/>
 						)}
-						{otherComments.length === 0 &&
-							!hasUserComment &&
-							!areCommentsLoading && (
-								<p className='text-muted-foreground text-center py-4'>
-									No reviews yet.
-								</p>
-							)}
+						{otherComments.length === 0 && !hasUserComment && !areCommentsLoading && (
+							<p className='text-muted-foreground text-center py-4'>
+								No reviews yet.
+							</p>
+						)}
 					</div>
 				</div>
 			</main>
