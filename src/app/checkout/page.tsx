@@ -4,13 +4,13 @@ import Footer from '@/components/layout/footer'
 import Header from '@/components/layout/header'
 import { StripeCheckout } from '@/components/stripe-checkout'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase'
-import type { Prompt } from '@/lib/types'
+import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
+import type { Cart, Prompt } from '@/lib/types'
 import { doc } from 'firebase/firestore'
 import { useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useState } from 'react'
 
-type CheckoutType = 'prompt' | 'credits' | 'plan'
+type CheckoutType = 'prompt' | 'credits' | 'plan' | 'cart'
 
 function CheckoutContent() {
 	const searchParams = useSearchParams()
@@ -20,12 +20,22 @@ function CheckoutContent() {
 	const planParam = searchParams.get('plan')
 	const billingParam = searchParams.get('billing')
 
+	const { user } = useUser()
 	const firestore = useFirestore()
 	const promptRef = useMemoFirebase(
 		() => (firestore && promptId ? doc(firestore, 'prompts', promptId) : null),
 		[firestore, promptId],
 	)
 	const { data: prompt, isLoading: isPromptLoading } = useDoc<Prompt>(promptRef)
+
+	const cartRef = useMemoFirebase(
+		() => (user && firestore ? doc(firestore, 'users', user.uid, 'carts', 'active') : null),
+		[firestore, user],
+	)
+	const { data: cart } = useDoc<Cart>(cartRef)
+	const cartPromptIds = cart?.promptIds ?? []
+	const isCartMode = !typeParam && !promptId && cartPromptIds.length > 0
+	const effectiveType: CheckoutType | null = typeParam ?? (promptId ? 'prompt' : isCartMode ? 'cart' : null)
 
 	const [error, setError] = useState<string | null>(null)
 	const [clientSecret, setClientSecret] = useState<string | null>(null)
@@ -39,12 +49,12 @@ function CheckoutContent() {
 	const [productPrice, setProductPrice] = useState<number | undefined>()
 	const [imageUrl, setImageUrl] = useState<string | undefined>()
 
-	const type: CheckoutType | null = typeParam ?? (promptId ? 'prompt' : null)
+	const type = effectiveType
 	const credits = creditsParam === '2000' ? 2000 : creditsParam === '1000' ? 1000 : null
 	const plan = planParam === 'pro' ? 'pro' : planParam === 'starter' ? 'starter' : null
 	const billing = billingParam === 'monthly' ? 'monthly' : 'yearly'
 
-	// Set display strings for credits/plan immediately
+	// Set display strings for credits/plan/cart immediately
 	useEffect(() => {
 		if (type === 'credits') {
 			const amount = credits ?? 1000
@@ -62,8 +72,14 @@ function CheckoutContent() {
 			setPriceLabel(billing === 'yearly' ? 'per year' : 'per month')
 			setBackHref('/account/plans')
 			setImageUrl(undefined)
+		} else if (type === 'cart') {
+			setCheckoutTitle(`Cart (${cartPromptIds.length} item${cartPromptIds.length === 1 ? '' : 's'})`)
+			setCheckoutDescription('Complete your purchase.')
+			setBackHref('/cart')
+			setPriceLabel(undefined)
+			setImageUrl(undefined)
 		}
-	}, [type, credits, plan, billing])
+	}, [type, credits, plan, billing, cartPromptIds.length])
 
 	// Fetch checkout session for credits or plan (no prompt needed)
 	useEffect(() => {
@@ -97,6 +113,33 @@ function CheckoutContent() {
 				setCheckoutError(err.message || 'Failed to load checkout')
 			})
 	}, [type, credits, plan, billing])
+
+	// Fetch checkout session for cart
+	useEffect(() => {
+		if (type !== 'cart' || cartPromptIds.length === 0) return
+		setCheckoutError(null)
+		fetch('/api/checkout', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ type: 'cart', promptIds: cartPromptIds }),
+		})
+			.then(async res => {
+				const data = await res.json()
+				if (!res.ok) throw new Error(data.error || 'Checkout failed')
+				return data
+			})
+			.then(data => {
+				setClientSecret(data.clientSecret)
+				if (data.currency) setCurrency(data.currency)
+				if (typeof data.amountCents === 'number') {
+					setAmountCents(data.amountCents)
+					setProductPrice(data.amountCents / 100)
+				}
+			})
+			.catch(err => {
+				setCheckoutError(err.message || 'Failed to load checkout')
+			})
+	}, [type, cartPromptIds])
 
 	// Fetch checkout session for prompt (after prompt loaded)
 	useEffect(() => {
@@ -149,10 +192,16 @@ function CheckoutContent() {
 	}, [type, prompt, promptId])
 
 	useEffect(() => {
-		if (!promptId && type !== 'credits' && type !== 'plan') {
-			setError('Missing product. Choose a plan, credits, or buy a prompt.')
+		if (!type) {
+			if (user && cartPromptIds.length === 0) {
+				setError('Your cart is empty. Add prompts from the store or choose a plan/credits.')
+			} else if (!user) {
+				setError('Sign in to checkout. Choose a plan, credits, or add prompts to your cart.')
+			} else {
+				setError('Missing product. Choose a plan, credits, or buy a prompt.')
+			}
 		}
-	}, [promptId, type])
+	}, [promptId, type, user, cartPromptIds.length])
 
 	// No valid checkout context
 	if (!type) {
@@ -161,9 +210,12 @@ function CheckoutContent() {
 				<Header />
 				<main className='flex-grow container mx-auto px-4 py-8'>
 					<p className='text-destructive'>{error || 'Missing product.'}</p>
-					<div className='mt-4 flex gap-4'>
+					<div className='mt-4 flex flex-wrap gap-4'>
 						<a href='/' className='text-primary underline'>
 							Back to home
+						</a>
+						<a href='/cart' className='text-primary underline'>
+							View cart
 						</a>
 						<a href='/account/plans' className='text-primary underline'>
 							Plans & credits

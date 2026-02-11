@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
+import { removePromptFromCart } from '@/firebase/cart'
 import {
 	useCollection,
 	useDoc,
@@ -19,11 +20,13 @@ import {
 	useMemoFirebase,
 	useUser,
 } from '@/firebase'
+import { useToast } from '@/hooks/use-toast'
 import type { Cart, Prompt } from '@/lib/types'
 import { collection, doc, documentId, query, where } from 'firebase/firestore'
-import { Trash2 } from 'lucide-react'
+import { Loader2, Trash2 } from 'lucide-react'
 import Image from 'next/image'
-import { useMemo } from 'react'
+import Link from 'next/link'
+import { useMemo, useState } from 'react'
 
 function CartSkeleton() {
 	return (
@@ -67,6 +70,8 @@ function CartSkeleton() {
 export default function CartPage() {
 	const { user } = useUser()
 	const firestore = useFirestore()
+	const { toast } = useToast()
+	const [removingId, setRemovingId] = useState<string | null>(null)
 
 	const cartRef = useMemoFirebase(
 		() => (user ? doc(firestore, 'users', user.uid, 'carts', 'active') : null),
@@ -99,7 +104,32 @@ export default function CartPage() {
 	const tax = subtotal * 0.08
 	const total = subtotal + tax
 
+	const handleRemove = (promptId: string, title: string) => {
+		if (!user || !firestore) return
+		setRemovingId(promptId)
+		removePromptFromCart(firestore, user.uid, promptId)
+		toast({
+			title: 'Removed from cart',
+			description: `"${title}" has been removed from your cart.`,
+		})
+		setRemovingId(null)
+	}
+
 	const renderContent = () => {
+		if (!user) {
+			return (
+				<div className='text-center py-16 bg-muted/50 rounded-lg'>
+					<h2 className='text-2xl font-semibold'>Sign in to view your cart</h2>
+					<p className='text-muted-foreground mt-2'>
+						You need to be signed in to add and view cart items.
+					</p>
+					<Button asChild className='mt-6'>
+						<Link href='/'>Go to Home</Link>
+					</Button>
+				</div>
+			)
+		}
+
 		if (isLoading) {
 			return <CartSkeleton />
 		}
@@ -150,8 +180,15 @@ export default function CartPage() {
 										variant='ghost'
 										size='icon'
 										className='text-muted-foreground hover:text-destructive'
+										onClick={() => handleRemove(item.id, item.title)}
+										disabled={removingId === item.id}
+										aria-label={`Remove ${item.title} from cart`}
 									>
-										<Trash2 className='h-5 w-5' />
+										{removingId === item.id ? (
+											<Loader2 className='h-5 w-5 animate-spin' />
+										) : (
+											<Trash2 className='h-5 w-5' />
+										)}
 									</Button>
 								</div>
 							</Card>
@@ -180,8 +217,8 @@ export default function CartPage() {
 							</div>
 						</CardContent>
 						<CardFooter>
-							<Button size='lg' className='w-full'>
-								Proceed to Checkout
+							<Button size='lg' className='w-full' asChild>
+								<Link href='/checkout'>Proceed to Checkout</Link>
 							</Button>
 						</CardFooter>
 					</Card>

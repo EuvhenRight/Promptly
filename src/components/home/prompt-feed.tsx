@@ -14,9 +14,10 @@ const breakpointColumnsObj = {
 
 interface PromptFeedProps {
   prompts: Prompt[];
+  cartPromptIds?: Set<string>;
 }
 
-export default function PromptFeed({ prompts }: PromptFeedProps) {
+export default function PromptFeed({ prompts, cartPromptIds }: PromptFeedProps) {
   const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
@@ -24,7 +25,7 @@ export default function PromptFeed({ prompts }: PromptFeedProps) {
   }, [])
 
   if (!isClient || !prompts.length) {
-    return null; // Don't render anything until mounted on client or if no prompts
+    return null
   }
 
   return (
@@ -34,8 +35,12 @@ export default function PromptFeed({ prompts }: PromptFeedProps) {
       columnClassName="prompt-feed-grid_column"
     >
       {prompts.map((prompt) => (
-        <PromptCard key={prompt.id} prompt={prompt} />
+        <PromptCard
+          key={prompt.id}
+          prompt={prompt}
+          isInCart={cartPromptIds?.has(prompt.id) ?? false}
+        />
       ))}
     </Masonry>
-  );
+  )
 }

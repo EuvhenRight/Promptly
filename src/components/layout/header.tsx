@@ -68,7 +68,11 @@ export default function Header() {
 				<div className='md:hidden ml-2'>
 					<Sheet>
 						<SheetTrigger asChild>
-							<Button variant='ghost' size='icon'>
+							<Button
+								variant='ghost'
+								size='icon'
+								className='hover:bg-transparent dark:hover:bg-transparent hover:text-accent dark:hover:text-primary'
+							>
 								<Menu className='h-6 w-6' />
 								<span className='sr-only'>Toggle Menu</span>
 							</Button>
@@ -102,13 +106,13 @@ export default function Header() {
 					<nav className='flex items-center gap-6 text-sm'>
 						<Link
 							href='/account/plans'
-							className='transition-colors hover:text-foreground/80 text-foreground/60 font-medium'
+							className='transition-colors text-foreground/80 font-medium hover:text-accent dark:hover:text-primary'
 						>
 							Pricing
 						</Link>
 						<Link
 							href='/community'
-							className='transition-colors hover:text-foreground/80 text-foreground/60 font-medium'
+							className='transition-colors text-foreground/80 font-medium hover:text-accent dark:hover:text-primary'
 						>
 							Community
 						</Link>
@@ -118,9 +122,16 @@ export default function Header() {
 				<div className='flex-1' />
 
 				<div className='flex flex-shrink-0 items-center gap-2'>
-					<Link href='/cart' className='hidden md:flex items-center'>
-						<Button variant='ghost' size='icon' className='relative h-11 w-11'>
-							<ShoppingBag className='h-7 w-7 text-foreground' strokeWidth={1.5} />
+					<Link href='/cart' className='hidden md:flex items-center group/cart'>
+						<Button
+							variant='ghost'
+							size='icon'
+							className='relative h-12 w-12 hover:bg-transparent dark:hover:bg-transparent hover:text-accent dark:hover:text-primary'
+						>
+							<ShoppingBag
+								className='h-8 w-8 text-foreground transition-colors group-hover/cart:text-accent dark:group-hover/cart:text-primary'
+								strokeWidth={1.5}
+							/>
 							{cartCount > 0 && (
 								<span
 									className='absolute -top-0.5 -right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground'
@@ -129,7 +140,9 @@ export default function Header() {
 									{cartCount > 99 ? '99+' : cartCount}
 								</span>
 							)}
-							<span className='sr-only'>Cart{cartCount > 0 ? ` (${cartCount} items)` : ''}</span>
+							<span className='sr-only'>
+								Cart{cartCount > 0 ? ` (${cartCount} items)` : ''}
+							</span>
 						</Button>
 					</Link>
 
@@ -137,7 +150,11 @@ export default function Header() {
 						<div className='h-10 w-24 animate-pulse rounded-md bg-muted' />
 					) : user ? (
 						<>
-							<Button asChild>
+							<Button
+								variant='ghost'
+								asChild
+								className='hover:bg-transparent dark:hover:bg-transparent hover:text-accent dark:hover:text-primary'
+							>
 								<Link href='/submit'>
 									<PlusCircle className='mr-2 h-4 w-4' />
 									Create
@@ -146,10 +163,10 @@ export default function Header() {
 							<Button
 								variant='ghost'
 								asChild
-								className='hidden sm:inline-flex'
+								className='hidden sm:inline-flex hover:bg-transparent dark:hover:bg-transparent hover:text-accent dark:hover:text-primary'
 							>
 								<Link href='/account/plans'>
-									<Coins className='mr-2 h-4 w-4 text-amber-500' />
+									<Coins className='mr-2 h-4 w-4' />
 									10
 								</Link>
 							</Button>
@@ -157,7 +174,7 @@ export default function Header() {
 								<DropdownMenuTrigger asChild>
 									<Button
 										variant='ghost'
-										className='relative h-10 w-10 rounded-full'
+										className='relative h-10 w-10 rounded-full hover:bg-transparent dark:hover:bg-transparent'
 									>
 										<Avatar className='h-10 w-10'>
 											<AvatarImage
@@ -201,7 +218,9 @@ export default function Header() {
 										<Settings className='mr-2 h-4 w-4' />
 										<span>Account Settings</span>
 									</DropdownMenuItem>
-									<DropdownMenuItem onSelect={() => router.push('/account/plans')}>
+									<DropdownMenuItem
+										onSelect={() => router.push('/account/plans')}
+									>
 										<Star className='mr-2 h-4 w-4' />
 										<span>Plans & Credits</span>
 									</DropdownMenuItem>
@@ -240,7 +259,13 @@ export default function Header() {
 							</DropdownMenu>
 						</>
 					) : (
-						<Button onClick={() => signInWithGoogle()}>Sign In</Button>
+						<Button
+							variant='ghost'
+							onClick={() => signInWithGoogle()}
+							className='hover:bg-transparent dark:hover:bg-transparent hover:text-accent dark:hover:text-primary'
+						>
+							Sign In
+						</Button>
 					)}
 				</div>
 			</div>

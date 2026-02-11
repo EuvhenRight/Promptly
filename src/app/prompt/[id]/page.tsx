@@ -26,6 +26,7 @@ import { toggleFavoritePrompt } from '@/firebase/users'
 import { useCategories } from '@/hooks/use-categories'
 import { useToast } from '@/hooks/use-toast'
 import type {
+	Cart,
 	Prompt,
 	PromptComment,
 	PromptPrivateContent,
@@ -47,7 +48,7 @@ import {
 	Eye,
 	Heart,
 	Loader2,
-	ShoppingCart,
+	ShoppingBag,
 	Star,
 	Trash2,
 } from 'lucide-react'
@@ -120,6 +121,13 @@ export default function PromptDetailPage() {
 	)
 	const { data: userProfile } = useDoc<UserProfile>(userProfileRef)
 
+	const cartRef = useMemoFirebase(
+		() => (user ? doc(firestore, 'users', user.uid, 'carts', 'active') : null),
+		[firestore, user],
+	)
+	const { data: cart } = useDoc<Cart>(cartRef)
+	const isInCart = (cart?.promptIds?.includes(params.id as string)) ?? false
+
 	const commentsQuery = useMemoFirebase(
 		() =>
 			firestore && params.id
@@ -140,6 +148,7 @@ export default function PromptDetailPage() {
 	const [isSubmittingComment, setIsSubmittingComment] = useState(false)
 	const [isDeletingComment, setIsDeletingComment] = useState(false)
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+	const [justAddedToCart, setJustAddedToCart] = useState(false)
 
 	// --- Memoized Derived State ---
 	const isFavorite = useMemo(
@@ -205,8 +214,10 @@ export default function PromptDetailPage() {
 			return
 		}
 		addPromptToCart(firestore, user.uid, prompt.id)
+		setJustAddedToCart(true)
+		setTimeout(() => setJustAddedToCart(false), 3000)
 		toast({
-			title: 'Success!',
+			title: 'Added to cart',
 			description: `"${prompt.title}" has been added to your cart.`,
 		})
 	}
@@ -522,25 +533,34 @@ export default function PromptDetailPage() {
 									<h2 className='text-2xl font-bold'>
 										{`$${(Number(prompt.price) ?? 0).toFixed(2)}`}
 									</h2>
-									<div className='flex flex-grow justify-end items-center gap-2 sm:flex-grow-0'>
+									<div className='flex flex-grow justify-end items-center gap-2 sm:flex-grow-0 flex-wrap'>
+										{justAddedToCart && (
+											<span className='text-sm font-medium text-primary rounded-md bg-primary/10 px-3 py-1.5'>
+												Added to cart
+											</span>
+										)}
 										<Button
 											size='lg'
 											variant='outline'
 											onClick={handleAddToCart}
 											className='flex-1 sm:flex-initial'
-											disabled={!user}
+											disabled={!user || isInCart}
 										>
-											<ShoppingCart className='mr-2 h-4 w-4' />
-											Add to Cart
+											<ShoppingBag className='mr-2 h-4 w-4' />
+											{isInCart ? 'In cart' : 'Add to Cart'}
 										</Button>
 										<Button
 											size='lg'
 											className='bg-accent text-accent-foreground hover:bg-accent/90 flex-1 sm:flex-initial'
 											asChild
 										>
-											<Link href={`/checkout?promptId=${prompt.id}`}>
-												Buy Now
-											</Link>
+											{isInCart ? (
+												<Link href='/cart'>View cart</Link>
+											) : (
+												<Link href={`/checkout?promptId=${prompt.id}`}>
+													Buy Now
+												</Link>
+											)}
 										</Button>
 									</div>
 								</div>

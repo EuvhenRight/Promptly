@@ -131,7 +131,7 @@ export default function SearchBar({
 							<div className='absolute right-2 top-1/2 -translate-y-1/2'>
 								<Button
 									type='submit'
-									className='rounded-full bg-foreground text-background hover:bg-foreground/90 h-12 px-8'
+									className='rounded-full bg-foreground text-background hover:bg-primary hover:text-primary-foreground h-12 px-8'
 									disabled={isLoading}
 								>
 									{isLoading ? <Loader2 className='animate-spin' /> : 'Search'}
@@ -146,7 +146,7 @@ export default function SearchBar({
 						<DropdownMenuTrigger asChild>
 							<Button
 								variant='outline'
-								className='rounded-full border bg-card'
+								className='rounded-full border bg-card hover:text-primary dark:hover:text-primary'
 								disabled={typesLoading}
 							>
 								{selectedTypeId ? selectedTypeName : '+ Type'}
@@ -177,7 +177,7 @@ export default function SearchBar({
 						<DropdownMenuTrigger asChild>
 							<Button
 								variant='outline'
-								className='rounded-full border bg-card'
+								className='rounded-full border bg-card hover:text-primary dark:hover:text-primary'
 								disabled={modelsLoading}
 							>
 								{selectedModelId ? selectedModelName : '+ Model'}
@@ -206,7 +206,10 @@ export default function SearchBar({
 					</DropdownMenu>
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
-							<Button variant='outline' className='rounded-full border bg-card'>
+							<Button
+								variant='outline'
+								className='rounded-full border bg-card hover:text-primary dark:hover:text-primary'
+							>
 								{selectedSortLabel}
 								<ArrowDownUp className='ml-2 h-4 w-4' />
 							</Button>
