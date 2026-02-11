@@ -29,18 +29,13 @@ service cloud.firestore {
     }
 
     function isIncrementing(field, by) {
-      return request.resource.data[field] == resource.data[field] + by;
+      return request.resource.data[field] == (resource.data[field] || 0) + by;
     }
     
     function isOnlyChangingStat(stat, by) {
-      let diff = request.resource.data.diff(resource.data);
-      if (diff.affectedKeys().hasOnly(['stats'])) {
-        let statsDiff = request.resource.data.stats.diff(resource.data.stats);
-        if (statsDiff.affectedKeys().hasOnly([stat])) {
-          return request.resource.data.stats[stat] == resource.data.stats[stat] + by;
-        }
-      }
-      return false;
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats']) &&
+             request.resource.data.stats.diff(resource.data.stats).affectedKeys().hasOnly([stat]) &&
+             request.resource.data.stats[stat] == (resource.data.stats[stat] || 0) + by;
     }
 
 
