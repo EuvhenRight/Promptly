@@ -51,7 +51,7 @@ export function StripeCheckout({
 	checkoutError,
 	isLoadingSecret,
 	productPrice,
-	currency = 'usd',
+	currency = 'eur',
 	description,
 	imageUrl,
 	priceLabel,

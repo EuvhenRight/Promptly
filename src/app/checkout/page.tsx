@@ -40,7 +40,7 @@ function CheckoutContent() {
 	const [error, setError] = useState<string | null>(null)
 	const [clientSecret, setClientSecret] = useState<string | null>(null)
 	const [checkoutError, setCheckoutError] = useState<string | null>(null)
-	const [currency, setCurrency] = useState<string>('usd')
+	const [currency, setCurrency] = useState<string>('eur')
 	const [amountCents, setAmountCents] = useState<number | null>(null)
 	const [checkoutTitle, setCheckoutTitle] = useState<string>('')
 	const [checkoutDescription, setCheckoutDescription] = useState<string | undefined>()
