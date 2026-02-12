@@ -96,9 +96,6 @@ export default function Home() {
 					break
 			}
 		} else {
-			// If filtering by category, tag, or model, reset sorting to default (Newest)
-			// This avoids confusion like "Top of Logos" when Top was previously selected.
-			// The user can then use the sort dropdown if they wish.
 			setSortBy('createdAt:desc')
 			if (type === 'category') {
 				setSelectedCategoryId(id)
@@ -120,6 +117,29 @@ export default function Home() {
 
 	const handleSortChange = (newSortBy: SortByOption) => {
 		setSortBy(newSortBy)
+
+		// Only sync main filter links if no content filter is active
+		const isContentFilterActive =
+			selectedCategoryId || selectedTagId || selectedModelId || searchTerm
+		if (isContentFilterActive) {
+			return
+		}
+
+		// Sync the active main filter based on the sort selection
+		if (newSortBy === 'createdAt:desc') {
+			if (activeFilter !== 'Featured') {
+				setActiveFilter('New')
+			}
+		} else if (newSortBy === 'stats.views:desc') {
+			setActiveFilter('Hot')
+		} else if (newSortBy === 'rating.average:desc') {
+			setActiveFilter('Top')
+		} else {
+			// This is for price sorting. If a main filter is active, deselect it.
+			if (['Featured', 'Hot', 'New', 'Top'].includes(activeFilter)) {
+				setActiveFilter('') // An empty string won't match any link, so none will be highlighted.
+			}
+		}
 	}
 
 	const handleSearch = (term: string) => {
