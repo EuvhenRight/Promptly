@@ -2,7 +2,7 @@
 
 Promptly is a marketplace for discovering, buying, and selling high-quality AI prompts. This project is built with Next.js, Firebase, and Tailwind CSS.
 
-## Getting Started
+## Getting Started 
 
 Follow these instructions to get a local copy up and running for development and testing purposes.
 
