@@ -10,14 +10,15 @@ import type { FirebaseOptions } from 'firebase/app'
  */
 export function getFirebaseConfig(): FirebaseOptions {
 	// 1. Try App Hosting environment variables first. This is the primary method for production.
+	// We prioritize FIREBASE_WEBAPP_CONFIG because it is the complete client-side config.
 	const appHostingConfig =
-		process.env.FIREBASE_CONFIG || process.env.FIREBASE_WEBAPP_CONFIG
+		process.env.FIREBASE_WEBAPP_CONFIG || process.env.FIREBASE_CONFIG
 	if (appHostingConfig) {
 		try {
 			return JSON.parse(appHostingConfig)
 		} catch (e) {
 			console.error(
-				'Failed to parse FIREBASE_CONFIG/FIREBASE_WEBAPP_CONFIG. Falling back.',
+				'Failed to parse FIREBASE_WEBAPP_CONFIG/FIREBASE_CONFIG. Falling back.',
 				e,
 			)
 		}
