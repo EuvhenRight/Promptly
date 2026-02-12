@@ -9,7 +9,7 @@ import type { FirebaseOptions } from 'firebase/app'
  * It also includes a fallback for build-time static generation.
  */
 export function getFirebaseConfig(): FirebaseOptions {
-	// 1. Try App Hosting environment variables first.
+	// 1. Try App Hosting environment variables first. This is the primary method for production.
 	const appHostingConfig =
 		process.env.FIREBASE_CONFIG || process.env.FIREBASE_WEBAPP_CONFIG
 	if (appHostingConfig) {
@@ -23,7 +23,7 @@ export function getFirebaseConfig(): FirebaseOptions {
 		}
 	}
 
-	// 2. Try local development environment variables.
+	// 2. Try local development environment variables (from .env.local).
 	const localDevConfig = {
 		apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
 		authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -51,6 +51,7 @@ export function getFirebaseConfig(): FirebaseOptions {
         };
     }
 
-	// 4. If no config is found, return an empty object to trigger a clear error.
+	// 4. If no config is found after all checks, return an empty object.
+	// This will cause initializeFirebase to throw a clear, helpful error.
 	return {}
 }
