@@ -5,8 +5,8 @@
 # you must grant the backend access to it. This is a one-time setup per secret.
 #
 # Since you are using Studio, you must do this manually in the Google Cloud Console:
-# 1. Go to IAM > Service Accounts and copy the email of the "App Hosting Backend" service account.
-# 2. Go to Secret Manager, select the secret, and in PERMISSIONS, grant that email
+# 1. Find the service account emails in IAM for "App Hosting Backend" and "Cloud Build".
+# 2. Go to Secret Manager, select the secret, and in PERMISSIONS, grant both emails
 #    the "Secret Manager Secret Accessor" role.
 #
 # If you had a local setup, you would run this command from your terminal:
@@ -21,12 +21,12 @@ env:
     availability:
       - BUILD
       - RUNTIME
-  - variable: STRIPE_SECRET_KEY
-    secret: STRIPE_SECRET_KEY
-    availability:
-      - RUNTIME
   - variable: STRIPE_CURRENCY
     value: eur
     availability:
       - BUILD
+      - RUNTIME
+  - variable: STRIPE_SECRET_KEY
+    secret: STRIPE_SECRET_KEY
+    availability:
       - RUNTIME
