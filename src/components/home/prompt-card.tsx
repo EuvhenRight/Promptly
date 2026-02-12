@@ -153,7 +153,7 @@ export default function PromptCard({ prompt, isInCart }: PromptCardProps) {
 					</button>
 				)}
 
-				<div className='absolute bottom-3 right-3 z-10'>
+				<div className='absolute bottom-4 right-4 z-10'>
 					<Badge className='flex items-center gap-1'>
 						<Coins className='h-3.5 w-3.5' />
 						{prompt.price === 0 ? 'Free' : creditPrice}
