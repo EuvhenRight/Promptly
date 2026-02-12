@@ -1,6 +1,6 @@
 import { Toaster } from '@/components/ui/toaster'
 import { FirebaseClientProvider } from '@/firebase'
-import { firebaseConfig } from '@/firebase/config'
+import { getFirebaseConfig } from '@/firebase/config'
 import { CategoriesProvider } from '@/hooks/use-categories'
 import { ModelsProvider } from '@/hooks/use-models'
 import { TagsProvider } from '@/hooks/use-tags'
@@ -31,6 +31,7 @@ export default function RootLayout({
 }: Readonly<{
 	children: React.ReactNode
 }>) {
+	const firebaseConfig = getFirebaseConfig()
 	return (
 		<html lang='en' suppressHydrationWarning>
 			<body
