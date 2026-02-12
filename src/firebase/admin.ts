@@ -10,13 +10,19 @@ function initializeAdminApp(): App | null {
         return getApps()[0];
     }
 
-    const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+    // For server-side, we derive config from server-only env vars
+    // Vercel/Cloudflare: FIREBASE_... vars are set in the project settings
+    // Local dev: service-account.json is used
+    // Firebase App Hosting: Application Default Credentials are used
+    const storageBucket = process.env.FIREBASE_STORAGE_BUCKET || process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
     if (!storageBucket) {
-        console.error("Firebase Admin: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET is not set.");
-        return null;
+        // This log is important for debugging deployment issues.
+        console.error("Firebase Admin: FIREBASE_STORAGE_BUCKET environment variable is not set.");
+        // We don't return null here because initializeApp might still succeed using other means
+        // if storage isn't used by the specific server-side function call.
     }
 
-    // 1. Vercel / Production Environment Variables
+    // 1. Vercel / Cloudflare / Production Environment Variables from service account
     if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
         try {
             const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
@@ -29,8 +35,7 @@ function initializeAdminApp(): App | null {
                 storageBucket: storageBucket,
             });
         } catch (e) {
-            console.error("Error initializing admin from Vercel environment variables:", e);
-            // Fall through to try other methods
+            console.error("Error initializing admin from environment variables:", e);
         }
     }
 
