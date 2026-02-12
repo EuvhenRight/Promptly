@@ -126,6 +126,9 @@ service cloud.firestore {
         || (isOnlyChangingStat('views') && isChangingStatBy('views', 1))
         // Allow signed-in users to like/unlike
         || (isSignedIn() && isOnlyChangingStat('likes') && (isChangingStatBy('likes', 1) || isChangingStatBy('likes', -1)))
+        // Allow a user to increment sales by 1, but only if they haven't purchased it yet.
+        // This is part of the purchase transaction.
+        || (isSignedIn() && !hasPurchased(promptId) && isOnlyChangingStat('sales') && isChangingStatBy('sales', 1))
         // Allow a user who purchased the prompt to update its rating
         || ((hasPurchased(promptId) || resource.data.price == 0) && request.resource.data.rating != resource.data.rating && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating']));
 
