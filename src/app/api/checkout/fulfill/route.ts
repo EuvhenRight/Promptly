@@ -123,6 +123,10 @@ export async function POST(req: NextRequest) {
 			return Response.json({ success: true, granted: [], grantedCredits: 0 }, { status: 200 })
 		}
 
+		if (type !== 'prompt' && type !== 'cart') {
+			return Response.json({ error: 'Invalid fulfillment type' }, { status: 400 });
+		}
+
 		const userRef = adminDb.collection('users').doc(userId)
 		await userRef.update({
 			purchasedPrompts: admin.firestore.FieldValue.arrayUnion(...promptIds),
