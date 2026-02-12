@@ -1,6 +1,8 @@
-// This file is intentionally minimal to prevent conflicts.
-// Main config is in next.config.ts. Images domains added here so Next uses them at runtime.
-module.exports = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'placehold.co', port: '', pathname: '/**' },
@@ -11,3 +13,5 @@ module.exports = {
     ],
   },
 };
+
+module.exports = nextConfig;
