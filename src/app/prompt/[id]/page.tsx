@@ -78,6 +78,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { Separator } from '@/components/ui/separator'
 import { useTags } from '@/hooks/use-tags'
 import { useModels } from '@/hooks/use-models'
+import { placeholderImages } from '@/lib/dummy-data'
 
 const PromptDetailSkeleton = () => (
 	<div className='grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12'>
@@ -456,7 +457,12 @@ export default function PromptDetailPage() {
 		const authorPhotoURL = prompt.authorPhotoURL ?? ''
 		const authorInitial = authorDisplayName.charAt(0)
 
-		const promptImage = prompt.images?.[0]
+		const imageId = prompt.images?.[0]
+		const imageData = placeholderImages.find(p => p.id === imageId)
+		const promptImage = imageData?.imageUrl
+		const imageWidth = imageData?.width ?? 720
+		const imageHeight = imageData?.height ?? 1280
+
 		const categoryId = prompt.categoryId ?? prompt.categories?.[0]
 		const categoryNames = getNames(categoryId)
 		const tagNames = getTagNames(prompt.tags)
@@ -470,11 +476,10 @@ export default function PromptDetailPage() {
 							<Image
 								src={promptImage}
 								alt={prompt.title}
-								width={720}
-								height={1280}
+								width={imageWidth}
+								height={imageHeight}
 								className='w-full h-auto object-contain'
 								priority
-								unoptimized
 							/>
 						)}
 					</div>

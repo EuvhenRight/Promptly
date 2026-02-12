@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { doc } from 'firebase/firestore'
 import React from 'react'
+import { placeholderImages } from '@/lib/dummy-data'
 
 type PromptCardProps = {
 	prompt: Prompt
@@ -26,7 +27,10 @@ const formatStat = (num: number): string => {
 }
 
 export default function PromptCard({ prompt, isInCart }: PromptCardProps) {
-	const imageUrl = prompt.images?.[0]
+	const imageId = prompt.images?.[0]
+	const imageData = placeholderImages.find(p => p.id === imageId)
+	const imageUrl = imageData?.imageUrl
+
 	const { getNames } = useCategories()
 	const categoryId = prompt.categoryId ?? prompt.categories?.[0]
 	const categoryNames = getNames(categoryId)
@@ -67,14 +71,13 @@ export default function PromptCard({ prompt, isInCart }: PromptCardProps) {
 		<div>
 			<div className='group relative w-full overflow-hidden rounded-2xl bg-card'>
 				<Link href={`/prompt/${prompt.id}`} className='block cursor-pointer'>
-					{imageUrl ? (
+					{imageUrl && imageData ? (
 						<Image
 							src={imageUrl}
 							alt={prompt.title}
-							width={500}
-							height={500}
+							width={imageData.width}
+							height={imageData.height}
 							className='w-full h-auto object-cover transition-transform duration-300 ease-in-out group-hover:scale-105'
-							unoptimized
 						/>
 					) : (
 						<Skeleton className='w-full aspect-[4/5]' />

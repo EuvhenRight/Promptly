@@ -34,7 +34,8 @@ export function getFirebaseConfig(): FirebaseOptions {
 			process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
 		appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 	}
-	if (localDevConfig.apiKey) {
+	// Ensure all required fields are present before using local config
+	if (localDevConfig.apiKey && localDevConfig.authDomain && localDevConfig.projectId) {
 		return localDevConfig
 	}
 

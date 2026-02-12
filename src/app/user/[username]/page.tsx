@@ -37,6 +37,7 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { signInWithGoogle } from '@/firebase/auth'
+import { placeholderImages } from '@/lib/dummy-data'
 
 function PublicProfileSkeleton() {
 	return (
@@ -239,7 +240,6 @@ export default function PublicProfilePage() {
 							fill
 							className='object-cover'
 							priority
-							unoptimized
 						/>
 					)}
 					<div className='absolute inset-0 bg-gradient-to-t from-black/20 to-transparent' />
@@ -339,7 +339,10 @@ export default function PublicProfilePage() {
 						) : (
 							<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
 								{prompts.map(prompt => {
-									const img = prompt.images?.[0]
+									const imageId = prompt.images?.[0];
+                  const imageData = placeholderImages.find(p => p.id === imageId);
+									const img = imageData?.imageUrl
+
 									return (
 										<Link key={prompt.id} href={`/prompt/${prompt.id}`}>
 											<Card className='overflow-hidden transition-all hover:scale-[1.02] hover:shadow-lg'>
@@ -348,9 +351,9 @@ export default function PublicProfilePage() {
 														<Image
 															src={img}
 															alt={prompt.title}
-															fill
-															className='object-cover'
-															unoptimized
+															width={imageData?.width ?? 400}
+															height={imageData?.height ?? 300}
+															className='object-cover w-full h-full'
 														/>
 													)}
 													<div className='absolute bottom-2 right-2'>
