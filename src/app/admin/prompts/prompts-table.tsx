@@ -73,6 +73,7 @@ import {
 import Image from 'next/image'
 import Link from 'next/link'
 import * as React from 'react'
+import { PlaceHolderImages } from '@/lib/placeholder-images'
 
 const ActionCell = ({ prompt }: { prompt: Prompt }) => {
 	const { toast } = useToast()
@@ -158,7 +159,20 @@ export const columns: ColumnDef<Prompt>[] = [
 		accessorKey: 'images',
 		header: 'Image',
 		cell: ({ row }) => {
-			const imageUrl = row.original.images?.[0]
+			const imageIdentifier = row.original.images?.[0]
+			let imageUrl: string | undefined
+
+			if (imageIdentifier) {
+				if (imageIdentifier.startsWith('http')) {
+					imageUrl = imageIdentifier
+				} else {
+					const imageData = PlaceHolderImages.find(p => p.id === imageIdentifier)
+					if (imageData) {
+						imageUrl = imageData.imageUrl
+					}
+				}
+			}
+
 			return imageUrl ? (
 				<Image
 					alt={row.original.title}
@@ -166,7 +180,6 @@ export const columns: ColumnDef<Prompt>[] = [
 					height='64'
 					src={imageUrl}
 					width='64'
-					unoptimized
 				/>
 			) : (
 				<div className='h-16 w-16 bg-muted rounded-md flex items-center justify-center text-xs text-muted-foreground'>
@@ -226,9 +239,9 @@ export const columns: ColumnDef<Prompt>[] = [
 		),
 		cell: ({ row }) => {
 			const price = parseFloat(row.getValue('price'))
-			const formatted = new Intl.NumberFormat('en-US', {
+			const formatted = new Intl.NumberFormat('de-DE', {
 				style: 'currency',
-				currency: 'USD',
+				currency: 'EUR',
 			}).format(price)
 			return <div className='text-right font-medium'>{formatted}</div>
 		},

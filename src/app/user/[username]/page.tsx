@@ -371,9 +371,15 @@ export default function PublicProfilePage() {
 															height={imgHeight}
 															className='object-cover w-full h-full'
 														/>
-													) : <Skeleton className='w-full h-full'/>}
+													) : (
+														<Skeleton className='w-full h-full' />
+													)}
 													<div className='absolute bottom-2 right-2'>
-														<Badge>{`$${prompt.price}`}</Badge>
+														<Badge>
+															{prompt.price === 0
+																? 'Free'
+																: `€${prompt.price.toFixed(2)}`}
+														</Badge>
 													</div>
 												</div>
 												<CardContent className='p-3'>

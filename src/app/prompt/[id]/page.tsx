@@ -605,7 +605,7 @@ export default function PromptDetailPage() {
 							<>
 								<div className='flex flex-wrap items-center justify-between gap-4'>
 									<h2 className='text-2xl font-bold'>
-										{`$${(Number(prompt.price) ?? 0).toFixed(2)}`}
+										{`€${(Number(prompt.price) ?? 0).toFixed(2)}`}
 									</h2>
 									<div className='flex flex-grow justify-end items-center gap-2 sm:flex-grow-0'>
 										<Button
@@ -697,11 +697,13 @@ export default function PromptDetailPage() {
 								hasUserComment={hasUserComment}
 							/>
 						)}
-						{otherComments.length === 0 && !hasUserComment && !areCommentsLoading && (
-							<p className='text-muted-foreground text-center py-4'>
-								No reviews yet.
-							</p>
-						)}
+						{otherComments.length === 0 &&
+							!hasUserComment &&
+							!areCommentsLoading && (
+								<p className='text-muted-foreground text-center py-4'>
+									No reviews yet.
+								</p>
+							)}
 					</div>
 				</div>
 			</main>

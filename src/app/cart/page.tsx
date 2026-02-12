@@ -27,6 +27,7 @@ import { Loader2, Trash2 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
+import { PlaceHolderImages } from '@/lib/placeholder-images'
 
 function CartSkeleton() {
 	return (
@@ -152,7 +153,22 @@ export default function CartPage() {
 			<div className='grid grid-cols-1 lg:grid-cols-3 gap-8'>
 				<div className='lg:col-span-2 space-y-4'>
 					{cartItems.map(item => {
-						const itemImage = item.images?.[0]
+						const imageIdentifier = item.images?.[0]
+						let itemImage: string | undefined
+
+						if (imageIdentifier) {
+							if (imageIdentifier.startsWith('http')) {
+								itemImage = imageIdentifier
+							} else {
+								const imageData = PlaceHolderImages.find(
+									p => p.id === imageIdentifier,
+								)
+								if (imageData) {
+									itemImage = imageData.imageUrl
+								}
+							}
+						}
+
 						return (
 							<Card key={item.id} className='flex items-center p-4'>
 								<div className='relative w-24 h-24 aspect-square overflow-hidden rounded-md mr-4 bg-muted'>
@@ -162,7 +178,6 @@ export default function CartPage() {
 											alt={item.title}
 											fill
 											className='object-cover'
-											unoptimized
 										/>
 									)}
 								</div>
@@ -174,7 +189,7 @@ export default function CartPage() {
 								</div>
 								<div className='flex items-center gap-4'>
 									<p className='font-bold text-lg'>
-										{item.price === 0 ? 'Free' : `$${item.price.toFixed(2)}`}
+										{item.price === 0 ? 'Free' : `€${item.price.toFixed(2)}`}
 									</p>
 									<Button
 										variant='ghost'
@@ -204,16 +219,16 @@ export default function CartPage() {
 						<CardContent className='space-y-4'>
 							<div className='flex justify-between'>
 								<span>Subtotal</span>
-								<span>${subtotal.toFixed(2)}</span>
+								<span>€{subtotal.toFixed(2)}</span>
 							</div>
 							<div className='flex justify-between'>
 								<span>Tax</span>
-								<span>${tax.toFixed(2)}</span>
+								<span>€{tax.toFixed(2)}</span>
 							</div>
 							<Separator />
 							<div className='flex justify-between font-bold text-lg'>
 								<span>Total</span>
-								<span>${total.toFixed(2)}</span>
+								<span>€{total.toFixed(2)}</span>
 							</div>
 						</CardContent>
 						<CardFooter>
