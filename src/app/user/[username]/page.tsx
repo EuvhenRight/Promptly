@@ -37,7 +37,7 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { signInWithGoogle } from '@/firebase/auth'
-import { placeholderImages } from '@/lib/dummy-data'
+import { PlaceHolderImages } from '@/lib/placeholder-images'
 
 function PublicProfileSkeleton() {
 	return (
@@ -339,23 +339,39 @@ export default function PublicProfilePage() {
 						) : (
 							<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
 								{prompts.map(prompt => {
-									const imageId = prompt.images?.[0];
-                  const imageData = placeholderImages.find(p => p.id === imageId);
-									const img = imageData?.imageUrl
+									const imageIdentifier = prompt.images?.[0]
+									let img: string | undefined
+									let imgWidth: number = 400
+									let imgHeight: number = 300
+
+									if (imageIdentifier) {
+										if (imageIdentifier.startsWith('http')) {
+											img = imageIdentifier
+										} else {
+											const imageData = PlaceHolderImages.find(
+												p => p.id === imageIdentifier,
+											)
+											if (imageData) {
+												img = imageData.imageUrl
+												imgWidth = imageData.width
+												imgHeight = imageData.height
+											}
+										}
+									}
 
 									return (
 										<Link key={prompt.id} href={`/prompt/${prompt.id}`}>
 											<Card className='overflow-hidden transition-all hover:scale-[1.02] hover:shadow-lg'>
 												<div className='relative aspect-video bg-muted'>
-													{img && (
+													{img ? (
 														<Image
 															src={img}
 															alt={prompt.title}
-															width={imageData?.width ?? 400}
-															height={imageData?.height ?? 300}
+															width={imgWidth}
+															height={imgHeight}
 															className='object-cover w-full h-full'
 														/>
-													)}
+													) : <Skeleton className='w-full h-full'/>}
 													<div className='absolute bottom-2 right-2'>
 														<Badge>{`$${prompt.price}`}</Badge>
 													</div>

@@ -78,7 +78,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { Separator } from '@/components/ui/separator'
 import { useTags } from '@/hooks/use-tags'
 import { useModels } from '@/hooks/use-models'
-import { placeholderImages } from '@/lib/dummy-data'
+import { PlaceHolderImages } from '@/lib/placeholder-images'
 
 const PromptDetailSkeleton = () => (
 	<div className='grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12'>
@@ -457,11 +457,23 @@ export default function PromptDetailPage() {
 		const authorPhotoURL = prompt.authorPhotoURL ?? ''
 		const authorInitial = authorDisplayName.charAt(0)
 
-		const imageId = prompt.images?.[0]
-		const imageData = placeholderImages.find(p => p.id === imageId)
-		const promptImage = imageData?.imageUrl
-		const imageWidth = imageData?.width ?? 720
-		const imageHeight = imageData?.height ?? 1280
+		const imageIdentifier = prompt.images?.[0]
+		let promptImage: string | undefined
+		let imageWidth: number = 720
+		let imageHeight: number = 1280
+
+		if (imageIdentifier) {
+			if (imageIdentifier.startsWith('http')) {
+				promptImage = imageIdentifier
+			} else {
+				const imageData = PlaceHolderImages.find(p => p.id === imageIdentifier)
+				if (imageData) {
+					promptImage = imageData.imageUrl
+					imageWidth = imageData.width
+					imageHeight = imageData.height
+				}
+			}
+		}
 
 		const categoryId = prompt.categoryId ?? prompt.categories?.[0]
 		const categoryNames = getNames(categoryId)

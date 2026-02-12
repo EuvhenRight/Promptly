@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { doc } from 'firebase/firestore'
 import React from 'react'
-import { placeholderImages } from '@/lib/dummy-data'
+import { PlaceHolderImages } from '@/lib/placeholder-images'
 
 type PromptCardProps = {
 	prompt: Prompt
@@ -27,10 +27,6 @@ const formatStat = (num: number): string => {
 }
 
 export default function PromptCard({ prompt, isInCart }: PromptCardProps) {
-	const imageId = prompt.images?.[0]
-	const imageData = placeholderImages.find(p => p.id === imageId)
-	const imageUrl = imageData?.imageUrl
-
 	const { getNames } = useCategories()
 	const categoryId = prompt.categoryId ?? prompt.categories?.[0]
 	const categoryNames = getNames(categoryId)
@@ -67,16 +63,37 @@ export default function PromptCard({ prompt, isInCart }: PromptCardProps) {
 		})
 	}
 
+	// Intelligent image handling
+	const imageIdentifier = prompt.images?.[0]
+	let imageUrl: string | undefined
+	let imageWidth: number = 400 // Default width
+	let imageHeight: number = 500 // Default height
+
+	if (imageIdentifier) {
+		if (imageIdentifier.startsWith('http')) {
+			// It's a full URL from Firebase Storage or elsewhere
+			imageUrl = imageIdentifier
+		} else {
+			// It's a placeholder ID
+			const imageData = PlaceHolderImages.find(p => p.id === imageIdentifier)
+			if (imageData) {
+				imageUrl = imageData.imageUrl
+				imageWidth = imageData.width
+				imageHeight = imageData.height
+			}
+		}
+	}
+
 	return (
 		<div>
 			<div className='group relative w-full overflow-hidden rounded-2xl bg-card'>
 				<Link href={`/prompt/${prompt.id}`} className='block cursor-pointer'>
-					{imageUrl && imageData ? (
+					{imageUrl ? (
 						<Image
 							src={imageUrl}
 							alt={prompt.title}
-							width={imageData.width}
-							height={imageData.height}
+							width={imageWidth}
+							height={imageHeight}
 							className='w-full h-auto object-cover transition-transform duration-300 ease-in-out group-hover:scale-105'
 						/>
 					) : (
