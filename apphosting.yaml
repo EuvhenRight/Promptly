@@ -1,6 +1,9 @@
 # Settings to manage and configure a Firebase App Hosting backend.
 # https://firebase.google.com/docs/app-hosting/configure
 # Stripe vars are synced from .env by: ./scripts/sync-stripe-to-firebase.sh
+# IMPORTANT: After adding a new secret reference below, you must grant the backend
+# access to it by running this command from your local machine (not in Studio):
+# firebase apphosting:secrets:grantaccess YOUR_SECRET_NAME
 
 runConfig:
   maxInstances: 1
