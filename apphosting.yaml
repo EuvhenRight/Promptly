@@ -9,7 +9,7 @@
 # 2. Go to Secret Manager, select the secret, and in PERMISSIONS, grant both emails
 #    the "Secret Manager Secret Accessor" role.
 #
-# If you had a local setup, you would run this command from your terminal:
+# If you had a local setup, you would run this command from your terminal: 
 # firebase apphosting:secrets:grantaccess YOUR_SECRET_NAME
 
 runConfig:
