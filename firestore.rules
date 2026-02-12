@@ -15,22 +15,25 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && request.auth.token.admin == true;
+      // Use .get() to safely access role from Firestore, as claims can be stale.
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     function hasPurchased(promptId) {
-      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('purchasedPrompts', []).hasAny([promptId]);
+      // Safely check if the user has purchased the prompt.
+      // Defaults to an empty list if 'purchasedPrompts' does not exist.
+      let userDocData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      let purchased = userDocData.get('purchasedPrompts', []);
+      return isSignedIn() && purchased.hasAny([promptId]);
     }
 
     // Safely checks if a stat is being changed by a certain amount.
+    // Handles cases where the 'stats' map or the stat field itself doesn't exist yet.
     function isChangingStatBy(stat, by) {
-        let currentStatValue = 0;
-        // Safely get the old value, defaulting to 0 if stats or the specific stat doesn't exist.
-        if ('stats' in resource.data && resource.data.stats != null && stat in resource.data.stats) {
-            currentStatValue = resource.data.stats[stat];
-        }
-        
-        // The new value must exist in the request.
+        // Safely get the old value, defaulting to 0.
+        let currentStatValue = resource.data.get('stats', {}).get(stat, 0);
+
+        // The new value must exist in the request's 'stats' map.
         if (!('stats' in request.resource.data) || !(stat in request.resource.data.stats)) {
           return false;
         }
@@ -40,24 +43,41 @@ service cloud.firestore {
     }
 
     // Safely checks that ONLY a specific stat field inside the 'stats' map is being changed.
+    // This is very explicit to avoid complex/unreliable diffing on nested maps.
     function isOnlyChangingStat(stat) {
-      let allAffectedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      let affected = request.resource.data.diff(resource.data).affectedKeys();
       
-      // Ensure only the 'stats' map is being changed at the top level.
-      if (!allAffectedKeys.hasOnly(['stats'])) {
+      // The only top-level key allowed to change is 'stats'.
+      if (!affected.hasOnly(['stats'])) {
         return false;
       }
       
-      // If 'stats' didn't exist before, the new map must only contain the target stat.
-      if (!('stats' in resource.data) || resource.data.stats == null) {
-        return request.resource.data.stats.keys().hasOnly([stat]);
+      // Now, verify the contents of the 'stats' map.
+      // Compare all fields EXCEPT the one we expect to change.
+      let oldStats = resource.data.get('stats', {});
+      let newStats = request.resource.data.stats;
+
+      // The 'views' count must be identical (or both default to 0).
+      let viewsUnchanged = oldStats.get('views', 0) == newStats.get('views', 0);
+      // The 'likes' count must be identical (or both default to 0).
+      let likesUnchanged = oldStats.get('likes', 0) == newStats.get('likes', 0);
+      // The 'sales' count must be identical (or both default to 0).
+      let salesUnchanged = oldStats.get('sales', 0) == newStats.get('sales', 0);
+
+      // Depending on which stat we are allowing to change, check if the others are unchanged.
+      if (stat == 'views') {
+        return likesUnchanged && salesUnchanged;
+      }
+      if (stat == 'likes') {
+        return viewsUnchanged && salesUnchanged;
+      }
+      if (stat == 'sales') {
+        return viewsUnchanged && likesUnchanged;
       }
       
-      // If 'stats' existed, diff it to see what changed inside.
-      let statsAffectedKeys = request.resource.data.stats.diff(resource.data.stats).affectedKeys();
-      return statsAffectedKeys.hasOnly([stat]);
+      // If we're checking a stat that isn't one of these three, deny.
+      return false;
     }
-
 
     function isOnlyChangingFavorites() {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['favoritePrompts']);
