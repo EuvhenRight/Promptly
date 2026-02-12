@@ -64,19 +64,22 @@ export default function Home() {
 	const handleFilterChange = (
 		id: string,
 		name?: string,
-		type?: 'category' | 'tag' | 'main',
+		type?: 'category' | 'tag' | 'main' | 'model',
 	) => {
 		setActiveFilter(id)
 		setActiveFilterName(name || id)
 
 		setSelectedCategoryId(null)
 		setSelectedTagId(null)
+		setSelectedModelId(null)
 		setSearchTerm('')
 
 		if (type === 'category') {
 			setSelectedCategoryId(id)
 		} else if (type === 'tag') {
 			setSelectedTagId(id)
+		} else if (type === 'model') {
+			setSelectedModelId(id)
 		}
 	}
 

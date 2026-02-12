@@ -37,6 +37,10 @@ service cloud.firestore {
       return allAffectedKeys.hasOnly(['stats']) && statsAffectedKeys.hasOnly([stat]);
     }
 
+    function isOnlyChangingFavorites() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['favoritePrompts']);
+    }
+
 
     // ----------------------------------------------------------------------
     // Collection Group Rules
@@ -55,6 +59,7 @@ service cloud.firestore {
       allow list: if isAdmin();
       allow create: if isOwner(userId);
       allow update: if
+        (isOwner(userId) && isOnlyChangingFavorites()) ||
         (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'followers', 'following', 'views'])) ||
         isAdmin();
       allow delete: if isAdmin();

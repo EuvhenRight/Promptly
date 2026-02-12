@@ -20,12 +20,37 @@ export async function GET() {
 		)
 	}
 	try {
-		const snap = await adminDb.collection('categories').get()
-		const categories: CategoryItem[] = snap.docs.map(doc => ({
+		const promptsSnap = await adminDb
+			.collection('prompts')
+			.select('categoryId', 'categories')
+			.get()
+		const activeCategoryIds = new Set<string>()
+		promptsSnap.docs.forEach(doc => {
+			const data = doc.data()
+			if (data.categoryId) {
+				activeCategoryIds.add(data.categoryId)
+			}
+			// Legacy support for 'categories' array
+			if (Array.isArray(data.categories)) {
+				data.categories.forEach(catId => activeCategoryIds.add(catId))
+			}
+		})
+
+		if (activeCategoryIds.size === 0) {
+			return NextResponse.json([])
+		}
+
+		const categoriesSnap = await adminDb.collection('categories').get()
+		const allCategories: CategoryItem[] = categoriesSnap.docs.map(doc => ({
 			id: doc.id,
 			name: (doc.data().name as string) || doc.id,
 		}))
-		return NextResponse.json(categories)
+
+		const activeCategories = allCategories.filter(cat =>
+			activeCategoryIds.has(cat.id),
+		)
+
+		return NextResponse.json(activeCategories)
 	} catch (err) {
 		console.error('Fetch categories error:', err)
 		return NextResponse.json(

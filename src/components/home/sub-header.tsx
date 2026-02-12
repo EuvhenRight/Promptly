@@ -3,9 +3,10 @@
 import { Button } from '@/components/ui/button'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useCategories } from '@/hooks/use-categories'
+import { useModels } from '@/hooks/use-models'
 import { useTags } from '@/hooks/use-tags'
 import { cn } from '@/lib/utils'
-import { FolderOpen, Tag } from 'lucide-react'
+import { Cpu, FolderOpen, Tag } from 'lucide-react'
 import Link from 'next/link'
 
 interface SubHeaderProps {
@@ -13,7 +14,7 @@ interface SubHeaderProps {
 	onFilterChange: (
 		id: string,
 		name?: string,
-		type?: 'category' | 'tag' | 'main',
+		type?: 'category' | 'tag' | 'main' | 'model',
 	) => void
 	mainLinks: string[]
 }
@@ -25,8 +26,9 @@ export default function SubHeader({
 }: SubHeaderProps) {
 	const { categories, isLoading: categoriesLoading } = useCategories()
 	const { tags, isLoading: tagsLoading } = useTags()
+	const { models, isLoading: modelsLoading } = useModels()
 
-	const isLoading = categoriesLoading || tagsLoading
+	const isLoading = categoriesLoading || tagsLoading || modelsLoading
 
 	return (
 		<div className='border-b bg-background/95'>
@@ -92,6 +94,26 @@ export default function SubHeader({
 										>
 											<Tag className='h-4 w-4' />
 											{tag.name}
+										</Button>
+									))}
+									<div className='h-6 border-l mx-2' />
+									{models.map(model => (
+										<Button
+											key={model.id}
+											variant='ghost'
+											size='sm'
+											onClick={() =>
+												onFilterChange(model.id, model.name, 'model')
+											}
+											className={cn(
+												'rounded-full px-3 h-9 gap-2',
+												activeFilter === model.id
+													? 'bg-muted text-primary font-semibold'
+													: 'hover:bg-muted',
+											)}
+										>
+											<Cpu className='h-4 w-4' />
+											{model.name}
 										</Button>
 									))}
 								</>
