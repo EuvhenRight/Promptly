@@ -105,8 +105,8 @@ export default function PromptCard({ prompt, isInCart }: PromptCardProps) {
 						<h3 className='font-bold text-base leading-tight truncate'>
 							{prompt.title}
 						</h3>
-						{prompt.stats && (
-							<div className='mt-1.5 flex items-center justify-between text-xs text-neutral-300'>
+						<div className='mt-1.5 space-y-1.5 text-xs text-neutral-300'>
+							{prompt.stats && (
 								<div className='flex items-center gap-3'>
 									<span className='flex items-center gap-1'>
 										<Eye className='h-4 w-4' />
@@ -117,16 +117,18 @@ export default function PromptCard({ prompt, isInCart }: PromptCardProps) {
 										{formatStat(prompt.stats.sales)}
 									</span>
 								</div>
-								{categoryNames[0] && (
+							)}
+							{categoryNames[0] && (
+								<div>
 									<Badge
 										variant='secondary'
 										className='bg-white/20 text-white backdrop-blur-sm border-0 font-medium'
 									>
 										{categoryNames[0]}
 									</Badge>
-								)}
-							</div>
-						)}
+								</div>
+							)}
+						</div>
 					</div>
 				</div>
 
