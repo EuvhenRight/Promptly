@@ -14,10 +14,9 @@ const nextConfig = {
   },
   /**
    * Custom webpack configuration to disable caching.
-   * This is a workaround for an issue with Cloudflare Pages where the build
-   * process can create cache files larger than the 25MB limit, causing the
-   * deployment to fail. Disabling the cache prevents the creation of these
-   * large .pack files.
+   * This can help prevent issues with "dirty builds" on some hosting platforms
+   * by ensuring a clean build every time, at the cost of a slightly longer
+   * build time.
    */
   webpack: (config) => {
     config.cache = false;
