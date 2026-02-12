@@ -7,7 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CheckCircle2, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 
 type Status = 'loading' | 'complete' | 'open' | 'error'
 
@@ -15,10 +15,13 @@ function CheckoutReturnContent() {
 	const searchParams = useSearchParams()
 	const router = useRouter()
 	const sessionId = searchParams.get('session_id')
+	const fulfillCalled = useRef(false)
 
 	const [status, setStatus] = useState<Status>('loading')
 	const [customerEmail, setCustomerEmail] = useState<string | null>(null)
 	const [error, setError] = useState<string | null>(null)
+	const [grantedPromptIds, setGrantedPromptIds] = useState<string[]>([])
+	const [grantedCredits, setGrantedCredits] = useState<number>(0)
 
 	useEffect(() => {
 		if (!sessionId) {
@@ -40,6 +43,29 @@ function CheckoutReturnContent() {
 				setError(err.message || 'Failed to load session')
 			})
 	}, [sessionId])
+
+	// When payment is complete, fulfill: grant prompts to user so they stay opened
+	useEffect(() => {
+		if (status !== 'complete' || !sessionId || fulfillCalled.current) return
+		fulfillCalled.current = true
+		fetch('/api/checkout/fulfill', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ session_id: sessionId }),
+		})
+			.then(res => res.json())
+			.then(data => {
+				if (data.granted && Array.isArray(data.granted)) {
+					setGrantedPromptIds(data.granted)
+				}
+				if (typeof data.grantedCredits === 'number' && data.grantedCredits > 0) {
+					setGrantedCredits(data.grantedCredits)
+				}
+			})
+			.catch(() => {
+				// Non-blocking: user still paid; prompts may be granted by webhook or support
+			})
+	}, [status, sessionId])
 
 	useEffect(() => {
 		if (status === 'open') {
@@ -96,15 +122,54 @@ function CheckoutReturnContent() {
 							Thank you for your payment
 						</h1>
 						<p className='text-muted-foreground mb-6'>
-							Your purchase was successful. A confirmation email will be sent to{' '}
-							<span className='text-foreground font-medium'>
-								{customerEmail || 'you'}
-							</span>
-							.
+							Your purchase was successful.
+							{grantedCredits > 0 && (
+								<> {grantedCredits.toLocaleString()} credits have been added to your wallet.</>
+							)}
+							{grantedPromptIds.length > 0 && (
+								<>
+									{' '}
+									The prompt{grantedPromptIds.length !== 1 ? 's are' : ' is'} now
+									unlocked for you.
+								</>
+							)}
+							{grantedCredits === 0 && grantedPromptIds.length === 0 && (
+								<> A confirmation email will be sent to you.</>
+							)}
+							{' '}
+							{customerEmail && (grantedCredits > 0 || grantedPromptIds.length > 0) && (
+								<>
+									{' '}
+									Confirmation will be sent to{' '}
+									<span className='text-foreground font-medium'>{customerEmail}</span>.
+								</>
+							)}
 						</p>
-						<Button asChild size='lg'>
-							<Link href='/'>Back to home</Link>
-						</Button>
+						<div className='flex flex-col sm:flex-row gap-3 justify-center'>
+							<Button asChild size='lg'>
+								<Link href='/'>Back to home</Link>
+							</Button>
+							{grantedCredits > 0 && (
+								<Button asChild size='lg' variant='outline'>
+									<Link href='/account'>View my wallet</Link>
+								</Button>
+							)}
+							{grantedPromptIds.length > 0 && (
+								<Button asChild size='lg' variant='outline'>
+									<Link
+										href={
+											grantedPromptIds.length === 1
+												? `/prompt/${grantedPromptIds[0]}`
+												: '/account/profile'
+										}
+									>
+										{grantedPromptIds.length === 1
+											? 'View your prompt'
+											: 'View my prompts'}
+									</Link>
+								</Button>
+							)}
+						</div>
 					</div>
 				)}
 			</main>

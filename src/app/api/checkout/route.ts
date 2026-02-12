@@ -37,6 +37,7 @@ const CREDITS_PRICES: Record<number, number> = {
 
 type CheckoutBody = {
 	type?: 'prompt' | 'credits' | 'plan' | 'cart'
+	userId?: string
 	promptId?: string
 	promptIds?: string[]
 	title?: string
@@ -55,6 +56,7 @@ export async function POST(req: NextRequest) {
 			body.type ??
 			(body.promptIds?.length ? 'cart' : body.promptId ? 'prompt' : undefined)
 		const {
+			userId: bodyUserId,
 			promptId,
 			promptIds: bodyPromptIds,
 			title: bodyTitle,
@@ -80,7 +82,11 @@ export async function POST(req: NextRequest) {
 					{ status: 503 },
 				)
 			}
-			metadata = { type: 'cart', promptIds: bodyPromptIds.join(',') }
+			metadata = {
+				type: 'cart',
+				promptIds: bodyPromptIds.join(','),
+				...(bodyUserId && { userId: bodyUserId }),
+			}
 			let totalCents = 0
 			const items: Stripe.Checkout.SessionCreateParams['line_items'] = []
 			for (const pid of bodyPromptIds) {
@@ -124,7 +130,11 @@ export async function POST(req: NextRequest) {
 			amountCents = Math.round(price * 100)
 			title = `${credits.toLocaleString()} credits for image generation`
 			description = 'Use these credits to generate images or videos.'
-			metadata = { type: 'credits', credits: String(credits) }
+			metadata = {
+				type: 'credits',
+				credits: String(credits),
+				...(bodyUserId && { userId: bodyUserId }),
+			}
 		} else if (type === 'plan') {
 			const plan = bodyPlan === 'pro' ? 'pro' : 'starter'
 			const billing = bodyBilling === 'monthly' ? 'monthly' : 'yearly'
@@ -135,7 +145,12 @@ export async function POST(req: NextRequest) {
 			title = planName
 			description =
 				billing === 'yearly' ? 'With annual billing' : 'With monthly billing'
-			metadata = { type: 'plan', plan, billing }
+			metadata = {
+				type: 'plan',
+				plan,
+				billing,
+				...(bodyUserId && { userId: bodyUserId }),
+			}
 		} else {
 			// prompt (default)
 			if (!promptId) {
@@ -144,7 +159,11 @@ export async function POST(req: NextRequest) {
 					{ status: 400 },
 				)
 			}
-			metadata = { promptId, type: 'prompt' }
+			metadata = {
+				promptId,
+				type: 'prompt',
+				...(bodyUserId && { userId: bodyUserId }),
+			}
 
 			if (adminDb) {
 				const promptSnap = await adminDb.collection('prompts').doc(promptId).get()

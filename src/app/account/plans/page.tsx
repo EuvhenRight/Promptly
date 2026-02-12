@@ -78,7 +78,7 @@ export default function PlansPage() {
 	)
 	const { data: userProfile } = useDoc<UserProfile>(userProfileRef)
 
-	const credits = 10 // Placeholder - could come from userProfile
+	const credits = userProfile?.credits ?? 0
 
 	useEffect(() => {
 		if (!isUserLoading && !user) {

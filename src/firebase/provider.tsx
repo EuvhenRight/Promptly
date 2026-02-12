@@ -135,6 +135,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 									coverImageURL: '',
 									description: '',
 									role: 'user',
+									credits: 0,
 									purchasedPrompts: [],
 									favoritePrompts: [],
 									followers: 0,

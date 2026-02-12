@@ -8,6 +8,28 @@ export type Cart = {
 	updatedAt?: Timestamp
 }
 
+/** One record per successful Stripe checkout, written by fulfill API. */
+export type PurchaseHistoryRecord = {
+	id: string
+	/** 'credits' | 'prompt' | 'cart' | 'plan' */
+	type: 'credits' | 'prompt' | 'cart' | 'plan'
+	amountCents: number
+	currency: string
+	createdAt: Timestamp
+	/** For prompt/cart: prompt IDs. */
+	promptIds?: string[]
+	/** For prompt/cart: prompt titles (same order as promptIds). */
+	promptTitles?: string[]
+	/** For credits: amount added to wallet. */
+	creditsAmount?: number
+	/** For plan: e.g. 'starter' | 'pro'. */
+	plan?: string
+	/** For plan: 'monthly' | 'yearly'. */
+	billing?: string
+	/** Human-readable description for the table. */
+	description?: string
+}
+
 export type UserProfile = {
 	uid: string
 	email: string
@@ -22,6 +44,8 @@ export type UserProfile = {
 	instagramProfile?: string
 	facebookProfile?: string
 	role: 'user' | 'admin'
+	/** Wallet balance for image/generation credits (incremented when user buys credits). */
+	credits?: number
 	purchasedPrompts?: string[]
 	favoritePrompts?: string[]
 	isSeller?: boolean
