@@ -6,25 +6,25 @@ import type { FirebaseOptions } from 'firebase/app'
  * on the server, typically within a Server Component like the root layout.
  * It prioritizes environment variables provided by
  * Firebase App Hosting, falling back to NEXT_PUBLIC_ variables for local dev.
+ * It also includes a fallback for build-time static generation.
  */
 export function getFirebaseConfig(): FirebaseOptions {
-	// App Hosting provides FIREBASE_CONFIG and/or FIREBASE_WEBAPP_CONFIG
-	const firebaseConfig =
+	// 1. Try App Hosting environment variables first.
+	const appHostingConfig =
 		process.env.FIREBASE_CONFIG || process.env.FIREBASE_WEBAPP_CONFIG
-	if (firebaseConfig) {
+	if (appHostingConfig) {
 		try {
-			// This is the primary method for production on App Hosting.
-			return JSON.parse(firebaseConfig)
+			return JSON.parse(appHostingConfig)
 		} catch (e) {
 			console.error(
-				'Failed to parse FIREBASE_CONFIG/FIREBASE_WEBAPP_CONFIG. Falling back to NEXT_PUBLIC_ variables.',
+				'Failed to parse FIREBASE_CONFIG/FIREBASE_WEBAPP_CONFIG. Falling back.',
 				e,
 			)
 		}
 	}
 
-	// Fallback for local development using .env.local or other env sources.
-	const envConfig = {
+	// 2. Try local development environment variables.
+	const localDevConfig = {
 		apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
 		authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
 		projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
@@ -33,16 +33,13 @@ export function getFirebaseConfig(): FirebaseOptions {
 			process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
 		appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 	}
-
-	// Only return this config if it's valid.
-	if (envConfig.apiKey) {
-		return envConfig
+	if (localDevConfig.apiKey) {
+		return localDevConfig
 	}
 
-    // During a production build, if no config is found, it's likely because
-    // we're prerendering a static page (like /_not-found) where env vars
-    // are not available. We provide a dummy config to allow the build to pass.
-    // At runtime, the server-side env vars will be available for server components.
+    // 3. Fallback for build-time static generation (e.g., for /_not-found).
+    // This allows the `next build` command to succeed even if env vars are not available
+    // during the prerendering of certain static pages.
     if (process.env.NODE_ENV === 'production') {
         return {
             apiKey: "build-time-dummy-key",
@@ -54,7 +51,6 @@ export function getFirebaseConfig(): FirebaseOptions {
         };
     }
 
-	// If neither config source is available (e.g. local dev without .env.local),
-    // return an empty object to trigger a clear error in initializeFirebase.
+	// 4. If no config is found, return an empty object to trigger a clear error.
 	return {}
 }
