@@ -26,6 +26,8 @@ export async function POST(req: NextRequest) {
 
         const userRef = adminDb.doc(`users/${userId}`);
         const promptRef = adminDb.doc(`prompts/${promptId}`);
+        let promptData: any;
+        let creditPrice: number;
 
         await adminDb.runTransaction(async (transaction) => {
             const [userDoc, promptDoc] = await Promise.all([
@@ -37,13 +39,13 @@ export async function POST(req: NextRequest) {
             if (!promptDoc.exists) throw new Error('Prompt not found.');
 
             const userData = userDoc.data()!;
-            const promptData = promptDoc.data()!;
+            promptData = promptDoc.data()!;
 
             if (userData.purchasedPrompts?.includes(promptId)) {
-                return;
+                return; // User already owns this prompt
             }
 
-            const creditPrice = Math.round(promptData.price * 100);
+            creditPrice = Math.round(promptData.price * 100);
             const userCredits = userData.credits ?? 0;
 
             if (userCredits < creditPrice) {
@@ -59,6 +61,20 @@ export async function POST(req: NextRequest) {
                 'stats.sales': admin.firestore.FieldValue.increment(1),
             });
         });
+
+        // After successful transaction, write to purchase history
+        if (promptData) {
+            const historyRef = adminDb.collection('users').doc(userId).collection('purchaseHistory').doc();
+            await historyRef.set({
+                type: 'prompt',
+                amountCents: creditPrice,
+                currency: 'crd', // Special currency code for credits
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                promptIds: [promptId],
+                promptTitles: [promptData.title],
+                description: promptData.title,
+            });
+        }
 
         return NextResponse.json({ success: true });
 

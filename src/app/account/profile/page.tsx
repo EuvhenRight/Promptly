@@ -513,10 +513,6 @@ export default function ProfilePage() {
 																	row.createdAt && 'toDate' in row.createdAt
 																		? row.createdAt.toDate()
 																		: null
-																const amount =
-																	row.amountCents != null
-																		? row.amountCents / 100
-																		: null
 																const typeLabel =
 																	row.type === 'credits'
 																		? 'Credits'
@@ -577,15 +573,22 @@ export default function ProfilePage() {
 																			</div>
 																		</TableCell>
 																		<TableCell className='text-right font-medium'>
-																			{amount !== null
-																				? new Intl.NumberFormat(
-																						'de-DE',
-																						{
-																							style: 'currency',
-																							currency: 'EUR',
-																						},
-																					).format(amount)
-																				: '—'}
+																			{row.currency === 'crd' ? (
+																				<div className='flex items-center justify-end gap-1'>
+																					<Coins className='h-4 w-4 text-amber-500' />
+																					<span>{row.amountCents}</span>
+																				</div>
+																			) : row.amountCents != null ? (
+																				new Intl.NumberFormat(
+																					'de-DE',
+																					{
+																						style: 'currency',
+																						currency: 'EUR',
+																					},
+																				).format(row.amountCents / 100)
+																			) : (
+																				'—'
+																			)}
 																		</TableCell>
 																	</TableRow>
 																)
