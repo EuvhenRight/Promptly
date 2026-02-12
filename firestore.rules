@@ -23,8 +23,27 @@ service cloud.firestore {
     // Handles cases where 'purchasedPrompts' field doesn't exist.
     function hasPurchased(promptId) {
       let userDocData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      // Use .get() with a default value to avoid errors if the field doesn't exist.
       let purchased = userDocData.get('purchasedPrompts', []);
       return isSignedIn() && purchased.hasAny([promptId]);
+    }
+
+    // Safely checks if a field is being changed by a specific amount.
+    // statName must be a path like 'stats.likes'
+    function isChangingStatBy(statName, by) {
+        let pathParts = statName.split('.');
+        let topLevelKey = pathParts[0];
+
+        // Safely get the current and next values of the stat.
+        let currentStatValue = resource.data.get(topLevelKey, {}).get(pathParts[1], 0);
+        let nextStatValue = request.resource.data.get(topLevelKey, {}).get(pathParts[1], 0);
+        
+        return nextStatValue == currentStatValue + by;
+    }
+    
+    // Checks if ONLY a specific stat is changing.
+    function isOnlyChangingStat(statName) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats.' + statName]);
     }
 
     // ----------------------------------------------------------------------
@@ -47,10 +66,10 @@ service cloud.firestore {
       allow update: if
         // 1. Admins can do anything.
         isAdmin() ||
-        // 2. The user is updating their own profile, but NOT protected fields like role or credits.
-        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'credits', 'purchasedPrompts', 'followers', 'following', 'views'])) ||
-        // 3. The user is toggling a favorite prompt (only the 'favoritePrompts' array can change).
-        (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['favoritePrompts']));
+        // 2. The user is toggling a favorite prompt (only the 'favoritePrompts' array can change).
+        (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['favoritePrompts'])) ||
+        // 3. The user is updating their own profile, but NOT protected fields.
+        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'credits', 'purchasedPrompts', 'followers', 'following', 'views', 'favoritePrompts']));
 
       allow delete: if isAdmin();
 
@@ -72,13 +91,11 @@ service cloud.firestore {
         // Rule 1: Owner can update their non-counter fields (description, etc.)
         (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['views', 'followers', 'following']))
         // Rule 2: Anyone can increment the view count by exactly 1.
-        || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views']) && request.resource.data.views == (resource.data.get('views', 0) + 1))
+        || (isOnlyChangingStat('views') && isChangingStatBy('views', 1))
         // Rule 3: Any signed-in user can increment/decrement the follower count by exactly 1.
-        || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers'])
-            && (request.resource.data.followers == (resource.data.get('followers', 0) + 1) || request.resource.data.followers == (resource.data.get('followers', 0) - 1)))
+        || (isSignedIn() && isOnlyChangingStat('followers') && (isChangingStatBy('followers', 1) || isChangingStatBy('followers', -1)))
         // Rule 4: The owner can increment/decrement their own following count by exactly 1.
-        || (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['following'])
-            && (request.resource.data.following == (resource.data.get('following', 0) + 1) || request.resource.data.following == (resource.data.get('following', 0) - 1)));
+        || (isOwner(userId) && isOnlyChangingStat('following') && (isChangingStatBy('following', 1) || isChangingStatBy('following', -1)));
     }
 
 
@@ -122,10 +139,9 @@ service cloud.firestore {
       allow update: if
         isAdmin()
         // Allow anyone (even unauth) to increment views by 1
-        || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats.views']) && request.resource.data.stats.views == (resource.data.get('stats', {}).get('views', 0) + 1))
+        || (isOnlyChangingStat('views') && isChangingStatBy('stats.views', 1))
         // Allow signed-in users to like/unlike
-        || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats.likes'])
-            && (request.resource.data.stats.likes == (resource.data.get('stats', {}).get('likes', 0) + 1) || request.resource.data.stats.likes == (resource.data.get('stats', {}).get('likes', 0) - 1)))
+        || (isSignedIn() && isOnlyChangingStat('likes') && (isChangingStatBy('stats.likes', 1) || isChangingStatBy('stats.likes', -1)))
         // Allow a user who purchased the prompt to update its rating
         || ((hasPurchased(promptId) || resource.data.price == 0) && request.resource.data.rating != resource.data.rating && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating']));
 
