@@ -9,6 +9,12 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
 	useCollection,
 	useDoc,
 	useFirestore,
@@ -71,12 +77,6 @@ import {
 	AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { Card } from '@/components/ui/card'
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { formatDistanceToNow } from 'date-fns'
 import { Separator } from '@/components/ui/separator'
 import { useTags } from '@/hooks/use-tags'
@@ -242,7 +242,7 @@ export default function PromptDetailPage() {
 	}
 
 	const handleBuyNow = async () => {
-		if (!user || !firestore || !prompt) {
+		if (!user || !prompt) {
 			toast({
 				variant: 'destructive',
 				title: 'Error',
@@ -252,7 +252,7 @@ export default function PromptDetailPage() {
 		}
 		setIsPurchasing(true)
 		try {
-			await purchasePromptWithCredits(firestore, user.uid, prompt.id)
+			await purchasePromptWithCredits(user.uid, prompt.id)
 			toast({
 				title: 'Purchase Successful!',
 				description: `You have unlocked "${prompt.title}".`,

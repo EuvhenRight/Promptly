@@ -24,6 +24,7 @@ import {
 	ref,
 	uploadBytes,
 } from 'firebase/storage'
+import { getAuth } from 'firebase/auth'
 
 /**
  * Uploads an image from a client-side File object to Firebase Storage.
@@ -469,44 +470,31 @@ export async function deletePromptComment({
 }
 
 /**
- * "Buys" a prompt using the user's credit balance.
+ * "Buys" a prompt using the user's credit balance by calling a secure API endpoint.
  */
 export async function purchasePromptWithCredits(
-	firestore: Firestore,
 	userId: string,
 	promptId: string,
 ): Promise<void> {
-	const userRef = doc(firestore, 'users', userId)
-	const promptRef = doc(firestore, 'prompts', promptId)
+	const auth = getAuth()
+	const user = auth.currentUser
+	if (!user || user.uid !== userId) {
+		throw new Error('You must be signed in to purchase.')
+	}
 
-	await runTransaction(firestore, async transaction => {
-		const [userDoc, promptDoc] = await Promise.all([
-			transaction.get(userRef),
-			transaction.get(promptRef),
-		])
+	const idToken = await user.getIdToken()
 
-		if (!userDoc.exists()) throw new Error('User not found.')
-		if (!promptDoc.exists()) throw new Error('Prompt not found.')
-
-		const userData = userDoc.data() as UserProfile
-		const promptData = promptDoc.data() as Prompt
-
-		const creditPrice = Math.round(promptData.price * 100)
-		const userCredits = userData.credits ?? 0
-
-		if (userCredits < creditPrice) {
-			throw new Error('Insufficient credits.')
-		}
-
-		// Decrement user credits and add prompt to purchased list
-		transaction.update(userRef, {
-			credits: increment(-creditPrice),
-			purchasedPrompts: arrayUnion(promptId),
-		})
-
-		// Increment prompt sales
-		transaction.update(promptRef, {
-			'stats.sales': increment(1),
-		})
+	const response = await fetch('/api/purchase', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			Authorization: `Bearer ${idToken}`,
+		},
+		body: JSON.stringify({ promptId }),
 	})
+
+	if (!response.ok) {
+		const result = await response.json()
+		throw new Error(result.error || 'An unknown error occurred during purchase.')
+	}
 }
