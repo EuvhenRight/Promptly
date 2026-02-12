@@ -8,9 +8,6 @@
 # 1. Find the service account emails in IAM for "App Hosting Backend" and "Cloud Build".
 # 2. Go to Secret Manager, select the secret, and in PERMISSIONS, grant both emails
 #    the "Secret Manager Secret Accessor" role.
-#
-# If you had a local setup, you would run this command from your terminal: 
-# firebase apphosting:secrets:grantaccess YOUR_SECRET_NAME
 
 runConfig:
   maxInstances: 1
@@ -25,8 +22,4 @@ env:
     value: eur
     availability:
       - BUILD
-      - RUNTIME
-  - variable: STRIPE_SECRET_KEY
-    secret: STRIPE_SECRET_KEY
-    availability:
       - RUNTIME

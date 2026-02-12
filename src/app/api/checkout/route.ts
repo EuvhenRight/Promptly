@@ -1,10 +1,43 @@
 import { adminDb } from '@/firebase/admin'
 import { NextRequest } from 'next/server'
 import Stripe from 'stripe'
+import { SecretManagerServiceClient } from '@google-cloud/secret-manager'
 
-function getStripe(): Stripe {
-	const key = process.env.STRIPE_SECRET_KEY
-	if (!key) throw new Error('STRIPE_SECRET_KEY is not set')
+let stripeSecretKey: string | null = null
+const secretName =
+	'projects/studio-2725546260-fde38/secrets/STRIPE_SECRET_KEY/versions/latest'
+
+async function getStripeSecretKey(): Promise<string> {
+	if (stripeSecretKey) {
+		return stripeSecretKey
+	}
+
+	// For local dev, use .env file. For production, this will be undefined.
+	if (process.env.STRIPE_SECRET_KEY) {
+		stripeSecretKey = process.env.STRIPE_SECRET_KEY
+		return stripeSecretKey
+	}
+
+	// For production on App Hosting, fetch from Secret Manager.
+	try {
+		const client = new SecretManagerServiceClient()
+		const [version] = await client.accessSecretVersion({ name: secretName })
+		const payload = version.payload?.data?.toString()
+		if (!payload) {
+			throw new Error(`Secret payload is empty for ${secretName}.`)
+		}
+		stripeSecretKey = payload
+		return stripeSecretKey
+	} catch (error) {
+		console.error('Failed to access secret from Secret Manager:', error)
+		throw new Error(
+			`STRIPE_SECRET_KEY could not be loaded. Ensure the App Hosting backend service account has the 'Secret Manager Secret Accessor' role for the secret.`,
+		)
+	}
+}
+
+async function getStripe(): Promise<Stripe> {
+	const key = await getStripeSecretKey()
 	return new Stripe(key)
 }
 
@@ -56,7 +89,9 @@ type CheckoutBody = {
 export async function POST(req: NextRequest) {
 	try {
 		const body = (await req.json()) as CheckoutBody
-		const type = body.type ?? (body.promptIds?.length ? 'cart' : body.promptId ? 'prompt' : undefined)
+		const type =
+			body.type ??
+			(body.promptIds?.length ? 'cart' : body.promptId ? 'prompt' : undefined)
 		const {
 			promptId,
 			promptIds: bodyPromptIds,
@@ -99,8 +134,12 @@ export async function POST(req: NextRequest) {
 						currency: STRIPE_CURRENCY,
 						product_data: {
 							name: (data.title as string) || 'Prompt',
-							description: (data.description as string)?.slice(0, 500) || undefined,
-							images: Array.isArray(data.images) && data.images[0] ? [data.images[0] as string] : undefined,
+							description:
+								(data.description as string)?.slice(0, 500) || undefined,
+							images:
+								Array.isArray(data.images) && data.images[0]
+									? [data.images[0] as string]
+									: undefined,
 						},
 						unit_amount: itemCents,
 					},
@@ -133,9 +172,7 @@ export async function POST(req: NextRequest) {
 			const planName = plan === 'pro' ? 'Promptly PRO' : 'Promptly Starter'
 			title = planName
 			description =
-				billing === 'yearly'
-					? 'With annual billing'
-					: 'With monthly billing'
+				billing === 'yearly' ? 'With annual billing' : 'With monthly billing'
 			metadata = { type: 'plan', plan, billing }
 		} else {
 			// prompt (default)
@@ -190,33 +227,40 @@ export async function POST(req: NextRequest) {
 		const origin = getOrigin(req)
 		const baseReturn = `${origin}/checkout/return?session_id={CHECKOUT_SESSION_ID}`
 		const extraParams: string[] = []
-		if (metadata.promptId) extraParams.push(`promptId=${encodeURIComponent(metadata.promptId)}`)
-		if (metadata.type) extraParams.push(`type=${encodeURIComponent(metadata.type)}`)
+		if (metadata.promptId)
+			extraParams.push(`promptId=${encodeURIComponent(metadata.promptId)}`)
+		if (metadata.type)
+			extraParams.push(`type=${encodeURIComponent(metadata.type)}`)
 		if (metadata.credits) extraParams.push(`credits=${metadata.credits}`)
 		if (metadata.plan) {
 			extraParams.push(`plan=${metadata.plan}`, `billing=${metadata.billing}`)
 		}
-		const returnUrl = extraParams.length ? `${baseReturn}&${extraParams.join('&')}` : baseReturn
+		const returnUrl = extraParams.length
+			? `${baseReturn}&${extraParams.join('&')}`
+			: baseReturn
 
-		const stripe = getStripe()
+		const stripe = await getStripe()
 		const session = await stripe.checkout.sessions.create({
 			ui_mode: 'embedded',
 			mode: 'payment',
 			payment_method_types: ['link', 'card'],
-			line_items: line_items.length > 0 ? line_items : [
-				{
-					price_data: {
-						currency: STRIPE_CURRENCY,
-						product_data: {
-							name: title,
-							description: description.slice(0, 500) || undefined,
-							images: image ? [image] : undefined,
-						},
-						unit_amount: amountCents,
-					},
-					quantity: 1,
-				},
-			],
+			line_items:
+				line_items.length > 0
+					? line_items
+					: [
+							{
+								price_data: {
+									currency: STRIPE_CURRENCY,
+									product_data: {
+										name: title,
+										description: description.slice(0, 500) || undefined,
+										images: image ? [image] : undefined,
+									},
+									unit_amount: amountCents,
+								},
+								quantity: 1,
+							},
+						],
 			return_url: returnUrl,
 			metadata,
 		})
