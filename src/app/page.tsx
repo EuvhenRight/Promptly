@@ -45,11 +45,17 @@ export default function Home() {
 	const { user } = useUser()
 	const firestore = useFirestore()
 	const cartRef = useMemoFirebase(
-		() => (user && firestore ? doc(firestore, 'users', user.uid, 'carts', 'active') : null),
+		() =>
+			user && firestore
+				? doc(firestore, 'users', user.uid, 'carts', 'active')
+				: null,
 		[firestore, user],
 	)
 	const { data: cart } = useDoc<Cart>(cartRef)
-	const cartPromptIds = useMemo(() => new Set(cart?.promptIds ?? []), [cart?.promptIds])
+	const cartPromptIds = useMemo(
+		() => new Set(cart?.promptIds ?? []),
+		[cart?.promptIds],
+	)
 
 	useEffect(() => {
 		if (!typesLoading && types.length > 0 && !isInitialTypeSet) {
@@ -69,17 +75,38 @@ export default function Home() {
 		setActiveFilter(id)
 		setActiveFilterName(name || id)
 
+		// Reset specific filters to start fresh
 		setSelectedCategoryId(null)
 		setSelectedTagId(null)
 		setSelectedModelId(null)
 		setSearchTerm('')
 
-		if (type === 'category') {
-			setSelectedCategoryId(id)
-		} else if (type === 'tag') {
-			setSelectedTagId(id)
-		} else if (type === 'model') {
-			setSelectedModelId(id)
+		if (type === 'main') {
+			switch (id) {
+				case 'Hot':
+					setSortBy('stats.views:desc')
+					break
+				case 'Top':
+					setSortBy('rating.average:desc')
+					break
+				case 'New':
+				case 'Featured':
+				default:
+					setSortBy('createdAt:desc')
+					break
+			}
+		} else {
+			// If filtering by category, tag, or model, reset sorting to default (Newest)
+			// This avoids confusion like "Top of Logos" when Top was previously selected.
+			// The user can then use the sort dropdown if they wish.
+			setSortBy('createdAt:desc')
+			if (type === 'category') {
+				setSelectedCategoryId(id)
+			} else if (type === 'tag') {
+				setSelectedTagId(id)
+			} else if (type === 'model') {
+				setSelectedModelId(id)
+			}
 		}
 	}
 
