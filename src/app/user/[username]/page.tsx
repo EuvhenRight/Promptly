@@ -23,6 +23,7 @@ import { useToast } from '@/hooks/use-toast'
 import type { Prompt, PublicProfile } from '@/lib/types'
 import { collection, query, where, limit, doc } from 'firebase/firestore'
 import {
+	Coins,
 	Eye,
 	Facebook,
 	Instagram,
@@ -358,6 +359,7 @@ export default function PublicProfilePage() {
 											}
 										}
 									}
+									const creditPrice = Math.round(prompt.price * 100)
 
 									return (
 										<Link key={prompt.id} href={`/prompt/${prompt.id}`}>
@@ -375,10 +377,15 @@ export default function PublicProfilePage() {
 														<Skeleton className='w-full h-full' />
 													)}
 													<div className='absolute bottom-2 right-2'>
-														<Badge>
-															{prompt.price === 0
-																? 'Free'
-																: `€${prompt.price.toFixed(2)}`}
+														<Badge className='flex items-center gap-1'>
+															{prompt.price === 0 ? (
+																'Free'
+															) : (
+																<>
+																	<Coins className='h-3.5 w-3.5' />
+																	{creditPrice}
+																</>
+															)}
 														</Badge>
 													</div>
 												</div>

@@ -37,6 +37,7 @@ import {
 	where,
 } from 'firebase/firestore'
 import {
+	Coins,
 	CreditCard,
 	DollarSign,
 	Edit2,
@@ -128,6 +129,7 @@ function PromptGrid({ prompts }: { prompts: Prompt[] }) {
 						}
 					}
 				}
+				const creditPrice = Math.round(prompt.price * 100)
 
 				return (
 					<Link
@@ -151,11 +153,16 @@ function PromptGrid({ prompts }: { prompts: Prompt[] }) {
 								<p className='font-medium line-clamp-1 group-hover:text-primary'>
 									{prompt.title}
 								</p>
-								<p className='text-sm text-muted-foreground'>
-									{prompt.price === 0
-										? 'Free'
-										: `€${prompt.price.toFixed(2)}`}
-								</p>
+								<div className='text-sm text-muted-foreground flex items-center gap-1'>
+									{prompt.price === 0 ? (
+										'Free'
+									) : (
+										<>
+											<Coins className='h-4 w-4 text-amber-500' />
+											{creditPrice}
+										</>
+									)}
+								</div>
 							</CardContent>
 						</Card>
 					</Link>

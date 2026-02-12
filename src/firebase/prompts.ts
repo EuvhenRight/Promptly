@@ -15,6 +15,7 @@ import {
 	serverTimestamp,
 	updateDoc,
 	writeBatch,
+	arrayUnion,
 } from 'firebase/firestore'
 import {
 	deleteObject,
@@ -464,5 +465,48 @@ export async function deletePromptComment({
 
 		// Delete comment
 		transaction.delete(commentRef)
+	})
+}
+
+/**
+ * "Buys" a prompt using the user's credit balance.
+ */
+export async function purchasePromptWithCredits(
+	firestore: Firestore,
+	userId: string,
+	promptId: string,
+): Promise<void> {
+	const userRef = doc(firestore, 'users', userId)
+	const promptRef = doc(firestore, 'prompts', promptId)
+
+	await runTransaction(firestore, async transaction => {
+		const [userDoc, promptDoc] = await Promise.all([
+			transaction.get(userRef),
+			transaction.get(promptRef),
+		])
+
+		if (!userDoc.exists()) throw new Error('User not found.')
+		if (!promptDoc.exists()) throw new Error('Prompt not found.')
+
+		const userData = userDoc.data() as UserProfile
+		const promptData = promptDoc.data() as Prompt
+
+		const creditPrice = Math.round(promptData.price * 100)
+		const userCredits = userData.credits ?? 0
+
+		if (userCredits < creditPrice) {
+			throw new Error('Insufficient credits.')
+		}
+
+		// Decrement user credits and add prompt to purchased list
+		transaction.update(userRef, {
+			credits: increment(-creditPrice),
+			purchasedPrompts: arrayUnion(promptId),
+		})
+
+		// Increment prompt sales
+		transaction.update(promptRef, {
+			'stats.sales': increment(1),
+		})
 	})
 }

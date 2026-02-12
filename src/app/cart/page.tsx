@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
-import { removePromptFromCart } from '@/firebase/cart'
+import { purchaseCartWithCredits, removePromptFromCart } from '@/firebase/cart'
 import {
 	useCollection,
 	useDoc,
@@ -21,9 +21,9 @@ import {
 	useUser,
 } from '@/firebase'
 import { useToast } from '@/hooks/use-toast'
-import type { Cart, Prompt } from '@/lib/types'
+import type { Cart, Prompt, UserProfile } from '@/lib/types'
 import { collection, doc, documentId, query, where } from 'firebase/firestore'
-import { Loader2, Trash2 } from 'lucide-react'
+import { Coins, Loader2, Trash2 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
@@ -73,6 +73,13 @@ export default function CartPage() {
 	const firestore = useFirestore()
 	const { toast } = useToast()
 	const [removingId, setRemovingId] = useState<string | null>(null)
+	const [isPurchasing, setIsPurchasing] = useState(false)
+
+	const userProfileRef = useMemoFirebase(
+		() => (user ? doc(firestore, 'users', user.uid) : null),
+		[firestore, user],
+	)
+	const { data: userProfile } = useDoc<UserProfile>(userProfileRef)
 
 	const cartRef = useMemoFirebase(
 		() => (user ? doc(firestore, 'users', user.uid, 'carts', 'active') : null),
@@ -97,13 +104,10 @@ export default function CartPage() {
 		isCartLoading ||
 		(cart?.promptIds && cart.promptIds.length > 0 && areItemsLoading)
 
-	const subtotal = useMemo(() => {
+	const totalCreditCost = useMemo(() => {
 		if (!cartItems) return 0
-		return cartItems.reduce((acc, item) => acc + item.price, 0)
+		return cartItems.reduce((acc, item) => acc + Math.round(item.price * 100), 0)
 	}, [cartItems])
-
-	const tax = subtotal * 0.08
-	const total = subtotal + tax
 
 	const handleRemove = (promptId: string, title: string) => {
 		if (!user || !firestore) return
@@ -114,6 +118,28 @@ export default function CartPage() {
 			description: `"${title}" has been removed from your cart.`,
 		})
 		setRemovingId(null)
+	}
+
+	const handlePurchase = async () => {
+		if (!user || !firestore || !cart?.promptIds || cart.promptIds.length === 0) {
+			return
+		}
+		setIsPurchasing(true)
+		try {
+			await purchaseCartWithCredits(firestore, user.uid, cart.promptIds)
+			toast({
+				title: 'Purchase Successful!',
+				description: 'The prompts have been added to your account.',
+			})
+		} catch (error: any) {
+			toast({
+				variant: 'destructive',
+				title: 'Purchase Failed',
+				description: error.message || 'An unknown error occurred.',
+			})
+		} finally {
+			setIsPurchasing(false)
+		}
 	}
 
 	const renderContent = () => {
@@ -149,6 +175,8 @@ export default function CartPage() {
 			)
 		}
 
+		const hasEnoughCredits = (userProfile?.credits ?? 0) >= totalCreditCost
+
 		return (
 			<div className='grid grid-cols-1 lg:grid-cols-3 gap-8'>
 				<div className='lg:col-span-2 space-y-4'>
@@ -168,6 +196,7 @@ export default function CartPage() {
 								}
 							}
 						}
+						const creditPrice = Math.round(item.price * 100)
 
 						return (
 							<Card key={item.id} className='flex items-center p-4'>
@@ -188,9 +217,10 @@ export default function CartPage() {
 									</p>
 								</div>
 								<div className='flex items-center gap-4'>
-									<p className='font-bold text-lg'>
-										{item.price === 0 ? 'Free' : `€${item.price.toFixed(2)}`}
-									</p>
+									<div className='flex items-center gap-1 font-bold text-lg'>
+										<Coins className='h-5 w-5 text-amber-500' />
+										<span>{creditPrice}</span>
+									</div>
 									<Button
 										variant='ghost'
 										size='icon'
@@ -218,23 +248,44 @@ export default function CartPage() {
 						</CardHeader>
 						<CardContent className='space-y-4'>
 							<div className='flex justify-between'>
-								<span>Subtotal</span>
-								<span>€{subtotal.toFixed(2)}</span>
-							</div>
-							<div className='flex justify-between'>
-								<span>Tax</span>
-								<span>€{tax.toFixed(2)}</span>
+								<span>Your balance</span>
+								<span className='flex items-center gap-1'>
+									<Coins className='h-4 w-4 text-amber-500' />
+									{userProfile?.credits ?? 0}
+								</span>
 							</div>
 							<Separator />
 							<div className='flex justify-between font-bold text-lg'>
-								<span>Total</span>
-								<span>€{total.toFixed(2)}</span>
+								<span>Total Cost</span>
+								<span className='flex items-center gap-1'>
+									<Coins className='h-5 w-5 text-amber-500' />
+									{totalCreditCost}
+								</span>
 							</div>
 						</CardContent>
 						<CardFooter>
-							<Button size='lg' className='w-full' asChild>
-								<Link href='/checkout'>Proceed to Checkout</Link>
-							</Button>
+							{hasEnoughCredits ? (
+								<Button
+									size='lg'
+									className='w-full'
+									onClick={handlePurchase}
+									disabled={isPurchasing}
+								>
+									{isPurchasing && (
+										<Loader2 className='mr-2 h-4 w-4 animate-spin' />
+									)}
+									Complete Purchase
+								</Button>
+							) : (
+								<div className='w-full text-center'>
+									<p className='text-sm text-destructive mb-2'>
+										Insufficient credits.
+									</p>
+									<Button size='lg' className='w-full' asChild>
+										<Link href='/account/plans#credits'>Buy More Credits</Link>
+									</Button>
+								</div>
+							)}
 						</CardFooter>
 					</Card>
 				</div>

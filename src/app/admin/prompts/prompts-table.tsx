@@ -66,6 +66,7 @@ import {
 	ArrowUp,
 	ArrowUpDown,
 	ChevronDown,
+	Coins,
 	MoreHorizontal,
 	Pencil,
 	Trash,
@@ -227,7 +228,7 @@ export const columns: ColumnDef<Prompt>[] = [
 				variant='ghost'
 				onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
 			>
-				Price
+				Price (Credits)
 				{column.getIsSorted() === 'asc' ? (
 					<ArrowUp className='ml-2 h-4 w-4' />
 				) : column.getIsSorted() === 'desc' ? (
@@ -239,11 +240,18 @@ export const columns: ColumnDef<Prompt>[] = [
 		),
 		cell: ({ row }) => {
 			const price = parseFloat(row.getValue('price'))
-			const formatted = new Intl.NumberFormat('de-DE', {
-				style: 'currency',
-				currency: 'EUR',
-			}).format(price)
-			return <div className='text-right font-medium'>{formatted}</div>
+			const creditPrice = Math.round(price * 100)
+			return (
+				<div className='text-right font-medium flex items-center justify-end gap-1'>
+					{price === 0 ? (
+						'Free'
+					) : (
+						<>
+							<Coins className='h-4 w-4 text-amber-500' /> {creditPrice}
+						</>
+					)}
+				</div>
+			)
 		},
 	},
 	{

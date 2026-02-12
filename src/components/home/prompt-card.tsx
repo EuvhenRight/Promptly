@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge'
 import { useCategories } from '@/hooks/use-categories'
 import type { Prompt, UserProfile } from '@/lib/types'
-import { Eye, Heart, ShoppingBag, ShoppingCart } from 'lucide-react'
+import { Coins, Eye, Heart, ShoppingBag } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Skeleton } from '../ui/skeleton'
@@ -63,18 +63,15 @@ export default function PromptCard({ prompt, isInCart }: PromptCardProps) {
 		})
 	}
 
-	// Intelligent image handling
 	const imageIdentifier = prompt.images?.[0]
 	let imageUrl: string | undefined
-	let imageWidth: number = 400 // Default width
-	let imageHeight: number = 500 // Default height
+	let imageWidth: number = 400
+	let imageHeight: number = 500
 
 	if (imageIdentifier) {
 		if (imageIdentifier.startsWith('http')) {
-			// It's a full URL from Firebase Storage or elsewhere
 			imageUrl = imageIdentifier
 		} else {
-			// It's a placeholder ID
 			const imageData = PlaceHolderImages.find(p => p.id === imageIdentifier)
 			if (imageData) {
 				imageUrl = imageData.imageUrl
@@ -83,6 +80,8 @@ export default function PromptCard({ prompt, isInCart }: PromptCardProps) {
 			}
 		}
 	}
+
+	const creditPrice = Math.round(prompt.price * 100)
 
 	return (
 		<div>
@@ -114,7 +113,7 @@ export default function PromptCard({ prompt, isInCart }: PromptCardProps) {
 										{formatStat(prompt.stats.views)}
 									</span>
 									<span className='flex items-center gap-1'>
-										<ShoppingCart className='h-4 w-4' />
+										<ShoppingBag className='h-4 w-4' />
 										{formatStat(prompt.stats.sales)}
 									</span>
 								</div>
@@ -151,6 +150,13 @@ export default function PromptCard({ prompt, isInCart }: PromptCardProps) {
 						/>
 					</button>
 				)}
+
+				<div className='absolute bottom-3 right-3 z-10'>
+					<Badge className='flex items-center gap-1'>
+						<Coins className='h-3.5 w-3.5' />
+						{prompt.price === 0 ? 'Free' : creditPrice}
+					</Badge>
+				</div>
 			</div>
 		</div>
 	)
