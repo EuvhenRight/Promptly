@@ -29,5 +29,4 @@ env:
   - variable: STRIPE_SECRET_KEY
     secret: STRIPE_SECRET_KEY
     availability:
-      - BUILD
       - RUNTIME
