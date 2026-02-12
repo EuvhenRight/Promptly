@@ -1,45 +1,7 @@
 import { adminDb } from '@/firebase/admin'
 import { NextRequest } from 'next/server'
 import Stripe from 'stripe'
-import { SecretManagerServiceClient } from '@google-cloud/secret-manager'
-
-let stripeSecretKey: string | null = null
-const secretName =
-	'projects/studio-2725546260-fde38/secrets/STRIPE_SECRET_KEY/versions/latest'
-
-async function getStripeSecretKey(): Promise<string> {
-	if (stripeSecretKey) {
-		return stripeSecretKey
-	}
-
-	// For local dev, use .env file. For production, this will be undefined.
-	if (process.env.STRIPE_SECRET_KEY) {
-		stripeSecretKey = process.env.STRIPE_SECRET_KEY
-		return stripeSecretKey
-	}
-
-	// For production on App Hosting, fetch from Secret Manager.
-	try {
-		const client = new SecretManagerServiceClient()
-		const [version] = await client.accessSecretVersion({ name: secretName })
-		const payload = version.payload?.data?.toString()
-		if (!payload) {
-			throw new Error(`Secret payload is empty for ${secretName}.`)
-		}
-		stripeSecretKey = payload
-		return stripeSecretKey
-	} catch (error) {
-		console.error('Failed to access secret from Secret Manager:', error)
-		throw new Error(
-			`STRIPE_SECRET_KEY could not be loaded. Ensure the App Hosting backend service account has the 'Secret Manager Secret Accessor' role for the secret.`,
-		)
-	}
-}
-
-async function getStripe(): Promise<Stripe> {
-	const key = await getStripeSecretKey()
-	return new Stripe(key)
-}
+import { getStripe } from '@/lib/stripe'
 
 /** Stripe currency (e.g. 'usd', 'eur'). Minimum charge is 0.50 in that currency. */
 const STRIPE_CURRENCY = (process.env.STRIPE_CURRENCY || 'usd').toLowerCase()
