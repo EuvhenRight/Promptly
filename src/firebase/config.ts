@@ -1,3 +1,4 @@
+
 import type { FirebaseOptions } from 'firebase/app'
 
 /**
@@ -33,12 +34,27 @@ export function getFirebaseConfig(): FirebaseOptions {
 		appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 	}
 
-	// Only return this config if it's valid, otherwise initializeFirebase will fail.
+	// Only return this config if it's valid.
 	if (envConfig.apiKey) {
 		return envConfig
 	}
 
-	// If neither config source is available, return an empty object.
-	// The initializeFirebase function will then throw a clear error.
+    // During a production build, if no config is found, it's likely because
+    // we're prerendering a static page (like /_not-found) where env vars
+    // are not available. We provide a dummy config to allow the build to pass.
+    // At runtime, the server-side env vars will be available for server components.
+    if (process.env.NODE_ENV === 'production') {
+        return {
+            apiKey: "build-time-dummy-key",
+            authDomain: "build-time-dummy.firebaseapp.com",
+            projectId: "build-time-dummy",
+            storageBucket: "build-time-dummy.appspot.com",
+            messagingSenderId: "0",
+            appId: "1:0:web:build-time-dummy"
+        };
+    }
+
+	// If neither config source is available (e.g. local dev without .env.local),
+    // return an empty object to trigger a clear error in initializeFirebase.
 	return {}
 }
