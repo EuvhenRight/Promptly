@@ -86,10 +86,14 @@ function CheckoutContent() {
 		if (type !== 'credits' && type !== 'plan') return
 		setCheckoutError(null)
 		const payload: Record<string, unknown> = { type }
-		if (type === 'credits') payload.credits = credits ?? 1000
+		if (type === 'credits') {
+			payload.credits = credits ?? 1000
+			if (user?.uid) payload.userId = user.uid
+		}
 		if (type === 'plan') {
 			payload.plan = plan ?? 'pro'
 			payload.billing = billing
+			if (user?.uid) payload.userId = user.uid
 		}
 		fetch('/api/checkout', {
 			method: 'POST',
@@ -112,7 +116,7 @@ function CheckoutContent() {
 			.catch(err => {
 				setCheckoutError(err.message || 'Failed to load checkout')
 			})
-	}, [type, credits, plan, billing])
+	}, [type, credits, plan, billing, user?.uid])
 
 	// Fetch checkout session for cart
 	useEffect(() => {
@@ -121,7 +125,11 @@ function CheckoutContent() {
 		fetch('/api/checkout', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ type: 'cart', promptIds: cartPromptIds }),
+			body: JSON.stringify({
+				type: 'cart',
+				promptIds: cartPromptIds,
+				...(user?.uid && { userId: user.uid }),
+			}),
 		})
 			.then(async res => {
 				const data = await res.json()
@@ -139,7 +147,7 @@ function CheckoutContent() {
 			.catch(err => {
 				setCheckoutError(err.message || 'Failed to load checkout')
 			})
-	}, [type, cartPromptIds])
+	}, [type, cartPromptIds, user?.uid])
 
 	// Fetch checkout session for prompt (after prompt loaded)
 	useEffect(() => {
@@ -148,11 +156,13 @@ function CheckoutContent() {
 		const payload: {
 			type: 'prompt'
 			promptId: string
+			userId?: string
 			title?: string
 			price?: number
 			description?: string
 			image?: string
 		} = { type: 'prompt', promptId }
+		if (user?.uid) payload.userId = user.uid
 		if (prompt) {
 			payload.title = prompt.title
 			payload.price = prompt.price
@@ -177,7 +187,7 @@ function CheckoutContent() {
 			.catch(err => {
 				setCheckoutError(err.message || 'Failed to load checkout')
 			})
-	}, [type, promptId, isPromptLoading, prompt])
+	}, [type, promptId, isPromptLoading, prompt, user?.uid])
 
 	// Set display strings for prompt when loaded
 	useEffect(() => {
@@ -203,13 +213,24 @@ function CheckoutContent() {
 		}
 	}, [promptId, type, user, cartPromptIds.length])
 
-	// No valid checkout context
-	if (!type) {
+	// No valid checkout context; or prompt/cart/credits without sign-in (so we can grant to account)
+	const needsSignInForPrompts =
+		(type === 'prompt' || type === 'cart') && !user
+	const needsSignInForCredits = type === 'credits' && !user
+	const needsSignIn = needsSignInForPrompts || needsSignInForCredits
+	if (!type || needsSignIn) {
+		const signInMessage = needsSignInForCredits
+			? 'Sign in so credits are added to your wallet.'
+			: needsSignInForPrompts
+				? 'Sign in so your purchased prompts stay unlocked on your account.'
+				: null
 		return (
 			<div className='flex min-h-screen flex-col'>
 				<Header />
 				<main className='flex-grow container mx-auto px-4 py-8'>
-					<p className='text-destructive'>{error || 'Missing product.'}</p>
+					<p className='text-destructive'>
+						{error || signInMessage || 'Missing product.'}
+					</p>
 					<div className='mt-4 flex flex-wrap gap-4'>
 						<a href='/' className='text-primary underline'>
 							Back to home

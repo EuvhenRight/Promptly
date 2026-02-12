@@ -83,6 +83,13 @@ service cloud.firestore {
       allow get, list, create, update, delete: if isOwner(userId);
     }
 
+    // Purchase history: written by server (fulfill); user can only read their own.
+    // {path=**} matches both the collection (list) and document (get) paths.
+    match /users/{userId}/purchaseHistory/{path=**} {
+      allow get, list: if isOwner(userId);
+      allow create, update, delete: if false;
+    }
+
     match /users/{userId}/orders/{orderId} {
       allow get, list, create, update, delete: if isOwner(userId);
     }

@@ -21,8 +21,21 @@ import {
 	useMemoFirebase,
 	useUser,
 } from '@/firebase'
-import type { Prompt, PublicProfile, UserProfile } from '@/lib/types'
-import { collection, doc, documentId, query, where } from 'firebase/firestore'
+import type {
+	Prompt,
+	PublicProfile,
+	PurchaseHistoryRecord,
+	UserProfile,
+} from '@/lib/types'
+import {
+	collection,
+	doc,
+	documentId,
+	getDocs,
+	orderBy,
+	query,
+	where,
+} from 'firebase/firestore'
 import {
 	CreditCard,
 	DollarSign,
@@ -40,6 +53,14 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import AccountSidebar from '@/components/account/account-sidebar'
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from '@/components/ui/table'
 
 function ProfileSkeleton() {
 	return (
@@ -128,8 +149,6 @@ export default function ProfilePage() {
 	const router = useRouter()
 	const [showFeaturedImage, setShowFeaturedImage] = useState<boolean | null>(null)
 
-	const credits = 10 // Placeholder
-
 	useEffect(() => {
 		const storedPreference = localStorage.getItem('showFeaturedImage')
 		setShowFeaturedImage(
@@ -143,6 +162,7 @@ export default function ProfilePage() {
 	)
 	const { data: userProfile, isLoading: isUserProfileLoading } =
 		useDoc<UserProfile>(userProfileRef)
+	const credits = userProfile?.credits ?? 0
 
 	const publicProfileRef = useMemoFirebase(
 		() => (user ? doc(firestore, 'public-profiles', user.uid) : null),
@@ -150,20 +170,6 @@ export default function ProfilePage() {
 	)
 	const { data: publicProfile, isLoading: isPublicProfileLoading } =
 		useDoc<PublicProfile>(publicProfileRef)
-
-	const purchasedPromptsQuery = useMemoFirebase(() => {
-		if (
-			!firestore ||
-			!userProfile?.purchasedPrompts ||
-			userProfile.purchasedPrompts.length === 0
-		) {
-			return null
-		}
-		return query(
-			collection(firestore, 'prompts'),
-			where(documentId(), 'in', userProfile.purchasedPrompts),
-		)
-	}, [firestore, userProfile?.purchasedPrompts])
 
 	const favoritePromptsQuery = useMemoFirebase(() => {
 		if (
@@ -190,9 +196,73 @@ export default function ProfilePage() {
 		[firestore, user],
 	)
 
-	const { data: purchasedPrompts } = useCollection<Prompt>(
-		purchasedPromptsQuery,
+	const purchaseHistoryRef = useMemoFirebase(
+		() =>
+			user && firestore
+				? collection(firestore, 'users', user.uid, 'purchaseHistory')
+				: null,
+		[firestore, user],
 	)
+	const purchaseHistoryQuery = useMemoFirebase(
+		() =>
+			purchaseHistoryRef
+				? query(
+						purchaseHistoryRef,
+						orderBy('createdAt', 'desc'),
+					)
+				: null,
+		[purchaseHistoryRef],
+	)
+	const { data: purchaseHistory } = useCollection<PurchaseHistoryRecord>(
+		purchaseHistoryQuery,
+	)
+
+	// Fetch prompt titles for history rows that don't have promptTitles (e.g. old records)
+	const [fetchedPromptTitles, setFetchedPromptTitles] = useState<
+		Record<string, string>
+	>({})
+	useEffect(() => {
+		if (!firestore || !purchaseHistory?.length) return
+		const missingIds = new Set<string>()
+		for (const row of purchaseHistory) {
+			if (!row.promptIds?.length) continue
+			for (let i = 0; i < row.promptIds.length; i++) {
+				if (!row.promptTitles?.[i]) {
+					missingIds.add(row.promptIds[i])
+				}
+			}
+		}
+		if (missingIds.size === 0) return
+		const ids = Array.from(missingIds)
+		const batchSize = 10 // Firestore 'in' query limit
+		const fetchBatch = async (start: number) => {
+			const chunk = ids.slice(start, start + batchSize)
+			const q = query(
+				collection(firestore, 'prompts'),
+				where(documentId(), 'in', chunk),
+			)
+			const snap = await getDocs(q)
+			const map: Record<string, string> = {}
+			snap.docs.forEach((d) => {
+				map[d.id] = (d.data().title as string) || 'Prompt'
+			})
+			return map
+		}
+		let cancelled = false
+		;(async () => {
+			const all: Record<string, string> = {}
+			for (let i = 0; i < ids.length; i += batchSize) {
+				if (cancelled) return
+				const map = await fetchBatch(i)
+				Object.assign(all, map)
+			}
+			if (!cancelled) setFetchedPromptTitles((prev) => ({ ...prev, ...all }))
+		})()
+		return () => {
+			cancelled = true
+		}
+	}, [firestore, purchaseHistory])
+
 	const { data: favoritePrompts } = useCollection<Prompt>(favoritePromptsQuery)
 	const { data: myPrompts } = useCollection<Prompt>(myPromptsQuery)
 
@@ -390,21 +460,115 @@ export default function ProfilePage() {
 									</CardHeader>
 									<CardContent>
 										<TabsContent value='purchased' className='mt-0'>
-											{!userProfile?.purchasedPrompts ||
-											userProfile.purchasedPrompts.length === 0 ? (
+											{!purchaseHistory || purchaseHistory.length === 0 ? (
 												<EmptyTabContent
 													icon={Package}
-													title='No purchases yet'
-													description='Prompts you buy will appear here.'
+													title='No purchase history yet'
+													description='Credits, prompts, and subscriptions you buy will appear here.'
 													actionLabel='Browse Prompts'
 												/>
-											) : !purchasedPrompts ||
-											  purchasedPrompts.length === 0 ? (
-												<div className='flex justify-center py-12'>
-													<Skeleton className='h-24 w-full max-w-md' />
-												</div>
 											) : (
-												<PromptGrid prompts={purchasedPrompts} />
+												<div className='rounded-md border'>
+													<Table>
+														<TableHeader>
+															<TableRow>
+																<TableHead>Date</TableHead>
+																<TableHead>Type</TableHead>
+																<TableHead>Name</TableHead>
+																<TableHead className='text-right'>
+																	Amount
+																</TableHead>
+															</TableRow>
+														</TableHeader>
+														<TableBody>
+															{purchaseHistory.map((row) => {
+																const date =
+																	row.createdAt &&
+																	'toDate' in row.createdAt
+																		? row.createdAt.toDate()
+																		: null
+																const amount =
+																	row.amountCents != null
+																		? (row.amountCents / 100).toFixed(
+																				2,
+																			)
+																		: '—'
+																const currency =
+																	row.currency?.toUpperCase() ?? 'USD'
+																const typeLabel =
+																	row.type === 'credits'
+																		? 'Credits'
+																		: row.type === 'plan'
+																			? 'Subscription'
+																			: row.type === 'cart'
+																				? 'Cart'
+																				: 'Prompt'
+																return (
+																	<TableRow key={row.id}>
+																		<TableCell className='whitespace-nowrap text-muted-foreground'>
+																			{date
+																				? date.toLocaleDateString(
+																						undefined,
+																						{
+																							dateStyle: 'medium',
+																						},
+																					)
+																				: '—'}
+																		</TableCell>
+																		<TableCell>
+																			{typeLabel}
+																		</TableCell>
+																		<TableCell className='max-w-0 w-[50%]'>
+																			<div className='flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0'>
+																				{row.promptIds &&
+																					row.promptIds.length > 0 ? (
+																					<>
+																						{row.promptIds.map(
+																							(id, i) => {
+																								const name =
+																									row.promptTitles?.[i] ??
+																									fetchedPromptTitles[
+																										id
+																									] ??
+																									'Prompt'
+																								return (
+																									<span
+																										key={id}
+																										className='inline-block min-w-0 max-w-full'
+																									>
+																										{i > 0 && (
+																											<span className='text-muted-foreground mx-0.5 shrink-0'>
+																												·
+																											</span>
+																										)}
+																										<Link
+																											href={`/prompt/${id}`}
+																											title={name}
+																											className='text-primary underline underline-offset-2 hover:text-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded px-0.5 -mx-0.5 text-sm font-medium cursor-pointer truncate block max-w-full'
+																										>
+																											{name}
+																										</Link>
+																									</span>
+																								)
+																							},
+																						)}
+																					</>
+																				) : (
+																					<span className='text-muted-foreground'>
+																						{row.description ?? '—'}
+																					</span>
+																				)}
+																			</div>
+																		</TableCell>
+																		<TableCell className='text-right font-medium'>
+																			{currency} {amount}
+																		</TableCell>
+																	</TableRow>
+																)
+															})}
+														</TableBody>
+													</Table>
+												</div>
 											)}
 										</TabsContent>
 										<TabsContent value='favorites' className='mt-0'>

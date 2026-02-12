@@ -12,7 +12,9 @@ import {
 	CardTitle,
 } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useUser } from '@/firebase'
+import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
+import type { UserProfile } from '@/lib/types'
+import { doc } from 'firebase/firestore'
 import { Bell } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -36,8 +38,15 @@ function NotificationsSkeleton() {
 
 export default function NotificationsPage() {
 	const { user, isUserLoading } = useUser()
+	const firestore = useFirestore()
 	const router = useRouter()
-	const credits = 10 // Placeholder
+
+	const userProfileRef = useMemoFirebase(
+		() => (user && firestore ? doc(firestore, 'users', user.uid) : null),
+		[firestore, user],
+	)
+	const { data: userProfile } = useDoc<UserProfile>(userProfileRef)
+	const credits = userProfile?.credits ?? 0
 
 	useEffect(() => {
 		if (!isUserLoading && !user) {

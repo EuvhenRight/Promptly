@@ -54,6 +54,7 @@ export default function Header() {
 	)
 	const { data: cart } = useDoc<Cart>(cartRef)
 	const cartCount = cart?.promptIds?.length ?? 0
+	const credits = userProfile?.credits ?? 0
 
 	return (
 		<header className='sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'>
@@ -165,9 +166,13 @@ export default function Header() {
 								asChild
 								className='hidden sm:inline-flex hover:bg-transparent dark:hover:bg-transparent hover:text-accent dark:hover:text-primary'
 							>
-								<Link href='/account/plans'>
+								<Link
+									href='/account/plans'
+									title={`${credits} credits`}
+									aria-label={`${credits} credits`}
+								>
 									<Coins className='mr-2 h-4 w-4' />
-									10
+									{credits > 999 ? `${(credits / 1000).toFixed(1)}k` : credits}
 								</Link>
 							</Button>
 							<DropdownMenu>

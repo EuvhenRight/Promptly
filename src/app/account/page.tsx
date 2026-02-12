@@ -128,7 +128,7 @@ export default function AccountPage() {
 	)
 	const { data: userProfile } = useDoc<UserProfile>(userProfileRef)
 
-	const credits = 10 // Placeholder
+	const credits = userProfile?.credits ?? 0
 
 	useEffect(() => {
 		setDisplayName(userProfile?.displayName ?? user?.displayName ?? '')
