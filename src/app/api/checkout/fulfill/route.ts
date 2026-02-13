@@ -89,18 +89,27 @@ export async function POST(req: NextRequest) {
 			}
 		}
 
-		// Plan: only record history (no grant logic yet)
+		// Plan: grant credits and update user plan
 		if (type === 'plan' && userId) {
 			const plan = metadata.plan ?? 'starter'
 			const billing = metadata.billing ?? 'monthly'
 			const planName = plan === 'pro' ? 'Promptly PRO' : 'Promptly Starter'
+			const creditsAmount = plan === 'pro' ? 7200 : 3600
+
+			const userRef = adminDb.collection('users').doc(userId)
+			await userRef.update({
+				planId: plan,
+				credits: admin.firestore.FieldValue.increment(creditsAmount),
+			})
+
 			await writePurchaseHistory(adminDb, userId, sessionId, session, 'plan', {
 				plan,
 				billing,
+				creditsAmount,
 				description: `${planName} (${billing})`,
 			})
 			return Response.json(
-				{ success: true, granted: [], grantedCredits: 0 },
+				{ success: true, granted: [], grantedCredits: creditsAmount },
 				{ status: 200 },
 			)
 		}

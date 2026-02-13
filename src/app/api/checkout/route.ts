@@ -4,7 +4,7 @@ import Stripe from 'stripe'
 import { getStripe } from '@/lib/stripe'
 
 /** Stripe currency (e.g. 'usd', 'eur'). Minimum charge is 0.50 in that currency. */
-const STRIPE_CURRENCY = (process.env.STRIPE_CURRENCY || 'usd').toLowerCase()
+const STRIPE_CURRENCY = (process.env.STRIPE_CURRENCY || 'eur').toLowerCase()
 const MIN_AMOUNT_CENTS = 50 // Stripe minimum 0.50 in the currency's smallest unit
 
 function getOrigin(req: NextRequest): string {
@@ -23,10 +23,10 @@ function getOrigin(req: NextRequest): string {
 		: 'http://localhost:9002'
 }
 
-/** Plan prices in main unit (e.g. 296 = 296 EUR/USD). Yearly = per year total. */
+/** Plan prices in main unit (e.g. 10 = 10 EUR/USD). Yearly = per year total. */
 const PLAN_PRICES = {
-	starter: { monthly: 10, yearly: 108 },
-	pro: { monthly: 22, yearly: 296 },
+	starter: { monthly: 10, yearly: 108 }, // 10/mo, or 9/mo billed yearly
+	pro: { monthly: 22, yearly: 228 },     // 22/mo, or 19/mo billed yearly
 } as const
 
 /** Credits pack prices in main unit. */

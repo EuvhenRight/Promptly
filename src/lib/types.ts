@@ -44,6 +44,7 @@ export type UserProfile = {
 	instagramProfile?: string
 	facebookProfile?: string
 	role: 'user' | 'admin'
+	planId?: 'free' | 'starter' | 'pro'
 	/** Wallet balance for image/generation credits (incremented when user buys credits). */
 	credits?: number
 	purchasedPrompts?: string[]

@@ -25,6 +25,8 @@ import { Check, Crown, Sparkles, Star } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
 
 const FREE_FEATURES = [
 	'For personal use only',
@@ -76,7 +78,9 @@ export default function PlansPage() {
 		() => (user ? doc(firestore, 'users', user.uid) : null),
 		[firestore, user],
 	)
-	const { data: userProfile } = useDoc<UserProfile>(userProfileRef)
+	const { data: userProfile, isLoading: isProfileLoading } =
+		useDoc<UserProfile>(userProfileRef)
+	const currentPlan = userProfile?.planId ?? 'free'
 
 	const credits = userProfile?.credits ?? 0
 
@@ -86,12 +90,12 @@ export default function PlansPage() {
 		}
 	}, [user, isUserLoading, router])
 
-	if (isUserLoading) {
+	if (isUserLoading || isProfileLoading) {
 		return (
 			<div className='flex min-h-screen flex-col'>
 				<Header />
 				<main className='flex-grow container mx-auto px-4 py-8'>
-					<div className='h-96 animate-pulse rounded-lg bg-muted' />
+					<Skeleton className='h-96 w-full animate-pulse rounded-lg bg-muted' />
 				</main>
 				<Footer />
 			</div>
@@ -142,14 +146,14 @@ export default function PlansPage() {
 						{/* Plan Cards */}
 						<div className='mt-8 grid grid-cols-1 md:grid-cols-3 gap-6'>
 							{/* Free */}
-							<Card>
+							<Card className={cn(currentPlan === 'free' && 'border-primary ring-2 ring-primary')}>
 								<CardHeader>
 									<Star className='h-8 w-8 text-muted-foreground' />
 									<CardTitle>Free</CardTitle>
 									<CardDescription>
 										Get started with basic features
 									</CardDescription>
-									<p className='text-2xl font-bold'>$0</p>
+									<p className='text-2xl font-bold'>€0</p>
 									<p className='text-sm text-muted-foreground'>forever</p>
 								</CardHeader>
 								<CardContent className='space-y-3'>
@@ -161,14 +165,14 @@ export default function PlansPage() {
 									))}
 								</CardContent>
 								<CardFooter>
-									<Button variant='outline' className='w-full' asChild>
-										<Link href='#'>Switch to Free</Link>
+									<Button variant='outline' className='w-full' disabled={currentPlan === 'free'}>
+										{currentPlan === 'free' ? 'Current Plan' : 'Switch to Free'}
 									</Button>
 								</CardFooter>
 							</Card>
 
 							{/* Starter */}
-							<Card>
+							<Card className={cn(currentPlan === 'starter' && 'border-primary ring-2 ring-primary')}>
 								<CardHeader>
 									<Crown className='h-8 w-8 text-amber-500' />
 									<CardTitle>Starter</CardTitle>
@@ -176,7 +180,7 @@ export default function PlansPage() {
 										For enthusiasts creating occasionally
 									</CardDescription>
 									<p className='text-2xl font-bold'>
-										${billingPeriod === 'yearly' ? '9' : '10'}
+										€{billingPeriod === 'yearly' ? '9' : '10'}
 									</p>
 									<p className='text-sm text-muted-foreground'>
 										per month
@@ -194,18 +198,18 @@ export default function PlansPage() {
 									))}
 								</CardContent>
 								<CardFooter>
-									<Button className='w-full' asChild>
+									<Button className='w-full' asChild disabled={currentPlan === 'starter'}>
 										<Link
-											href={`/checkout?type=plan&plan=starter&billing=${billingPeriod}`}
+											href={currentPlan !== 'starter' ? `/checkout?type=plan&plan=starter&billing=${billingPeriod}` : '#'}
 										>
-											Upgrade to Starter
+											{currentPlan === 'starter' ? 'Current Plan' : 'Upgrade to Starter'}
 										</Link>
 									</Button>
 								</CardFooter>
 							</Card>
 
 							{/* Pro */}
-							<Card className='relative border-primary shadow-md'>
+							<Card className={cn('relative', currentPlan === 'pro' && 'border-primary ring-2 ring-primary')}>
 								<div className='absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-medium'>
 									Best Value
 								</div>
@@ -216,7 +220,7 @@ export default function PlansPage() {
 										For experts creating daily
 									</CardDescription>
 									<p className='text-2xl font-bold'>
-										${billingPeriod === 'yearly' ? '19' : '22'}
+										€{billingPeriod === 'yearly' ? '19' : '22'}
 									</p>
 									<p className='text-sm text-muted-foreground'>
 										per month
@@ -234,11 +238,11 @@ export default function PlansPage() {
 									))}
 								</CardContent>
 								<CardFooter>
-									<Button className='w-full' asChild>
+									<Button className='w-full' asChild disabled={currentPlan === 'pro'}>
 										<Link
-											href={`/checkout?type=plan&plan=pro&billing=${billingPeriod}`}
+											href={currentPlan !== 'pro' ? `/checkout?type=plan&plan=pro&billing=${billingPeriod}` : '#'}
 										>
-											Upgrade to Pro
+											{currentPlan === 'pro' ? 'Current Plan' : 'Upgrade to Pro'}
 										</Link>
 									</Button>
 								</CardFooter>

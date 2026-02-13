@@ -75,7 +75,7 @@ service cloud.firestore {
         // 2. The user is toggling a favorite prompt (only the 'favoritePrompts' array can change).
         (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['favoritePrompts'])) ||
         // 3. The user is updating their own profile, but NOT protected fields.
-        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'credits', 'purchasedPrompts', 'followers', 'following', 'views']));
+        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'credits', 'purchasedPrompts', 'followers', 'following', 'views', 'planId']));
 
       allow delete: if isAdmin();
 
