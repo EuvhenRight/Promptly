@@ -101,6 +101,7 @@ export async function createPrompt(
 			authorDisplayName: authorData.displayName,
 			authorPhotoURL: authorData.photoURL,
 			authorUsername: authorData.username,
+			authorPlanId: authorData.planId ?? 'free',
 			title: data.title,
 			titleLowercase: data.title.toLowerCase(),
 			searchTerms: getSearchTerms(data.title),
@@ -361,6 +362,7 @@ export async function addPromptCommentAndRating({
 			text,
 			authorDisplayName: userData.displayName,
 			authorPhotoURL: userData.photoURL,
+			authorPlanId: userData.planId ?? 'free',
 			timestamp: serverTimestamp(),
 		})
 

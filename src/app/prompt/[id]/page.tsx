@@ -51,6 +51,7 @@ import {
 } from 'firebase/firestore'
 import {
 	Copy,
+	Crown,
 	Edit,
 	Eye,
 	Heart,
@@ -410,6 +411,16 @@ export default function PromptDetailPage() {
 										<span className='font-semibold'>
 											{userComment.authorDisplayName ?? 'Anonymous'}
 										</span>
+										{userComment.authorPlanId === 'pro' && (
+											<Badge className='bg-primary text-primary-foreground text-xs px-1.5 py-0'>
+												<Crown className='mr-1 h-3 w-3' /> PRO
+											</Badge>
+										)}
+										{userComment.authorPlanId === 'starter' && (
+											<Badge variant='secondary' className='text-xs px-1.5 py-0'>
+												<Star className='mr-1 h-3 w-3' /> Starter
+											</Badge>
+										)}
 										<span className='text-xs text-muted-foreground'>
 											{userComment.timestamp instanceof Timestamp
 												? formatDistanceToNow(userComment.timestamp.toDate(), {
@@ -544,7 +555,19 @@ export default function PromptDetailPage() {
 								<AvatarFallback>{authorInitial}</AvatarFallback>
 							</Avatar>
 							<div>
-								<p className='font-semibold'>{authorDisplayName}</p>
+								<div className='flex items-center gap-2'>
+									<p className='font-semibold'>{authorDisplayName}</p>
+									{prompt.authorPlanId === 'pro' && (
+										<Badge className='bg-primary text-primary-foreground'>
+											<Crown className='mr-1 h-3 w-3' /> PRO
+										</Badge>
+									)}
+									{prompt.authorPlanId === 'starter' && (
+										<Badge variant='secondary'>
+											<Star className='mr-1 h-3 w-3' /> Starter
+										</Badge>
+									)}
+								</div>
 								{authorUsername ? (
 									<Link
 										href={`/user/${authorUsername}`}

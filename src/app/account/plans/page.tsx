@@ -21,10 +21,15 @@ import {
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
 import type { UserProfile } from '@/lib/types'
 import { doc } from 'firebase/firestore'
-import { Check, Crown, Sparkles, Star } from 'lucide-react'
+import { Check, Crown, Loader2, Star, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
+import { add, format } from 'date-fns'
+import { manageSubscriptionCancellation } from '@/firebase/users'
+import { useToast } from '@/hooks/use-toast'
 
 const FREE_FEATURES = [
 	'For personal use only',
@@ -62,9 +67,94 @@ const FAQ_ITEMS = [
 	},
 	{
 		q: 'Is there a free trial?',
-		a: "Yes! Start with our Free plan to try PromptHero before upgrading to a paid plan.",
+		a: "Yes! Start with our Free plan to try Promptly before upgrading to a paid plan.",
 	},
 ]
+
+function SubscriptionStatusCard({ profile }: { profile: UserProfile }) {
+	const firestore = useFirestore()
+	const { toast } = useToast()
+	const [isCancelling, setIsCancelling] = useState(false)
+	const { planId, planPurchasedAt, planBillingPeriod, planWillCancelAtPeriodEnd } = profile
+
+	if (!planId || planId === 'free') {
+		return null
+	}
+
+	const handleCancellation = async (cancel: boolean) => {
+		setIsCancelling(true)
+		try {
+			await manageSubscriptionCancellation(firestore, profile.uid, cancel)
+			toast({
+				title: `Subscription ${cancel ? 'Cancellation Scheduled' : 'Reactivated'}`,
+				description: cancel
+					? 'Your plan will remain active until the end of the current billing period.'
+					: 'Your plan will now renew automatically as scheduled.',
+			})
+		} catch (error: any) {
+			toast({
+				variant: 'destructive',
+				title: 'Error',
+				description: error.message,
+			})
+		} finally {
+			setIsCancelling(false)
+		}
+	}
+
+	const planName = planId === 'pro' ? 'PRO' : 'Starter'
+	const purchaseDate = planPurchasedAt?.toDate()
+	const renewalDate =
+		purchaseDate &&
+		(planBillingPeriod === 'yearly'
+			? add(purchaseDate, { years: 1 })
+			: add(purchaseDate, { months: 1 }))
+
+	return (
+		<Card className='mb-8'>
+			<CardHeader>
+				<CardTitle>Current Subscription</CardTitle>
+				<CardDescription>
+					Manage your active plan and billing details.
+				</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<p>
+					You are currently on the{' '}
+					<span className='font-bold text-primary'>{planName}</span> plan.
+				</p>
+				{renewalDate && (
+					<p className='text-muted-foreground text-sm mt-1'>
+						{planWillCancelAtPeriodEnd
+							? `Your subscription will remain active until ${format(renewalDate, 'PPP')}.`
+							: `Your plan automatically renews on ${format(renewalDate, 'PPP')}.`}
+					</p>
+				)}
+			</CardContent>
+			<CardFooter>
+				{planWillCancelAtPeriodEnd ? (
+					<Button
+						variant='outline'
+						onClick={() => handleCancellation(false)}
+						disabled={isCancelling}
+					>
+						{isCancelling && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+						Reactivate Subscription
+					</Button>
+				) : (
+					<Button
+						variant='destructive'
+						onClick={() => handleCancellation(true)}
+						disabled={isCancelling}
+					>
+						{isCancelling && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+						Cancel Subscription
+					</Button>
+				)}
+			</CardFooter>
+		</Card>
+	)
+}
 
 export default function PlansPage() {
 	const { user, isUserLoading } = useUser()
@@ -76,29 +166,31 @@ export default function PlansPage() {
 		() => (user ? doc(firestore, 'users', user.uid) : null),
 		[firestore, user],
 	)
-	const { data: userProfile } = useDoc<UserProfile>(userProfileRef)
+	const { data: userProfile, isLoading: isProfileLoading } =
+		useDoc<UserProfile>(userProfileRef)
+	const currentPlan = userProfile?.planId ?? 'free'
 
 	const credits = userProfile?.credits ?? 0
 
 	useEffect(() => {
 		if (!isUserLoading && !user) {
-			router.replace('/')
+			router.replace('/plans')
 		}
 	}, [user, isUserLoading, router])
 
-	if (isUserLoading) {
+	if (isUserLoading || isProfileLoading) {
 		return (
 			<div className='flex min-h-screen flex-col'>
 				<Header />
 				<main className='flex-grow container mx-auto px-4 py-8'>
-					<div className='h-96 animate-pulse rounded-lg bg-muted' />
+					<Skeleton className='h-96 w-full animate-pulse rounded-lg bg-muted' />
 				</main>
 				<Footer />
 			</div>
 		)
 	}
 
-	if (!user) {
+	if (!user || !userProfile) {
 		return null
 	}
 
@@ -110,6 +202,8 @@ export default function PlansPage() {
 					<AccountSidebar credits={credits} />
 
 					<div className='flex-1 min-w-0'>
+						<SubscriptionStatusCard profile={userProfile} />
+
 						<h1 className='font-headline text-3xl font-bold'>
 							Choose Your Plan
 						</h1>
@@ -119,21 +213,23 @@ export default function PlansPage() {
 						</p>
 
 						{/* Billing Toggle */}
-						<div className='mt-6 flex items-center gap-3'>
-							<Button
-								variant={billingPeriod === 'monthly' ? 'default' : 'outline'}
-								size='sm'
-								onClick={() => setBillingPeriod('monthly')}
-							>
-								Monthly
-							</Button>
-							<Button
-								variant={billingPeriod === 'yearly' ? 'default' : 'outline'}
-								size='sm'
-								onClick={() => setBillingPeriod('yearly')}
-							>
-								Yearly
-							</Button>
+						<div className='mt-6 flex items-center gap-4'>
+							<div className='flex items-center gap-3'>
+								<Button
+									variant={billingPeriod === 'monthly' ? 'default' : 'outline'}
+									size='sm'
+									onClick={() => setBillingPeriod('monthly')}
+								>
+									Monthly
+								</Button>
+								<Button
+									variant={billingPeriod === 'yearly' ? 'default' : 'outline'}
+									size='sm'
+									onClick={() => setBillingPeriod('yearly')}
+								>
+									Yearly
+								</Button>
+							</div>
 							<span className='text-sm text-green-600 font-medium'>
 								Save up to 15% with yearly billing!
 							</span>
@@ -142,103 +238,116 @@ export default function PlansPage() {
 						{/* Plan Cards */}
 						<div className='mt-8 grid grid-cols-1 md:grid-cols-3 gap-6'>
 							{/* Free */}
-							<Card>
-								<CardHeader>
-									<Star className='h-8 w-8 text-muted-foreground' />
+							<Card className={cn('flex flex-col', currentPlan === 'free' && 'border-primary ring-2 ring-primary')}>
+								<CardHeader className='items-center text-center'>
+									<div className='flex h-10 w-10 items-center justify-center rounded-full bg-muted'>
+										<Star className='h-6 w-6 text-muted-foreground' />
+									</div>
 									<CardTitle>Free</CardTitle>
 									<CardDescription>
-										Get started with basic features
+										Get started with limited access.
 									</CardDescription>
-									<p className='text-2xl font-bold'>$0</p>
-									<p className='text-sm text-muted-foreground'>forever</p>
+									<p className='text-4xl font-bold'>€0</p>
 								</CardHeader>
-								<CardContent className='space-y-3'>
+								<CardContent className='space-y-3 flex-grow'>
 									{FREE_FEATURES.map(f => (
 										<div key={f} className='flex items-start gap-2'>
-											<Check className='h-4 w-4 text-green-600 shrink-0 mt-0.5' />
+											<Check className='h-4 w-4 text-green-600 shrink-0 mt-1' />
 											<span className='text-sm'>{f}</span>
 										</div>
 									))}
 								</CardContent>
 								<CardFooter>
-									<Button variant='outline' className='w-full' asChild>
-										<Link href='#'>Switch to Free</Link>
+									<Button variant='outline' className='w-full' disabled={currentPlan === 'free'}>
+										Current Plan
 									</Button>
 								</CardFooter>
 							</Card>
 
 							{/* Starter */}
-							<Card>
-								<CardHeader>
-									<Crown className='h-8 w-8 text-amber-500' />
+							<Card className={cn('flex flex-col', currentPlan === 'starter' && 'border-primary ring-2 ring-primary')}>
+								<CardHeader className='items-center text-center'>
+									<div className='flex h-10 w-10 items-center justify-center rounded-full bg-muted'>
+										<Zap className='h-6 w-6 text-primary' />
+									</div>
 									<CardTitle>Starter</CardTitle>
 									<CardDescription>
-										For enthusiasts creating occasionally
+										For enthusiasts creating occasionally.
 									</CardDescription>
-									<p className='text-2xl font-bold'>
-										${billingPeriod === 'yearly' ? '9' : '10'}
-									</p>
-									<p className='text-sm text-muted-foreground'>
-										per month
+									<div className='flex items-baseline gap-2'>
+										<p className='text-4xl font-bold'>
+											€{billingPeriod === 'yearly' ? '9' : '10'}
+										</p>
+										<span className='text-sm text-muted-foreground'>
+											/ mo
+										</span>
+									</div>
+									<p className='text-xs text-muted-foreground'>
 										{billingPeriod === 'yearly' && (
-											<span className='text-green-600'> (billed yearly)</span>
+											<span className='text-green-600'> (Billed yearly at €108)</span>
 										)}
 									</p>
 								</CardHeader>
-								<CardContent className='space-y-3'>
+								<CardContent className='space-y-3 flex-grow'>
 									{STARTER_FEATURES.map(f => (
 										<div key={f} className='flex items-start gap-2'>
-											<Check className='h-4 w-4 text-green-600 shrink-0 mt-0.5' />
+											<Check className='h-4 w-4 text-green-600 shrink-0 mt-1' />
 											<span className='text-sm'>{f}</span>
 										</div>
 									))}
 								</CardContent>
 								<CardFooter>
-									<Button className='w-full' asChild>
+									<Button className='w-full' asChild disabled={currentPlan === 'starter'}>
 										<Link
-											href={`/checkout?type=plan&plan=starter&billing=${billingPeriod}`}
+											href={currentPlan !== 'starter' ? `/checkout?type=plan&plan=starter&billing=${billingPeriod}` : '#'}
 										>
-											Upgrade to Starter
+											{currentPlan === 'starter' ? 'Current Plan' : 'Get Started with Starter'}
 										</Link>
 									</Button>
 								</CardFooter>
 							</Card>
 
 							{/* Pro */}
-							<Card className='relative border-primary shadow-md'>
+							<Card className={cn('relative flex flex-col', currentPlan === 'pro' && 'border-primary ring-2 ring-primary')}>
 								<div className='absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-medium'>
-									Best Value
+									Most Popular
 								</div>
-								<CardHeader>
-									<Sparkles className='h-8 w-8 text-primary' />
+								<CardHeader className='items-center text-center'>
+									<div className='flex h-10 w-10 items-center justify-center rounded-full bg-muted'>
+										<Crown className='h-6 w-6 text-amber-500' />
+									</div>
 									<CardTitle>Pro</CardTitle>
 									<CardDescription>
-										For experts creating daily
+										For experts creating daily.
 									</CardDescription>
-									<p className='text-2xl font-bold'>
-										${billingPeriod === 'yearly' ? '19' : '22'}
-									</p>
-									<p className='text-sm text-muted-foreground'>
-										per month
+									<div className='flex items-baseline gap-2'>
+										<p className='text-4xl font-bold'>
+											€{billingPeriod === 'yearly' ? '19' : '22'}
+										</p>
+										<span className='text-sm text-muted-foreground'>
+											/ mo
+										</span>
+									</div>
+									<p className='text-xs text-muted-foreground'>
 										{billingPeriod === 'yearly' && (
-											<span className='text-green-600'> (billed yearly)</span>
+											<span className='text-green-600'>(Billed yearly at €228)</span>
 										)}
 									</p>
 								</CardHeader>
-								<CardContent className='space-y-3'>
+								<CardContent className='space-y-3 flex-grow'>
 									{PRO_FEATURES.map(f => (
 										<div key={f} className='flex items-start gap-2'>
-											<Check className='h-4 w-4 text-green-600 shrink-0 mt-0.5' />
+											<Check className='h-4 w-4 text-green-600 shrink-0 mt-1' />
 											<span className='text-sm'>{f}</span>
 										</div>
 									))}
 								</CardContent>
 								<CardFooter>
-									<Button className='w-full' asChild>
+									<Button className='w-full' asChild disabled={currentPlan === 'pro'}>
 										<Link
-											href={`/checkout?type=plan&plan=pro&billing=${billingPeriod}`}
+											href={currentPlan !== 'pro' ? `/checkout?type=plan&plan=pro&billing=${billingPeriod}` : '#'}
 										>
-											Upgrade to Pro
+											{currentPlan === 'pro' ? 'Current Plan' : 'Get Started with Pro'}
 										</Link>
 									</Button>
 								</CardFooter>
@@ -247,23 +356,57 @@ export default function PlansPage() {
 
 						{/* Need Extra Credits */}
 						<section id='credits' className='mt-16'>
-							<h2 className='font-headline text-2xl font-bold'>
+							<h2 className='font-headline text-3xl font-bold text-center'>
 								Need Extra Credits?
 							</h2>
-							<p className='mt-2 text-muted-foreground'>
+							<p className='mt-2 text-muted-foreground text-center max-w-xl mx-auto'>
 								Purchase credits that never expire and roll over month to month.
 							</p>
-							<div className='mt-6 flex flex-wrap gap-4'>
-								<Button variant='outline' asChild>
-									<Link href='/checkout?type=credits&credits=1000'>
-										Buy 1,000 Credits
-									</Link>
-								</Button>
-								<Button variant='outline' asChild>
-									<Link href='/checkout?type=credits&credits=2000'>
-										Buy 2,000 Credits
-									</Link>
-								</Button>
+							<div className='mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto'>
+								{/* 300 Credits Card */}
+								<Card className='flex flex-col text-center p-8'>
+									<div className='flex-grow space-y-4'>
+										<div className='flex justify-center'>
+											<div className='bg-muted text-foreground p-4 rounded-lg inline-block'>
+												<Zap className='h-8 w-8' />
+											</div>
+										</div>
+										<h3 className='text-2xl font-bold'>300 Credits</h3>
+										<p className='text-muted-foreground'>
+											Great for getting started and occasional use.
+										</p>
+										<p className='text-4xl font-bold'>€10</p>
+									</div>
+									<Button className='w-full mt-6' size='lg' asChild>
+										<Link href='/checkout?type=credits&credits=300'>
+											Buy Credits
+										</Link>
+									</Button>
+								</Card>
+
+								{/* 500 Credits Card */}
+								<Card className='relative flex flex-col text-center p-8 border-primary ring-2 ring-primary'>
+									<div className='absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-medium'>
+										Best Value
+									</div>
+									<div className='flex-grow space-y-4'>
+										<div className='flex justify-center'>
+											<div className='bg-primary/10 text-primary p-4 rounded-lg inline-block'>
+												<Zap className='h-8 w-8' />
+											</div>
+										</div>
+										<h3 className='text-2xl font-bold'>500 Credits</h3>
+										<p className='text-muted-foreground'>
+											Perfect for power users and frequent creation.
+										</p>
+										<p className='text-4xl font-bold'>€18</p>
+									</div>
+									<Button className='w-full mt-6' size='lg' asChild>
+										<Link href='/checkout?type=credits&credits=500'>
+											Buy Credits
+										</Link>
+									</Button>
+								</Card>
 							</div>
 						</section>
 

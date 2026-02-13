@@ -32,13 +32,13 @@ function CheckoutContent() {
 	const [productPrice, setProductPrice] = useState<number | undefined>()
 
 	const type = typeParam
-	const credits = creditsParam === '2000' ? 2000 : creditsParam === '1000' ? 1000 : null
+	const credits = creditsParam === '500' ? 500 : creditsParam === '300' ? 300 : null
 	const plan = planParam === 'pro' ? 'pro' : planParam === 'starter' ? 'starter' : null
 	const billing = billingParam === 'monthly' ? 'monthly' : 'yearly'
 
 	useEffect(() => {
 		if (type === 'credits') {
-			const amount = credits ?? 1000
+			const amount = credits ?? 300
 			setCheckoutTitle(`${amount.toLocaleString()} credits`)
 			setCheckoutDescription('For generating images, videos, and more.')
 			setBackHref('/account/plans')
@@ -61,7 +61,7 @@ function CheckoutContent() {
 		setCheckoutError(null)
 		const payload: Record<string, unknown> = { type }
 		if (type === 'credits') {
-			payload.credits = credits ?? 1000
+			payload.credits = credits ?? 300
 		}
 		if (type === 'plan') {
 			payload.plan = plan ?? 'pro'

@@ -35,6 +35,7 @@ export function usePromptsFeed({
 	modelId,
 	sortBy,
 	searchTerm,
+	privateOnly,
 }: {
 	categoryId: string | null
 	typeId: string | null
@@ -42,6 +43,7 @@ export function usePromptsFeed({
 	modelId: string | null
 	sortBy: SortByOption
 	searchTerm: string | null
+	privateOnly?: boolean
 }) {
 	const firestore = useFirestore()
 	const [prompts, setPrompts] = useState<Prompt[]>([])
@@ -64,6 +66,10 @@ export function usePromptsFeed({
 				let clientSideFilter: (prompt: Prompt) => boolean = () => true
 				let clientSideSort: ((a: Prompt, b: Prompt) => number) | undefined =
 					undefined
+
+				if (privateOnly) {
+					firestoreQueryConstraints.push(where('isPrivate', '==', true))
+				}
 
 				// If there's a search term, we perform a text search in Firestore
 				// and do the rest of the filtering/sorting on the client-side.
@@ -185,7 +191,18 @@ export function usePromptsFeed({
 			}
 		},
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-		[firestore, loading, lastVisible, categoryId, typeId, tagId, modelId, sortBy, searchTerm],
+		[
+			firestore,
+			loading,
+			lastVisible,
+			categoryId,
+			typeId,
+			tagId,
+			modelId,
+			sortBy,
+			searchTerm,
+			privateOnly,
+		],
 	)
 
 	useEffect(() => {
@@ -195,7 +212,16 @@ export function usePromptsFeed({
 		setTotalCount(null)
 		fetchPrompts(true)
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [firestore, categoryId, typeId, tagId, modelId, sortBy, searchTerm])
+	}, [
+		firestore,
+		categoryId,
+		typeId,
+		tagId,
+		modelId,
+		sortBy,
+		searchTerm,
+		privateOnly,
+	])
 
 	const loadMore = useCallback(() => {
 		if (hasMore && !loading) {

@@ -41,6 +41,7 @@ export default function Home() {
 	const [sortBy, setSortBy] = useState<SortByOption>('createdAt:desc')
 	const [searchTerm, setSearchTerm] = useState('')
 	const [debouncedSearchTerm] = useDebounce(searchTerm, 500)
+	const [showPrivateOnly, setShowPrivateOnly] = useState(false)
 	const { types, isLoading: typesLoading } = useTypes()
 	const { user } = useUser()
 	const firestore = useFirestore()
@@ -67,6 +68,8 @@ export default function Home() {
 		() => new Set(userProfile?.purchasedPrompts ?? []),
 		[userProfile?.purchasedPrompts],
 	)
+	const isProOrAdmin =
+		userProfile?.planId === 'pro' || userProfile?.role === 'admin'
 
 	useEffect(() => {
 		if (!typesLoading && types.length > 0 && !isInitialTypeSet) {
@@ -81,7 +84,7 @@ export default function Home() {
 	const handleFilterChange = (
 		id: string,
 		name?: string,
-		type?: 'category' | 'tag' | 'main' | 'model',
+		type?: 'category' | 'tag' | 'main' | 'model' | 'pro',
 	) => {
 		setActiveFilter(id)
 		setActiveFilterName(name || id)
@@ -91,8 +94,11 @@ export default function Home() {
 		setSelectedTagId(null)
 		setSelectedModelId(null)
 		setSearchTerm('')
+		setShowPrivateOnly(false)
 
-		if (type === 'main') {
+		if (type === 'pro') {
+			setShowPrivateOnly(true)
+		} else if (type === 'main') {
 			switch (id) {
 				case 'Hot':
 					setSortBy('stats.views:desc')
@@ -131,7 +137,11 @@ export default function Home() {
 
 		// Only sync main filter links if no content filter is active
 		const isContentFilterActive =
-			selectedCategoryId || selectedTagId || selectedModelId || searchTerm
+			selectedCategoryId ||
+			selectedTagId ||
+			selectedModelId ||
+			searchTerm ||
+			showPrivateOnly
 		if (isContentFilterActive) {
 			return
 		}
@@ -159,6 +169,7 @@ export default function Home() {
 		setActiveFilter(term ? 'search' : 'Featured')
 		setSelectedCategoryId(null)
 		setSelectedTagId(null)
+		setShowPrivateOnly(false)
 	}
 
 	const { prompts, loading, error, hasMore, loadMore, totalCount } =
@@ -169,9 +180,15 @@ export default function Home() {
 			modelId: selectedModelId,
 			sortBy,
 			searchTerm: debouncedSearchTerm,
+			privateOnly: showPrivateOnly,
 		})
 
 	const observer = useRef<IntersectionObserver | null>(null)
+
+	const visiblePrompts = useMemo(() => {
+		if (isProOrAdmin) return prompts
+		return prompts.filter(p => !p.isPrivate)
+	}, [prompts, isProOrAdmin])
 
 	const loadMoreRef = useCallback(
 		(node: HTMLDivElement) => {
@@ -196,6 +213,7 @@ export default function Home() {
 				activeFilter={activeFilter}
 				onFilterChange={handleFilterChange}
 				mainLinks={mainLinks}
+				userProfile={userProfile}
 			/>
 			<main>
 				<SearchBar
@@ -219,7 +237,7 @@ export default function Home() {
 					)}
 
 					<PromptFeed
-						prompts={prompts}
+						prompts={visiblePrompts}
 						cartPromptIds={cartPromptIds}
 						purchasedPromptIds={purchasedPromptIds}
 					/>

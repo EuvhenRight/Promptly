@@ -342,3 +342,18 @@ export async function unfollowUser(
 
 	await batch.commit()
 }
+
+/**
+ * Updates a user's subscription cancellation status.
+ */
+export async function manageSubscriptionCancellation(
+	firestore: Firestore,
+	userId: string,
+	cancel: boolean,
+): Promise<void> {
+	if (!userId) throw new Error('User ID is required.')
+	const userRef = doc(firestore, 'users', userId)
+	await updateDoc(userRef, {
+		planWillCancelAtPeriodEnd: cancel,
+	})
+}
