@@ -19,11 +19,10 @@ import {
 } from '@/components/ui/accordion'
 import { useUser } from '@/firebase'
 import { signInWithGoogle } from '@/firebase/auth'
-import { Check, Crown, Star } from 'lucide-react'
+import { Check, Crown, Star, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { cn } from '@/lib/utils'
 
 const FREE_FEATURES = [
 	'For personal use only',
@@ -155,7 +154,7 @@ export default function PlansPage() {
 						<Card className='flex flex-col'>
 							<CardHeader className='items-center text-center'>
 								<div className='flex h-12 w-12 items-center justify-center rounded-full bg-muted'>
-									<Star className='h-7 w-7 text-amber-500' />
+									<Zap className='h-7 w-7 text-primary' />
 								</div>
 								<CardTitle>Starter</CardTitle>
 								<CardDescription>

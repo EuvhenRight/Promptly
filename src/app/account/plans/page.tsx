@@ -88,8 +88,8 @@ function SubscriptionStatusCard({ profile }: { profile: UserProfile }) {
 			toast({
 				title: `Subscription ${cancel ? 'Cancellation Scheduled' : 'Reactivated'}`,
 				description: cancel
-					? 'Your plan will expire at the end of the current billing period.'
-					: 'Your plan will now renew automatically.',
+					? 'Your plan will remain active until the end of the current billing period.'
+					: 'Your plan will now renew automatically as scheduled.',
 			})
 		} catch (error: any) {
 			toast({
@@ -127,7 +127,7 @@ function SubscriptionStatusCard({ profile }: { profile: UserProfile }) {
 					<p className='text-muted-foreground text-sm mt-1'>
 						{planWillCancelAtPeriodEnd
 							? `Your subscription will remain active until ${format(renewalDate, 'PPP')}.`
-							: `Your plan will automatically renew on ${format(renewalDate, 'PPP')}.`}
+							: `Your plan automatically renews on ${format(renewalDate, 'PPP')}.`}
 					</p>
 				)}
 			</CardContent>
@@ -268,7 +268,7 @@ export default function PlansPage() {
 							<Card className={cn('flex flex-col', currentPlan === 'starter' && 'border-primary ring-2 ring-primary')}>
 								<CardHeader className='items-center text-center'>
 									<div className='flex h-10 w-10 items-center justify-center rounded-full bg-muted'>
-										<Star className='h-6 w-6 text-amber-500' />
+										<Zap className='h-6 w-6 text-primary' />
 									</div>
 									<CardTitle>Starter</CardTitle>
 									<CardDescription>
