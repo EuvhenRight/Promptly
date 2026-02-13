@@ -1,9 +1,9 @@
 import { adminDb } from '@/firebase/admin'
 import admin from 'firebase-admin'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 
 export async function PATCH(
-	request: NextRequest,
+	request: Request,
 	{ params }: { params: { id: string } },
 ) {
 	if (!adminDb) {
@@ -72,7 +72,7 @@ export async function PATCH(
 }
 
 export async function DELETE(
-	request: NextRequest,
+	request: Request,
 	{ params }: { params: { id: string } },
 ) {
 	if (!adminDb) {
