@@ -84,6 +84,7 @@ export type Prompt = {
 	authorDisplayName?: string
 	authorPhotoURL?: string
 	authorUsername?: string
+	authorPlanId?: 'free' | 'starter' | 'pro'
 	title: string
 	titleLowercase: string
 	searchTerms: string[]
@@ -124,6 +125,7 @@ export type PromptComment = {
 	userId: string
 	authorDisplayName?: string
 	authorPhotoURL?: string
+	authorPlanId?: 'free' | 'starter' | 'pro'
 	timestamp?: Timestamp
 }
 
