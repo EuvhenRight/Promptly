@@ -213,7 +213,7 @@ export default function PlansPage() {
 						</p>
 
 						{/* Billing Toggle */}
-						<div className='mt-6 flex flex-col items-start gap-2'>
+						<div className='mt-6 flex items-center gap-4'>
 							<div className='flex items-center gap-3'>
 								<Button
 									variant={billingPeriod === 'monthly' ? 'default' : 'outline'}
