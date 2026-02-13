@@ -49,10 +49,28 @@ service cloud.firestore {
       return nextNum == currentNum + by;
     }
     
-    // Checks if ONLY a specific field path is changing.
+    // Robustly checks if ONLY a specific nested or top-level field is changing.
+    // Examples: isOnlyChangingStat('views'), isOnlyChangingStat('stats.likes')
     function isOnlyChangingStat(statPath) {
-      // Check that the set of changed keys contains ONLY the statPath we are interested in.
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([statPath]);
+        let pathParts = statPath.split('.');
+        let topLevelKey = pathParts[0];
+
+        // 1. Check that only the top-level key is changing.
+        if (!request.resource.data.diff(resource.data).affectedKeys().hasOnly([topLevelKey])) {
+            return false;
+        }
+
+        // 2. If it's a nested path, check the inner changes.
+        if (pathParts.size() > 1) {
+            let oldMap = resource.data.get(topLevelKey, {});
+            let newMap = request.resource.data[topLevelKey];
+            let nestedKey = pathParts[1];
+            // Ensure only the nested key we care about is changing within the map.
+            return newMap.diff(oldMap).affectedKeys().hasOnly([nestedKey]);
+        }
+        
+        // 3. If it's a top-level path, the first check was sufficient.
+        return true;
     }
 
     // ----------------------------------------------------------------------
