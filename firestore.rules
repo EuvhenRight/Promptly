@@ -27,27 +27,6 @@ service cloud.firestore {
       let purchased = userDocData.get('purchasedPrompts', []);
       return isSignedIn() && purchased.hasAny([promptId]);
     }
-
-    // Safely checks if a field is being changed by a specific amount.
-    // Works for nested (e.g. 'stats.likes') and top-level fields (e.g. 'views').
-    function isChangingStatBy(statPath, by) {
-      let pathParts = statPath.split('.');
-      let currentVal = resource.data;
-      let nextVal = request.resource.data;
-
-      // Traverse the path for both current and next resource
-      for (let i = 0; i < pathParts.length; i++) {
-        // Gracefully handle missing intermediate objects with .get()
-        currentVal = (currentVal is map) ? currentVal.get(pathParts[i], {}) : {};
-        nextVal = (nextVal is map) ? nextVal.get(pathParts[i], {}) : {};
-      }
-      
-      // Default to 0 if the final value is not a number or doesn't exist
-      let currentNum = (currentVal is number) ? currentVal : 0;
-      let nextNum = (nextVal is number) ? nextVal : 0;
-
-      return nextNum == currentNum + by;
-    }
     
     // Robustly checks if ONLY a specific nested or top-level field is changing.
     // Examples: isOnlyChangingStat('views'), isOnlyChangingStat('stats.likes')
@@ -96,7 +75,7 @@ service cloud.firestore {
         // 2. The user is toggling a favorite prompt (only the 'favoritePrompts' array can change).
         (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['favoritePrompts'])) ||
         // 3. The user is updating their own profile, but NOT protected fields.
-        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'credits', 'purchasedPrompts', 'followers', 'following', 'views', 'favoritePrompts']));
+        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'credits', 'purchasedPrompts', 'followers', 'following', 'views']));
 
       allow delete: if isAdmin();
 
@@ -118,11 +97,11 @@ service cloud.firestore {
         // Rule 1: Owner can update their non-counter fields (description, etc.)
         (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['views', 'followers', 'following']))
         // Rule 2: Anyone can increment the view count by exactly 1.
-        || (isOnlyChangingStat('views') && isChangingStatBy('views', 1))
+        || (isOnlyChangingStat('views') && request.resource.data.views == resource.data.get('views', 0) + 1)
         // Rule 3: Any signed-in user can increment/decrement the follower count by exactly 1.
-        || (isSignedIn() && isOnlyChangingStat('followers') && (isChangingStatBy('followers', 1) || isChangingStatBy('followers', -1)))
+        || (isSignedIn() && isOnlyChangingStat('followers') && (request.resource.data.followers == resource.data.get('followers', 0) + 1 || request.resource.data.followers == resource.data.get('followers', 0) - 1))
         // Rule 4: The owner can increment/decrement their own following count by exactly 1.
-        || (isOwner(userId) && isOnlyChangingStat('following') && (isChangingStatBy('following', 1) || isChangingStatBy('following', -1)));
+        || (isOwner(userId) && isOnlyChangingStat('following') && (request.resource.data.following == resource.data.get('following', 0) + 1 || request.resource.data.following == resource.data.get('following', 0) - 1));
     }
 
 
@@ -161,19 +140,21 @@ service cloud.firestore {
 
     match /prompts/{promptId} {
       allow get, list: if true;
+      // Creation and deletion is handled via server-side logic (Admin API / Scraper)
       allow create, delete: if isAdmin();
-      // Most updates are now handled server-side. Client-side updates are limited.
+      // Client-side updates are limited to specific stats increments. All other edits go through Admin API.
       allow update: if
         isAdmin()
-        // Allow anyone (even unauth) to increment views by 1
-        || (isOnlyChangingStat('stats.views') && isChangingStatBy('stats.views', 1))
-        // Allow signed-in users to like/unlike
-        || (isSignedIn() && isOnlyChangingStat('stats.likes') && (isChangingStatBy('stats.likes', 1) || isChangingStatBy('stats.likes', -1)))
+        // Allow anyone (even unauth) to increment views by exactly 1
+        || (isOnlyChangingStat('stats.views') && request.resource.data.stats.views == resource.data.get(['stats', 'views'], 0) + 1)
+        // Allow signed-in users to like/unlike (increment/decrement by 1)
+        || (isSignedIn() && isOnlyChangingStat('stats.likes') && (request.resource.data.stats.likes == resource.data.get(['stats', 'likes'], 0) + 1 || request.resource.data.stats.likes == resource.data.get(['stats', 'likes'], 0) - 1))
         // Allow a user who purchased the prompt to update its rating
         || ((hasPurchased(promptId) || resource.data.price == 0) && request.resource.data.rating != resource.data.rating && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating']));
 
 
       match /private/{docId} {
+        // Private content can only be read by admins or users who have purchased the prompt.
         allow get: if docId == 'content' && (isAdmin() || hasPurchased(promptId));
         allow write: if docId == 'content' && isAdmin();
       }

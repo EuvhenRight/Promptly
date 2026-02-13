@@ -146,8 +146,12 @@ export async function POST(req: NextRequest) {
 		if (!token) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 		}
-
-		const decodedToken = await getAdminAuth().verifyIdToken(token);
+		
+		const adminAuth = getAdminAuth();
+		if (!adminAuth) {
+			return NextResponse.json({ error: 'Server auth not configured' }, { status: 500 });
+		}
+		const decodedToken = await adminAuth.verifyIdToken(token);
 		const userId = decodedToken.uid;
 
 		const body = await req.json();
