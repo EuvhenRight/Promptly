@@ -21,7 +21,7 @@ import {
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
 import type { UserProfile } from '@/lib/types'
 import { doc } from 'firebase/firestore'
-import { Check, Crown, Loader2, Sparkles, Star, Zap } from 'lucide-react'
+import { Check, Crown, Loader2, Star, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -236,8 +236,8 @@ export default function PlansPage() {
 						{/* Plan Cards */}
 						<div className='mt-8 grid grid-cols-1 md:grid-cols-3 gap-6'>
 							{/* Free */}
-							<Card className={cn(currentPlan === 'free' && 'border-primary ring-2 ring-primary')}>
-								<CardHeader>
+							<Card className={cn('flex flex-col', currentPlan === 'free' && 'border-primary ring-2 ring-primary')}>
+								<CardHeader className='items-center text-center'>
 									<div className='flex h-10 w-10 items-center justify-center rounded-full bg-muted'>
 										<Star className='h-6 w-6 text-muted-foreground' />
 									</div>
@@ -247,7 +247,7 @@ export default function PlansPage() {
 									</CardDescription>
 									<p className='text-4xl font-bold'>€0</p>
 								</CardHeader>
-								<CardContent className='space-y-3'>
+								<CardContent className='space-y-3 flex-grow'>
 									{FREE_FEATURES.map(f => (
 										<div key={f} className='flex items-start gap-2'>
 											<Check className='h-4 w-4 text-green-600 shrink-0 mt-1' />
@@ -263,10 +263,10 @@ export default function PlansPage() {
 							</Card>
 
 							{/* Starter */}
-							<Card className={cn(currentPlan === 'starter' && 'border-primary ring-2 ring-primary')}>
-								<CardHeader>
+							<Card className={cn('flex flex-col', currentPlan === 'starter' && 'border-primary ring-2 ring-primary')}>
+								<CardHeader className='items-center text-center'>
 									<div className='flex h-10 w-10 items-center justify-center rounded-full bg-muted'>
-										<Crown className='h-6 w-6 text-amber-500' />
+										<Star className='h-6 w-6 text-amber-500' />
 									</div>
 									<CardTitle>Starter</CardTitle>
 									<CardDescription>
@@ -286,7 +286,7 @@ export default function PlansPage() {
 										)}
 									</p>
 								</CardHeader>
-								<CardContent className='space-y-3'>
+								<CardContent className='space-y-3 flex-grow'>
 									{STARTER_FEATURES.map(f => (
 										<div key={f} className='flex items-start gap-2'>
 											<Check className='h-4 w-4 text-green-600 shrink-0 mt-1' />
@@ -306,13 +306,13 @@ export default function PlansPage() {
 							</Card>
 
 							{/* Pro */}
-							<Card className={cn('relative', currentPlan === 'pro' && 'border-primary ring-2 ring-primary')}>
+							<Card className={cn('relative flex flex-col', currentPlan === 'pro' && 'border-primary ring-2 ring-primary')}>
 								<div className='absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-medium'>
 									Most Popular
 								</div>
-								<CardHeader>
-									<div className='flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground'>
-										<Zap className='h-6 w-6' />
+								<CardHeader className='items-center text-center'>
+									<div className='flex h-10 w-10 items-center justify-center rounded-full bg-muted'>
+										<Crown className='h-6 w-6 text-amber-500' />
 									</div>
 									<CardTitle>Pro</CardTitle>
 									<CardDescription>
@@ -332,7 +332,7 @@ export default function PlansPage() {
 										)}
 									</p>
 								</CardHeader>
-								<CardContent className='space-y-3'>
+								<CardContent className='space-y-3 flex-grow'>
 									{PRO_FEATURES.map(f => (
 										<div key={f} className='flex items-start gap-2'>
 											<Check className='h-4 w-4 text-green-600 shrink-0 mt-1' />

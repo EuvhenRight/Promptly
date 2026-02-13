@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/accordion'
 import { useUser } from '@/firebase'
 import { signInWithGoogle } from '@/firebase/auth'
-import { Check, Crown, Star, Zap } from 'lucide-react'
+import { Check, Crown, Star } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -119,8 +119,8 @@ export default function PlansPage() {
 					{/* Plan Cards */}
 					<div className='mt-10 grid grid-cols-1 md:grid-cols-3 gap-8'>
 						{/* Free */}
-						<Card>
-							<CardHeader>
+						<Card className='flex flex-col'>
+							<CardHeader className='items-center text-center'>
 								<div className='flex h-12 w-12 items-center justify-center rounded-full bg-muted'>
 									<Star className='h-7 w-7 text-muted-foreground' />
 								</div>
@@ -130,7 +130,7 @@ export default function PlansPage() {
 								</CardDescription>
 								<p className='text-4xl font-bold'>€0</p>
 							</CardHeader>
-							<CardContent className='space-y-3'>
+							<CardContent className='space-y-3 flex-grow'>
 								{FREE_FEATURES.map(f => (
 									<div key={f} className='flex items-start gap-2'>
 										<Check className='h-4 w-4 text-green-600 shrink-0 mt-1' />
@@ -150,16 +150,16 @@ export default function PlansPage() {
 						</Card>
 
 						{/* Starter */}
-						<Card>
-							<CardHeader>
+						<Card className='flex flex-col'>
+							<CardHeader className='items-center text-center'>
 								<div className='flex h-12 w-12 items-center justify-center rounded-full bg-muted'>
-									<Crown className='h-7 w-7 text-amber-500' />
+									<Star className='h-7 w-7 text-amber-500' />
 								</div>
 								<CardTitle>Starter</CardTitle>
 								<CardDescription>
 									For enthusiasts creating occasionally.
 								</CardDescription>
-								<div className='flex items-baseline gap-2'>
+								<div className='flex items-baseline justify-center gap-2'>
 									<p className='text-4xl font-bold'>
 										€{billingPeriod === 'yearly' ? '9' : '10'}
 									</p>
@@ -173,7 +173,7 @@ export default function PlansPage() {
 									)}
 								</p>
 							</CardHeader>
-							<CardContent className='space-y-3'>
+							<CardContent className='space-y-3 flex-grow'>
 								{STARTER_FEATURES.map(f => (
 									<div key={f} className='flex items-start gap-2'>
 										<Check className='h-4 w-4 text-green-600 shrink-0 mt-1' />
@@ -193,17 +193,17 @@ export default function PlansPage() {
 						</Card>
 
 						{/* Pro */}
-						<Card className='relative border-primary ring-2 ring-primary'>
+						<Card className='relative flex flex-col border-primary ring-2 ring-primary'>
 							<div className='absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-medium'>
 								Most Popular
 							</div>
-							<CardHeader>
-								<div className='flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground'>
-									<Zap className='h-7 w-7' />
+							<CardHeader className='items-center text-center'>
+								<div className='flex h-12 w-12 items-center justify-center rounded-full bg-muted'>
+									<Crown className='h-7 w-7 text-amber-500' />
 								</div>
 								<CardTitle>Pro</CardTitle>
 								<CardDescription>For experts creating daily.</CardDescription>
-								<div className='flex items-baseline gap-2'>
+								<div className='flex items-baseline justify-center gap-2'>
 									<p className='text-4xl font-bold'>
 										€{billingPeriod === 'yearly' ? '19' : '22'}
 									</p>
@@ -217,7 +217,7 @@ export default function PlansPage() {
 									)}
 								</p>
 							</CardHeader>
-							<CardContent className='space-y-3'>
+							<CardContent className='space-y-3 flex-grow'>
 								{PRO_FEATURES.map(f => (
 									<div key={f} className='flex items-start gap-2'>
 										<Check className='h-4 w-4 text-green-600 shrink-0 mt-1' />
