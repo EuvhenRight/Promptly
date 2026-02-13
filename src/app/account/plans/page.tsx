@@ -21,7 +21,7 @@ import {
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
 import type { UserProfile } from '@/lib/types'
 import { doc } from 'firebase/firestore'
-import { Check, Crown, Sparkles, Star } from 'lucide-react'
+import { Check, Crown, Sparkles, Star, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -251,23 +251,57 @@ export default function PlansPage() {
 
 						{/* Need Extra Credits */}
 						<section id='credits' className='mt-16'>
-							<h2 className='font-headline text-2xl font-bold'>
+							<h2 className='font-headline text-3xl font-bold text-center'>
 								Need Extra Credits?
 							</h2>
-							<p className='mt-2 text-muted-foreground'>
+							<p className='mt-2 text-muted-foreground text-center max-w-xl mx-auto'>
 								Purchase credits that never expire and roll over month to month.
 							</p>
-							<div className='mt-6 flex flex-wrap gap-4'>
-								<Button variant='outline' asChild>
-									<Link href='/checkout?type=credits&credits=1000'>
-										Buy 1,000 Credits
-									</Link>
-								</Button>
-								<Button variant='outline' asChild>
-									<Link href='/checkout?type=credits&credits=2000'>
-										Buy 2,000 Credits
-									</Link>
-								</Button>
+							<div className='mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto'>
+								{/* 1000 Credits Card */}
+								<Card className='flex flex-col text-center p-8'>
+									<div className='flex-grow space-y-4'>
+										<div className='flex justify-center'>
+											<div className='bg-muted text-foreground p-4 rounded-lg inline-block'>
+												<Zap className='h-8 w-8' />
+											</div>
+										</div>
+										<h3 className='text-2xl font-bold'>1,000 Credits</h3>
+										<p className='text-muted-foreground'>
+											Great for getting started and occasional use.
+										</p>
+										<p className='text-4xl font-bold'>€10</p>
+									</div>
+									<Button className='w-full mt-6' size='lg' asChild>
+										<Link href='/checkout?type=credits&credits=1000'>
+											Buy Credits
+										</Link>
+									</Button>
+								</Card>
+
+								{/* 2000 Credits Card */}
+								<Card className='relative flex flex-col text-center p-8 border-primary ring-2 ring-primary'>
+									<div className='absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-medium'>
+										Best Value
+									</div>
+									<div className='flex-grow space-y-4'>
+										<div className='flex justify-center'>
+											<div className='bg-primary/10 text-primary p-4 rounded-lg inline-block'>
+												<Zap className='h-8 w-8' />
+											</div>
+										</div>
+										<h3 className='text-2xl font-bold'>2,000 Credits</h3>
+										<p className='text-muted-foreground'>
+											Perfect for power users and frequent creation.
+										</p>
+										<p className='text-4xl font-bold'>€18</p>
+									</div>
+									<Button className='w-full mt-6' size='lg' asChild>
+										<Link href='/checkout?type=credits&credits=2000'>
+											Buy Credits
+										</Link>
+									</Button>
+								</Card>
 							</div>
 						</section>
 
