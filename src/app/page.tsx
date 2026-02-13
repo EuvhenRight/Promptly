@@ -7,7 +7,7 @@ import Footer from '@/components/layout/footer'
 import Header from '@/components/layout/header'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
-import type { Cart } from '@/lib/types'
+import type { Cart, UserProfile } from '@/lib/types'
 import { doc } from 'firebase/firestore'
 import { usePromptsFeed, type SortByOption } from '@/hooks/use-prompts-feed'
 import { useTypes } from '@/hooks/use-types'
@@ -44,6 +44,13 @@ export default function Home() {
 	const { types, isLoading: typesLoading } = useTypes()
 	const { user } = useUser()
 	const firestore = useFirestore()
+
+	const userProfileRef = useMemoFirebase(
+		() => (user ? doc(firestore, 'users', user.uid) : null),
+		[firestore, user],
+	)
+	const { data: userProfile } = useDoc<UserProfile>(userProfileRef)
+
 	const cartRef = useMemoFirebase(
 		() =>
 			user && firestore
@@ -55,6 +62,10 @@ export default function Home() {
 	const cartPromptIds = useMemo(
 		() => new Set(cart?.promptIds ?? []),
 		[cart?.promptIds],
+	)
+	const purchasedPromptIds = useMemo(
+		() => new Set(userProfile?.purchasedPrompts ?? []),
+		[userProfile?.purchasedPrompts],
 	)
 
 	useEffect(() => {
@@ -207,7 +218,11 @@ export default function Home() {
 						</p>
 					)}
 
-					<PromptFeed prompts={prompts} cartPromptIds={cartPromptIds} />
+					<PromptFeed
+						prompts={prompts}
+						cartPromptIds={cartPromptIds}
+						purchasedPromptIds={purchasedPromptIds}
+					/>
 
 					<div ref={loadMoreRef} />
 

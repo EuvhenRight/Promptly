@@ -15,9 +15,10 @@ const breakpointColumnsObj = {
 interface PromptFeedProps {
   prompts: Prompt[];
   cartPromptIds?: Set<string>;
+  purchasedPromptIds?: Set<string>;
 }
 
-export default function PromptFeed({ prompts, cartPromptIds }: PromptFeedProps) {
+export default function PromptFeed({ prompts, cartPromptIds, purchasedPromptIds }: PromptFeedProps) {
   const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
@@ -39,6 +40,7 @@ export default function PromptFeed({ prompts, cartPromptIds }: PromptFeedProps) 
           key={prompt.id}
           prompt={prompt}
           isInCart={cartPromptIds?.has(prompt.id) ?? false}
+          isPurchased={purchasedPromptIds?.has(prompt.id) ?? false}
         />
       ))}
     </Masonry>

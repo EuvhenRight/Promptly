@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge'
 import { useCategories } from '@/hooks/use-categories'
 import type { Prompt, UserProfile } from '@/lib/types'
-import { Coins, Eye, Heart, ShoppingBag } from 'lucide-react'
+import { Check, Coins, Eye, Heart, ShoppingBag } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Skeleton } from '../ui/skeleton'
@@ -18,6 +18,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images'
 type PromptCardProps = {
 	prompt: Prompt
 	isInCart?: boolean
+	isPurchased?: boolean
 }
 
 const formatStat = (num: number): string => {
@@ -26,7 +27,11 @@ const formatStat = (num: number): string => {
 	return num.toString()
 }
 
-export default function PromptCard({ prompt, isInCart }: PromptCardProps) {
+export default function PromptCard({
+	prompt,
+	isInCart,
+	isPurchased,
+}: PromptCardProps) {
 	const { getNames } = useCategories()
 	const categoryId = prompt.categoryId ?? prompt.categories?.[0]
 	const categoryNames = getNames(categoryId)
@@ -154,10 +159,20 @@ export default function PromptCard({ prompt, isInCart }: PromptCardProps) {
 				)}
 
 				<div className='absolute bottom-4 right-4 z-10'>
-					<Badge className='flex items-center gap-1'>
-						<Coins className='h-3.5 w-3.5' />
-						{prompt.price === 0 ? 'Free' : creditPrice}
-					</Badge>
+					{isPurchased ? (
+						<Badge
+							variant='secondary'
+							className='flex items-center gap-1 bg-green-100 text-green-800 border-green-200 dark:bg-green-900/50 dark:text-green-300 dark:border-green-800'
+						>
+							<Check className='h-3.5 w-3.5' />
+							Owned
+						</Badge>
+					) : (
+						<Badge className='flex items-center gap-1'>
+							<Coins className='h-3.5 w-3.5' />
+							{prompt.price === 0 ? 'Free' : creditPrice}
+						</Badge>
+					)}
 				</div>
 			</div>
 		</div>
