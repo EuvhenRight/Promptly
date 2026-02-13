@@ -1,9 +1,15 @@
 import { adminDb } from '@/firebase/admin'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+
+interface RouteContext {
+	params: {
+		id: string
+	}
+}
 
 export async function PATCH(
-	request: Request,
-	context: { params: { id: string } },
+	request: NextRequest,
+	context: RouteContext,
 ) {
 	if (!adminDb) {
 		return NextResponse.json(
@@ -43,8 +49,8 @@ export async function PATCH(
 }
 
 export async function DELETE(
-	request: Request,
-	context: { params: { id: string } },
+	request: NextRequest,
+	context: RouteContext,
 ) {
 	if (!adminDb) {
 		return NextResponse.json(
