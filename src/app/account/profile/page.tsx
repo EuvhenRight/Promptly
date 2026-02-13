@@ -39,6 +39,7 @@ import {
 import {
 	Coins,
 	CreditCard,
+	Crown,
 	DollarSign,
 	Edit2,
 	Eye,
@@ -63,6 +64,7 @@ import {
 	TableRow,
 } from '@/components/ui/table'
 import { PlaceHolderImages } from '@/lib/placeholder-images'
+import { cn } from '@/lib/utils'
 
 function ProfileSkeleton() {
 	return (
@@ -336,7 +338,12 @@ export default function ProfilePage() {
 					<AccountSidebar credits={credits} />
 					<div className='flex-1 min-w-0'>
 						<div className='flex flex-col sm:flex-row sm:items-end gap-6'>
-							<Avatar className='h-24 w-24 sm:h-32 sm:w-32 border-4 border-background bg-background shrink-0 shadow-lg'>
+							<Avatar
+								className={cn(
+									'h-24 w-24 sm:h-32 sm:w-32 border-4 border-background bg-background shrink-0 shadow-lg',
+									userProfile.planId === 'pro' && 'ring-4 ring-primary',
+								)}
+							>
 								<AvatarImage
 									src={userProfile?.photoURL ?? user.photoURL ?? ''}
 									alt={user.displayName ?? 'User'}
@@ -354,6 +361,18 @@ export default function ProfilePage() {
 									<h2 className='text-2xl font-bold'>
 										{userProfile?.displayName ?? user.displayName ?? 'User'}
 									</h2>
+									{userProfile?.planId === 'pro' && (
+										<Badge className='bg-primary text-primary-foreground'>
+											<Crown className='mr-1 h-3 w-3' />
+											PRO
+										</Badge>
+									)}
+									{userProfile?.planId === 'starter' && (
+										<Badge variant='secondary'>
+											<Star className='mr-1 h-3 w-3' />
+											Starter
+										</Badge>
+									)}
 									{userProfile?.role === 'admin' && (
 										<Badge variant='secondary'>Admin</Badge>
 									)}

@@ -96,11 +96,17 @@ export async function POST(req: NextRequest) {
 			const planName = plan === 'pro' ? 'Promptly PRO' : 'Promptly Starter'
 			const creditsAmount = plan === 'pro' ? 7200 : 3600
 
+			const batch = adminDb.batch()
 			const userRef = adminDb.collection('users').doc(userId)
-			await userRef.update({
+			batch.update(userRef, {
 				planId: plan,
 				credits: admin.firestore.FieldValue.increment(creditsAmount),
 			})
+
+			const publicProfileRef = adminDb.collection('public-profiles').doc(userId)
+			batch.update(publicProfileRef, { planId: plan })
+
+			await batch.commit()
 
 			await writePurchaseHistory(adminDb, userId, sessionId, session, 'plan', {
 				plan,

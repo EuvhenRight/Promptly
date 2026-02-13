@@ -210,8 +210,9 @@ export default function PlansPage() {
 
 							{/* Pro */}
 							<Card className={cn('relative', currentPlan === 'pro' && 'border-primary ring-2 ring-primary')}>
-								<div className='absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-medium'>
-									Best Value
+								<div className='absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-medium flex items-center gap-1'>
+									<Crown className='h-3 w-3' />
+									<span>PRO</span>
 								</div>
 								<CardHeader>
 									<Sparkles className='h-8 w-8 text-primary' />

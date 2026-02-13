@@ -24,11 +24,13 @@ import type { Prompt, PublicProfile } from '@/lib/types'
 import { collection, query, where, limit, doc } from 'firebase/firestore'
 import {
 	Coins,
+	Crown,
 	Eye,
 	Facebook,
 	Instagram,
 	Loader2,
 	Package,
+	Star,
 	Twitter,
 	UserPlus,
 	Users,
@@ -39,6 +41,7 @@ import { useParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { signInWithGoogle } from '@/firebase/auth'
 import { PlaceHolderImages } from '@/lib/placeholder-images'
+import { cn } from '@/lib/utils'
 
 function PublicProfileSkeleton() {
 	return (
@@ -248,7 +251,12 @@ export default function PublicProfilePage() {
 				<div className='container mx-auto px-4 sm:px-6 lg:px-8'>
 					<div className='relative -mt-16 sm:-mt-20'>
 						<div className='flex flex-col sm:flex-row sm:items-end gap-4'>
-							<Avatar className='h-28 w-28 sm:h-32 sm:w-32 border-4 border-background bg-background shrink-0'>
+							<Avatar
+								className={cn(
+									'h-28 w-28 sm:h-32 sm:w-32 border-4 border-background bg-background shrink-0',
+									userProfile.planId === 'pro' && 'ring-4 ring-primary',
+								)}
+							>
 								<AvatarImage
 									src={userProfile.photoURL}
 									alt={userProfile.displayName}
@@ -258,8 +266,20 @@ export default function PublicProfilePage() {
 								</AvatarFallback>
 							</Avatar>
 							<div className='py-4 flex-grow'>
-								<h1 className='text-3xl font-bold font-headline'>
-									{userProfile.displayName}
+								<h1 className='text-3xl font-bold font-headline flex items-center gap-2'>
+									<span>{userProfile.displayName}</span>
+									{userProfile.planId === 'pro' && (
+										<Badge className='bg-primary text-primary-foreground'>
+											<Crown className='mr-1 h-3 w-3' />
+											PRO
+										</Badge>
+									)}
+									{userProfile.planId === 'starter' && (
+										<Badge variant='secondary'>
+											<Star className='mr-1 h-3 w-3' />
+											Starter
+										</Badge>
+									)}
 								</h1>
 								<p className='text-muted-foreground'>@{userProfile.username}</p>
 							</div>

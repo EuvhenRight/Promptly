@@ -75,6 +75,7 @@ export type PublicProfile = Pick<
 	| 'xProfile'
 	| 'instagramProfile'
 	| 'facebookProfile'
+	| 'planId'
 >
 
 export type Prompt = {

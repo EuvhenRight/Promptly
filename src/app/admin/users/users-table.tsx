@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Pencil, ShieldCheck } from 'lucide-react';
+import { Crown, MoreHorizontal, Pencil, ShieldCheck, Star } from 'lucide-react';
 import type { UserProfile } from '@/lib/types';
 import { EditUserDialog } from './edit-user-dialog';
 
@@ -82,8 +82,18 @@ export function UsersTable({ users }: UsersTableProps) {
                        <ShieldCheck className="mr-1 h-3 w-3" />
                        Admin
                     </Badge>
+                  ) : user.planId === 'pro' ? (
+                    <Badge className="bg-primary text-primary-foreground">
+                       <Crown className="mr-1 h-3 w-3" />
+                       PRO
+                    </Badge>
+                  ) : user.planId === 'starter' ? (
+                    <Badge variant="secondary">
+                      <Star className="mr-1 h-3 w-3" />
+                      Starter
+                    </Badge>
                   ) : (
-                    <Badge variant="outline">User</Badge>
+                    <Badge variant="outline">Free</Badge>
                   )}
                 </TableCell>
                 <TableCell>
