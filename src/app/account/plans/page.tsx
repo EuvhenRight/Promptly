@@ -174,7 +174,7 @@ export default function PlansPage() {
 
 	useEffect(() => {
 		if (!isUserLoading && !user) {
-			router.replace('/')
+			router.replace('/plans')
 		}
 	}, [user, isUserLoading, router])
 
@@ -238,25 +238,26 @@ export default function PlansPage() {
 							{/* Free */}
 							<Card className={cn(currentPlan === 'free' && 'border-primary ring-2 ring-primary')}>
 								<CardHeader>
-									<Star className='h-8 w-8 text-muted-foreground' />
+									<div className='flex h-10 w-10 items-center justify-center rounded-full bg-muted'>
+										<Star className='h-6 w-6 text-muted-foreground' />
+									</div>
 									<CardTitle>Free</CardTitle>
 									<CardDescription>
-										Get started with basic features
+										Get started with limited access.
 									</CardDescription>
-									<p className='text-2xl font-bold'>€0</p>
-									<p className='text-sm text-muted-foreground'>forever</p>
+									<p className='text-4xl font-bold'>€0</p>
 								</CardHeader>
 								<CardContent className='space-y-3'>
 									{FREE_FEATURES.map(f => (
 										<div key={f} className='flex items-start gap-2'>
-											<Check className='h-4 w-4 text-green-600 shrink-0 mt-0.5' />
+											<Check className='h-4 w-4 text-green-600 shrink-0 mt-1' />
 											<span className='text-sm'>{f}</span>
 										</div>
 									))}
 								</CardContent>
 								<CardFooter>
 									<Button variant='outline' className='w-full' disabled={currentPlan === 'free'}>
-										{currentPlan === 'free' ? 'Current Plan' : 'Switch to Free'}
+										Current Plan
 									</Button>
 								</CardFooter>
 							</Card>
@@ -264,25 +265,31 @@ export default function PlansPage() {
 							{/* Starter */}
 							<Card className={cn(currentPlan === 'starter' && 'border-primary ring-2 ring-primary')}>
 								<CardHeader>
-									<Sparkles className='h-8 w-8 text-primary' />
+									<div className='flex h-10 w-10 items-center justify-center rounded-full bg-muted'>
+										<Crown className='h-6 w-6 text-amber-500' />
+									</div>
 									<CardTitle>Starter</CardTitle>
 									<CardDescription>
-										For enthusiasts creating occasionally
+										For enthusiasts creating occasionally.
 									</CardDescription>
-									<p className='text-2xl font-bold'>
-										€{billingPeriod === 'yearly' ? '9' : '10'}
-									</p>
-									<p className='text-sm text-muted-foreground'>
-										per month
+									<div className='flex items-baseline gap-2'>
+										<p className='text-4xl font-bold'>
+											€{billingPeriod === 'yearly' ? '9' : '10'}
+										</p>
+										<span className='text-sm text-muted-foreground'>
+											/ mo
+										</span>
+									</div>
+									<p className='text-xs text-muted-foreground'>
 										{billingPeriod === 'yearly' && (
-											<span className='text-green-600'> (billed yearly)</span>
+											<span className='text-green-600'> (Billed yearly at €108)</span>
 										)}
 									</p>
 								</CardHeader>
 								<CardContent className='space-y-3'>
 									{STARTER_FEATURES.map(f => (
 										<div key={f} className='flex items-start gap-2'>
-											<Check className='h-4 w-4 text-green-600 shrink-0 mt-0.5' />
+											<Check className='h-4 w-4 text-green-600 shrink-0 mt-1' />
 											<span className='text-sm'>{f}</span>
 										</div>
 									))}
@@ -292,7 +299,7 @@ export default function PlansPage() {
 										<Link
 											href={currentPlan !== 'starter' ? `/checkout?type=plan&plan=starter&billing=${billingPeriod}` : '#'}
 										>
-											{currentPlan === 'starter' ? 'Current Plan' : 'Upgrade to Starter'}
+											{currentPlan === 'starter' ? 'Current Plan' : 'Get Started with Starter'}
 										</Link>
 									</Button>
 								</CardFooter>
@@ -300,30 +307,35 @@ export default function PlansPage() {
 
 							{/* Pro */}
 							<Card className={cn('relative', currentPlan === 'pro' && 'border-primary ring-2 ring-primary')}>
-								<div className='absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-medium flex items-center gap-1'>
-									<Crown className='h-3 w-3' />
-									<span>PRO</span>
+								<div className='absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-medium'>
+									Most Popular
 								</div>
 								<CardHeader>
-									<Crown className='h-8 w-8 text-amber-500' />
+									<div className='flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground'>
+										<Zap className='h-6 w-6' />
+									</div>
 									<CardTitle>Pro</CardTitle>
 									<CardDescription>
-										For experts creating daily
+										For experts creating daily.
 									</CardDescription>
-									<p className='text-2xl font-bold'>
-										€{billingPeriod === 'yearly' ? '19' : '22'}
-									</p>
-									<p className='text-sm text-muted-foreground'>
-										per month
+									<div className='flex items-baseline gap-2'>
+										<p className='text-4xl font-bold'>
+											€{billingPeriod === 'yearly' ? '19' : '22'}
+										</p>
+										<span className='text-sm text-muted-foreground'>
+											/ mo
+										</span>
+									</div>
+									<p className='text-xs text-muted-foreground'>
 										{billingPeriod === 'yearly' && (
-											<span className='text-green-600'> (billed yearly)</span>
+											<span className='text-green-600'>(Billed yearly at €228)</span>
 										)}
 									</p>
 								</CardHeader>
 								<CardContent className='space-y-3'>
 									{PRO_FEATURES.map(f => (
 										<div key={f} className='flex items-start gap-2'>
-											<Check className='h-4 w-4 text-green-600 shrink-0 mt-0.5' />
+											<Check className='h-4 w-4 text-green-600 shrink-0 mt-1' />
 											<span className='text-sm'>{f}</span>
 										</div>
 									))}
@@ -333,7 +345,7 @@ export default function PlansPage() {
 										<Link
 											href={currentPlan !== 'pro' ? `/checkout?type=plan&plan=pro&billing=${billingPeriod}` : '#'}
 										>
-											{currentPlan === 'pro' ? 'Current Plan' : 'Upgrade to Pro'}
+											{currentPlan === 'pro' ? 'Current Plan' : 'Get Started with Pro'}
 										</Link>
 									</Button>
 								</CardFooter>
