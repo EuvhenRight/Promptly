@@ -3,15 +3,15 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function PATCH(
 	request: NextRequest,
-	{ params }: { params: { id: string } },
+	context: any,
 ) {
+	const { id } = context.params;
 	if (!adminDb) {
 		return NextResponse.json(
 			{ error: 'Firebase Admin not initialized' },
 			{ status: 503 },
 		)
 	}
-	const { id } = params
 	if (!id) {
 		return NextResponse.json({ error: 'Missing model id' }, { status: 400 })
 	}
@@ -44,15 +44,15 @@ export async function PATCH(
 
 export async function DELETE(
 	request: NextRequest,
-	{ params }: { params: { id: string } },
+	context: any,
 ) {
+	const { id } = context.params;
 	if (!adminDb) {
 		return NextResponse.json(
 			{ error: 'Firebase Admin not initialized' },
 			{ status: 503 },
 		)
 	}
-	const { id } = params
 	if (!id) {
 		return NextResponse.json({ error: 'Missing model id' }, { status: 400 })
 	}
