@@ -67,7 +67,7 @@ const FAQ_ITEMS = [
 	},
 	{
 		q: 'Is there a free trial?',
-		a: "Yes! Start with our Free plan to try PromptHero before upgrading to a paid plan.",
+		a: "Yes! Start with our Free plan to try Promptly before upgrading to a paid plan.",
 	},
 ]
 
@@ -126,8 +126,8 @@ function SubscriptionStatusCard({ profile }: { profile: UserProfile }) {
 				{renewalDate && (
 					<p className='text-muted-foreground text-sm mt-1'>
 						{planWillCancelAtPeriodEnd
-							? `Your plan will expire on ${format(renewalDate, 'PPP')}.`
-							: `Your plan renews automatically on ${format(renewalDate, 'PPP')}.`}
+							? `Your subscription will remain active until ${format(renewalDate, 'PPP')}.`
+							: `Your plan will automatically renew on ${format(renewalDate, 'PPP')}.`}
 					</p>
 				)}
 			</CardContent>
