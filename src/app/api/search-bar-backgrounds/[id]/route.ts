@@ -2,15 +2,9 @@ import { adminDb } from '@/firebase/admin'
 import admin from 'firebase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-interface RouteContext {
-	params: {
-		id: string
-	}
-}
-
 export async function PATCH(
 	request: NextRequest,
-	context: RouteContext,
+	{ params }: { params: { id: string } },
 ) {
 	if (!adminDb) {
 		return NextResponse.json(
@@ -18,7 +12,7 @@ export async function PATCH(
 			{ status: 503 },
 		)
 	}
-	const { id } = context.params
+	const { id } = params
 	if (!id) {
 		return NextResponse.json({ error: 'Missing id' }, { status: 400 })
 	}
@@ -79,7 +73,7 @@ export async function PATCH(
 
 export async function DELETE(
 	request: NextRequest,
-	context: RouteContext,
+	{ params }: { params: { id: string } },
 ) {
 	if (!adminDb) {
 		return NextResponse.json(
@@ -87,7 +81,7 @@ export async function DELETE(
 			{ status: 503 },
 		)
 	}
-	const { id } = context.params
+	const { id } = params
 	if (!id) {
 		return NextResponse.json({ error: 'Missing id' }, { status: 400 })
 	}
