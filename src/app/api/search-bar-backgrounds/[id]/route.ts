@@ -1,10 +1,10 @@
 import { adminDb } from '@/firebase/admin'
 import admin from 'firebase-admin'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 export async function PATCH(
-	request: Request,
-	{ params }: { params: { id: string } },
+	request: NextRequest,
+	context: { params: { id: string } },
 ) {
 	if (!adminDb) {
 		return NextResponse.json(
@@ -12,7 +12,7 @@ export async function PATCH(
 			{ status: 503 },
 		)
 	}
-	const { id } = params
+	const { id } = context.params
 	if (!id) {
 		return NextResponse.json({ error: 'Missing id' }, { status: 400 })
 	}
@@ -72,8 +72,8 @@ export async function PATCH(
 }
 
 export async function DELETE(
-	request: Request,
-	{ params }: { params: { id: string } },
+	request: NextRequest,
+	context: { params: { id: string } },
 ) {
 	if (!adminDb) {
 		return NextResponse.json(
@@ -81,7 +81,7 @@ export async function DELETE(
 			{ status: 503 },
 		)
 	}
-	const { id } = params
+	const { id } = context.params
 	if (!id) {
 		return NextResponse.json({ error: 'Missing id' }, { status: 400 })
 	}
