@@ -9,15 +9,17 @@ async function handleSinglePromptPurchase(
 	userId: string,
 	promptId: string,
 ): Promise<NextResponse> {
-	if (!adminDb)
+	const db = adminDb;
+	if (!db) {
 		return NextResponse.json({ error: 'Server not configured' }, { status: 500 });
+	}
 
 	let creditPrice: number;
 	let promptData: any;
 
-	await adminDb.runTransaction(async transaction => {
-		const userRef = adminDb.doc(`users/${userId}`);
-		const promptRef = adminDb.doc(`prompts/${promptId}`);
+	await db.runTransaction(async transaction => {
+		const userRef = db.doc(`users/${userId}`);
+		const promptRef = db.doc(`prompts/${promptId}`);
 		const [userDoc, promptDoc] = await Promise.all([
 			transaction.get(userRef),
 			transaction.get(promptRef),
@@ -51,7 +53,7 @@ async function handleSinglePromptPurchase(
 	});
 
 	if (promptData) {
-		const historyRef = adminDb
+		const historyRef = db
 			.collection('users')
 			.doc(userId)
 			.collection('purchaseHistory')
@@ -74,19 +76,21 @@ async function handleCartPurchase(
 	userId: string,
 	promptIds: string[],
 ): Promise<NextResponse> {
-	if (!adminDb)
+	const db = adminDb;
+	if (!db) {
 		return NextResponse.json({ error: 'Server not configured' }, { status: 500 });
+	}
 
 	let totalCreditCost = 0;
 	const promptDocsData: { title: string; id: string }[] = [];
 
-	await adminDb.runTransaction(async transaction => {
-		const userRef = adminDb.doc(`users/${userId}`);
-		const cartRef = adminDb.collection('users').doc(userId).collection('carts').doc('active');
+	await db.runTransaction(async transaction => {
+		const userRef = db.doc(`users/${userId}`);
+		const cartRef = db.collection('users').doc(userId).collection('carts').doc('active');
 		const userDoc = await transaction.get(userRef);
 		if (!userDoc.exists) throw new Error('User not found.');
 
-		const promptRefs = promptIds.map(id => adminDb.doc(`prompts/${id}`));
+		const promptRefs = promptIds.map(id => db.doc(`prompts/${id}`));
 		const promptDocs = await transaction.getAll(...promptRefs);
 
 		for (const pDoc of promptDocs) {
@@ -118,7 +122,7 @@ async function handleCartPurchase(
 	});
 
 	// After successful transaction, write history
-	const historyRef = adminDb
+	const historyRef = db
 		.collection('users')
 		.doc(userId)
 		.collection('purchaseHistory')
