@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge'
 import { useCategories } from '@/hooks/use-categories'
 import type { Prompt, UserProfile } from '@/lib/types'
-import { Check, Coins, Eye, Heart, ShoppingBag } from 'lucide-react'
+import { Check, Coins, Crown, Eye, Heart, ShoppingBag } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Skeleton } from '../ui/skeleton'
@@ -137,12 +137,21 @@ export default function PromptCard({
 					</div>
 				</div>
 
-				{isInCart && (
-					<span className='absolute top-3 left-3 z-10 flex items-center gap-1 rounded-md bg-primary/90 px-2 py-1 text-xs font-medium text-primary-foreground backdrop-blur-sm'>
-						<ShoppingBag className='h-3.5 w-3.5' />
-						In cart
-					</span>
-				)}
+				<div className='absolute top-3 left-3 z-10 flex flex-col items-start gap-2'>
+					{prompt.isPrivate && (
+						<Badge className='bg-primary text-primary-foreground'>
+							<Crown className='mr-1 h-3 w-3' />
+							PRO
+						</Badge>
+					)}
+					{isInCart && (
+						<span className='flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-xs font-medium text-secondary-foreground backdrop-blur-sm'>
+							<ShoppingBag className='h-3.5 w-3.5' />
+							In cart
+						</span>
+					)}
+				</div>
+
 				{user && (
 					<button
 						onClick={handleToggleFavorite}

@@ -141,7 +141,10 @@ service cloud.firestore {
     }
 
     match /prompts/{promptId} {
-      allow get, list: if true;
+      allow list: if true; // Allow listing for feeds, client handles visibility.
+      // Get is restricted. You can only get a prompt if it's not private,
+      // or if you are a PRO user or an admin.
+      allow get: if resource.data.isPrivate != true || (isSignedIn() && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.planId == 'pro' || isAdmin()));
       // Creation and deletion is handled via server-side logic (Admin API / Scraper)
       allow create, delete: if isAdmin();
       // Client-side updates are limited to specific stats increments. All other edits go through Admin API.
