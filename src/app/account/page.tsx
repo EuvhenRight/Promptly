@@ -39,6 +39,8 @@ import AccountSidebar from '@/components/account/account-sidebar'
 import { ThemeSwitcher } from '@/components/account/theme-switcher'
 import { useToast } from '@/hooks/use-toast'
 import { Badge } from '@/components/ui/badge'
+import { ToastAction } from '@/components/ui/toast'
+import { cn } from '@/lib/utils'
 
 function AccountPageSkeleton() {
 	return (
@@ -90,21 +92,34 @@ export default function AccountPage() {
 		null,
 	)
 
+	const userProfileRef = useMemoFirebase(
+		() => (user ? doc(firestore, 'users', user.uid) : null),
+		[firestore, user],
+	)
+	const { data: userProfile } = useDoc<UserProfile>(userProfileRef)
+	const isPro = userProfile?.planId === 'pro'
+	const credits = userProfile?.credits ?? 0
+
 	// Load and save the featured image toggle preference from/to localStorage
 	useEffect(() => {
+		if (!isPro) {
+			setShowFeaturedImage(false)
+			return
+		}
 		const storedPreference = localStorage.getItem('showFeaturedImage')
 		// Set state based on stored value, defaulting to true if not found
 		setShowFeaturedImage(
 			storedPreference !== null ? JSON.parse(storedPreference) : true,
 		)
-	}, [])
+	}, [isPro])
 
 	useEffect(() => {
+		if (!isPro) return
 		// Only save to localStorage if the state has been initialized
 		if (showFeaturedImage !== null) {
 			localStorage.setItem('showFeaturedImage', JSON.stringify(showFeaturedImage))
 		}
-	}, [showFeaturedImage])
+	}, [showFeaturedImage, isPro])
 
 	// Warn user about unsaved changes before leaving the page
 	useEffect(() => {
@@ -121,14 +136,6 @@ export default function AccountPage() {
 			window.removeEventListener('beforeunload', handleBeforeUnload)
 		}
 	}, [isDirty])
-
-	const userProfileRef = useMemoFirebase(
-		() => (user ? doc(firestore, 'users', user.uid) : null),
-		[firestore, user],
-	)
-	const { data: userProfile } = useDoc<UserProfile>(userProfileRef)
-
-	const credits = userProfile?.credits ?? 0
 
 	useEffect(() => {
 		setDisplayName(userProfile?.displayName ?? user?.displayName ?? '')
@@ -251,14 +258,27 @@ export default function AccountPage() {
 	}, [user, firestore])
 
 	const handleCoverButtonClick = () => {
+		if (!isPro) {
+			toast({
+				title: 'PRO Feature',
+				description: 'Upgrade to PRO to use a featured image on your profile.',
+				action: (
+					<ToastAction altText='Upgrade'>
+						<Link href='/account/plans'>Upgrade</Link>
+					</ToastAction>
+				),
+			})
+			return
+		}
+
 		if (showFeaturedImage) {
 			coverInputRef.current?.click()
 		} else {
 			appearanceCardRef.current?.scrollIntoView({ behavior: 'smooth' })
 			toast({
-				title: 'PRO Feature',
+				title: 'Enable Featured Image',
 				description:
-					"To change your featured image, please enable the 'Show Featured Image' option in the Appearance settings below.",
+					"To change your featured image, first enable the 'Show Featured Image' option in the Appearance settings below.",
 				variant: 'default',
 			})
 		}
@@ -572,12 +592,20 @@ export default function AccountPage() {
 								</CardDescription>
 							</CardHeader>
 							<CardContent>
-								<ThemeSwitcher />
+								<ThemeSwitcher isPro={isPro} />
 								{showFeaturedImage !== null && (
-									<div className='mt-4 flex items-center justify-between rounded-lg border p-4'>
+									<div
+										className={cn(
+											'mt-4 flex items-center justify-between rounded-lg border p-4',
+											!isPro && 'bg-muted/50',
+										)}
+									>
 										<Label
-											htmlFor='featured-image-switch'
-											className='flex flex-col space-y-1'
+											htmlFor={isPro ? 'featured-image-switch' : undefined}
+											className={cn(
+												'flex flex-col space-y-1',
+												isPro && 'cursor-pointer',
+											)}
 										>
 											<div className='flex items-center gap-2'>
 												<span>Show Featured Image</span>
@@ -589,13 +617,16 @@ export default function AccountPage() {
 												</Badge>
 											</div>
 											<span className='font-normal leading-snug text-muted-foreground'>
-												Toggle visibility of the featured image editor.
+												{isPro
+													? 'Toggle visibility of the featured image editor.'
+													: 'Available for PRO users.'}
 											</span>
 										</Label>
 										<Switch
 											id='featured-image-switch'
-											checked={showFeaturedImage}
+											checked={isPro ? showFeaturedImage : false}
 											onCheckedChange={setShowFeaturedImage}
+											disabled={!isPro}
 										/>
 									</div>
 								)}
