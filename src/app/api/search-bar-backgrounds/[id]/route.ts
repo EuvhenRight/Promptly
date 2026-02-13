@@ -2,7 +2,7 @@ import { adminDb } from '@/firebase/admin'
 import admin from 'firebase-admin'
 import { NextResponse } from 'next/server'
 
-type RouteParams = { params: Promise<{ id: string }> }
+type RouteParams = { params: { id: string } }
 
 export async function PATCH(request: Request, { params }: RouteParams) {
 	if (!adminDb) {
@@ -11,7 +11,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 			{ status: 503 },
 		)
 	}
-	const { id } = await params
+	const { id } = params
 	if (!id) {
 		return NextResponse.json({ error: 'Missing id' }, { status: 400 })
 	}
@@ -77,7 +77,7 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
 			{ status: 503 },
 		)
 	}
-	const { id } = await params
+	const { id } = params
 	if (!id) {
 		return NextResponse.json({ error: 'Missing id' }, { status: 400 })
 	}
