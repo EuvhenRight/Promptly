@@ -31,8 +31,8 @@ const PLAN_PRICES = {
 
 /** Credits pack prices in main unit. */
 const CREDITS_PRICES: Record<number, number> = {
-	1000: 10,
-	2000: 18,
+	300: 10,
+	500: 18,
 }
 
 type CheckoutBody = {
@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
 			description = ''
 			line_items = items
 		} else if (type === 'credits') {
-			const credits = bodyCredits === 2000 ? 2000 : 1000
+			const credits = bodyCredits === 500 ? 500 : 300
 			const price = CREDITS_PRICES[credits] ?? 10
 			amountCents = Math.round(price * 100)
 			title = `${credits.toLocaleString()} credits for image generation`

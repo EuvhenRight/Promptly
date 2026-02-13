@@ -45,6 +45,9 @@ export type UserProfile = {
 	facebookProfile?: string
 	role: 'user' | 'admin'
 	planId?: 'free' | 'starter' | 'pro'
+	planPurchasedAt?: Timestamp
+	planBillingPeriod?: 'monthly' | 'yearly'
+	planWillCancelAtPeriodEnd?: boolean
 	/** Wallet balance for image/generation credits (incremented when user buys credits). */
 	credits?: number
 	purchasedPrompts?: string[]

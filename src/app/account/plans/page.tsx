@@ -21,12 +21,15 @@ import {
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
 import type { UserProfile } from '@/lib/types'
 import { doc } from 'firebase/firestore'
-import { Check, Crown, Sparkles, Star, Zap } from 'lucide-react'
+import { Check, Crown, Loader2, Sparkles, Star, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
+import { add, format } from 'date-fns'
+import { manageSubscriptionCancellation } from '@/firebase/users'
+import { useToast } from '@/hooks/use-toast'
 
 const FREE_FEATURES = [
 	'For personal use only',
@@ -68,6 +71,91 @@ const FAQ_ITEMS = [
 	},
 ]
 
+function SubscriptionStatusCard({ profile }: { profile: UserProfile }) {
+	const firestore = useFirestore()
+	const { toast } = useToast()
+	const [isCancelling, setIsCancelling] = useState(false)
+	const { planId, planPurchasedAt, planBillingPeriod, planWillCancelAtPeriodEnd } = profile
+
+	if (!planId || planId === 'free') {
+		return null
+	}
+
+	const handleCancellation = async (cancel: boolean) => {
+		setIsCancelling(true)
+		try {
+			await manageSubscriptionCancellation(firestore, profile.uid, cancel)
+			toast({
+				title: `Subscription ${cancel ? 'Cancellation Scheduled' : 'Reactivated'}`,
+				description: cancel
+					? 'Your plan will expire at the end of the current billing period.'
+					: 'Your plan will now renew automatically.',
+			})
+		} catch (error: any) {
+			toast({
+				variant: 'destructive',
+				title: 'Error',
+				description: error.message,
+			})
+		} finally {
+			setIsCancelling(false)
+		}
+	}
+
+	const planName = planId === 'pro' ? 'PRO' : 'Starter'
+	const purchaseDate = planPurchasedAt?.toDate()
+	const renewalDate =
+		purchaseDate &&
+		(planBillingPeriod === 'yearly'
+			? add(purchaseDate, { years: 1 })
+			: add(purchaseDate, { months: 1 }))
+
+	return (
+		<Card className='mb-8'>
+			<CardHeader>
+				<CardTitle>Current Subscription</CardTitle>
+				<CardDescription>
+					Manage your active plan and billing details.
+				</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<p>
+					You are currently on the{' '}
+					<span className='font-bold text-primary'>{planName}</span> plan.
+				</p>
+				{renewalDate && (
+					<p className='text-muted-foreground text-sm mt-1'>
+						{planWillCancelAtPeriodEnd
+							? `Your plan will expire on ${format(renewalDate, 'PPP')}.`
+							: `Your plan renews automatically on ${format(renewalDate, 'PPP')}.`}
+					</p>
+				)}
+			</CardContent>
+			<CardFooter>
+				{planWillCancelAtPeriodEnd ? (
+					<Button
+						variant='outline'
+						onClick={() => handleCancellation(false)}
+						disabled={isCancelling}
+					>
+						{isCancelling && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+						Reactivate Subscription
+					</Button>
+				) : (
+					<Button
+						variant='destructive'
+						onClick={() => handleCancellation(true)}
+						disabled={isCancelling}
+					>
+						{isCancelling && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+						Cancel Subscription
+					</Button>
+				)}
+			</CardFooter>
+		</Card>
+	)
+}
+
 export default function PlansPage() {
 	const { user, isUserLoading } = useUser()
 	const firestore = useFirestore()
@@ -102,7 +190,7 @@ export default function PlansPage() {
 		)
 	}
 
-	if (!user) {
+	if (!user || !userProfile) {
 		return null
 	}
 
@@ -114,6 +202,8 @@ export default function PlansPage() {
 					<AccountSidebar credits={credits} />
 
 					<div className='flex-1 min-w-0'>
+						<SubscriptionStatusCard profile={userProfile} />
+
 						<h1 className='font-headline text-3xl font-bold'>
 							Choose Your Plan
 						</h1>
@@ -259,7 +349,7 @@ export default function PlansPage() {
 								Purchase credits that never expire and roll over month to month.
 							</p>
 							<div className='mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto'>
-								{/* 1000 Credits Card */}
+								{/* 300 Credits Card */}
 								<Card className='flex flex-col text-center p-8'>
 									<div className='flex-grow space-y-4'>
 										<div className='flex justify-center'>
@@ -267,20 +357,20 @@ export default function PlansPage() {
 												<Zap className='h-8 w-8' />
 											</div>
 										</div>
-										<h3 className='text-2xl font-bold'>1,000 Credits</h3>
+										<h3 className='text-2xl font-bold'>300 Credits</h3>
 										<p className='text-muted-foreground'>
 											Great for getting started and occasional use.
 										</p>
 										<p className='text-4xl font-bold'>€10</p>
 									</div>
 									<Button className='w-full mt-6' size='lg' asChild>
-										<Link href='/checkout?type=credits&credits=1000'>
+										<Link href='/checkout?type=credits&credits=300'>
 											Buy Credits
 										</Link>
 									</Button>
 								</Card>
 
-								{/* 2000 Credits Card */}
+								{/* 500 Credits Card */}
 								<Card className='relative flex flex-col text-center p-8 border-primary ring-2 ring-primary'>
 									<div className='absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-medium'>
 										Best Value
@@ -291,14 +381,14 @@ export default function PlansPage() {
 												<Zap className='h-8 w-8' />
 											</div>
 										</div>
-										<h3 className='text-2xl font-bold'>2,000 Credits</h3>
+										<h3 className='text-2xl font-bold'>500 Credits</h3>
 										<p className='text-muted-foreground'>
 											Perfect for power users and frequent creation.
 										</p>
 										<p className='text-4xl font-bold'>€18</p>
 									</div>
 									<Button className='w-full mt-6' size='lg' asChild>
-										<Link href='/checkout?type=credits&credits=2000'>
+										<Link href='/checkout?type=credits&credits=500'>
 											Buy Credits
 										</Link>
 									</Button>

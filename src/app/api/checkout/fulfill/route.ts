@@ -101,6 +101,9 @@ export async function POST(req: NextRequest) {
 			batch.update(userRef, {
 				planId: plan,
 				credits: admin.firestore.FieldValue.increment(creditsAmount),
+				planPurchasedAt: admin.firestore.FieldValue.serverTimestamp(),
+				planBillingPeriod: billing,
+				planWillCancelAtPeriodEnd: false,
 			})
 
 			const publicProfileRef = adminDb.collection('public-profiles').doc(userId)
