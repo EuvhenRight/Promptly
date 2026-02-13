@@ -98,19 +98,21 @@ export default function PlansPage() {
 					</p>
 
 					{/* Billing Toggle */}
-					<div className='mt-8 flex justify-center items-center gap-3'>
-						<Button
-							variant={billingPeriod === 'monthly' ? 'default' : 'outline'}
-							onClick={() => setBillingPeriod('monthly')}
-						>
-							Monthly
-						</Button>
-						<Button
-							variant={billingPeriod === 'yearly' ? 'default' : 'outline'}
-							onClick={() => setBillingPeriod('yearly')}
-						>
-							Yearly
-						</Button>
+					<div className='mt-8 flex flex-col items-center gap-2'>
+						<div className='flex items-center gap-3'>
+							<Button
+								variant={billingPeriod === 'monthly' ? 'default' : 'outline'}
+								onClick={() => setBillingPeriod('monthly')}
+							>
+								Monthly
+							</Button>
+							<Button
+								variant={billingPeriod === 'yearly' ? 'default' : 'outline'}
+								onClick={() => setBillingPeriod('yearly')}
+							>
+								Yearly
+							</Button>
+						</div>
 						<span className='text-sm text-green-600 font-medium'>
 							Save up to 15% with yearly billing!
 						</span>
