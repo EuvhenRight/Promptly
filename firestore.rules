@@ -29,21 +29,30 @@ service cloud.firestore {
     }
 
     // Safely checks if a field is being changed by a specific amount.
-    // statName must be a path like 'stats.likes'
-    function isChangingStatBy(statName, by) {
-        let pathParts = statName.split('.');
-        let topLevelKey = pathParts[0];
+    // Works for nested (e.g. 'stats.likes') and top-level fields (e.g. 'views').
+    function isChangingStatBy(statPath, by) {
+      let pathParts = statPath.split('.');
+      let currentVal = resource.data;
+      let nextVal = request.resource.data;
 
-        // Safely get the current and next values of the stat.
-        let currentStatValue = resource.data.get(topLevelKey, {}).get(pathParts[1], 0);
-        let nextStatValue = request.resource.data.get(topLevelKey, {}).get(pathParts[1], 0);
-        
-        return nextStatValue == currentStatValue + by;
+      // Traverse the path for both current and next resource
+      for (let i = 0; i < pathParts.length; i++) {
+        // Gracefully handle missing intermediate objects with .get()
+        currentVal = (currentVal is map) ? currentVal.get(pathParts[i], {}) : {};
+        nextVal = (nextVal is map) ? nextVal.get(pathParts[i], {}) : {};
+      }
+      
+      // Default to 0 if the final value is not a number or doesn't exist
+      let currentNum = (currentVal is number) ? currentVal : 0;
+      let nextNum = (nextVal is number) ? nextVal : 0;
+
+      return nextNum == currentNum + by;
     }
     
-    // Checks if ONLY a specific stat is changing.
-    function isOnlyChangingStat(statName) {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats.' + statName]);
+    // Checks if ONLY a specific field path is changing.
+    function isOnlyChangingStat(statPath) {
+      // Check that the set of changed keys contains ONLY the statPath we are interested in.
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([statPath]);
     }
 
     // ----------------------------------------------------------------------
@@ -139,9 +148,9 @@ service cloud.firestore {
       allow update: if
         isAdmin()
         // Allow anyone (even unauth) to increment views by 1
-        || (isOnlyChangingStat('views') && isChangingStatBy('stats.views', 1))
+        || (isOnlyChangingStat('stats.views') && isChangingStatBy('stats.views', 1))
         // Allow signed-in users to like/unlike
-        || (isSignedIn() && isOnlyChangingStat('likes') && (isChangingStatBy('stats.likes', 1) || isChangingStatBy('stats.likes', -1)))
+        || (isSignedIn() && isOnlyChangingStat('stats.likes') && (isChangingStatBy('stats.likes', 1) || isChangingStatBy('stats.likes', -1)))
         // Allow a user who purchased the prompt to update its rating
         || ((hasPurchased(promptId) || resource.data.price == 0) && request.resource.data.rating != resource.data.rating && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating']));
 

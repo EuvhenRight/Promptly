@@ -82,6 +82,7 @@ async function handleCartPurchase(
 
 	await adminDb.runTransaction(async transaction => {
 		const userRef = adminDb.doc(`users/${userId}`);
+		const cartRef = adminDb.collection('users').doc(userId).collection('carts').doc('active');
 		const userDoc = await transaction.get(userRef);
 		if (!userDoc.exists) throw new Error('User not found.');
 
@@ -111,16 +112,12 @@ async function handleCartPurchase(
 				'stats.sales': admin.firestore.FieldValue.increment(1),
 			});
 		}
+        
+        // Also clear the cart in the same transaction
+        transaction.update(cartRef, { promptIds: [] });
 	});
 
-	// After successful transaction, clear cart and write history
-	const cartRef = adminDb
-		.collection('users')
-		.doc(userId)
-		.collection('carts')
-		.doc('active');
-	await cartRef.update({ promptIds: [] });
-
+	// After successful transaction, write history
 	const historyRef = adminDb
 		.collection('users')
 		.doc(userId)
