@@ -3,9 +3,9 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function PATCH(
 	request: NextRequest,
-	context: any,
+	{ params }: { params: { id: string } },
 ) {
-	const { id } = context.params;
+	const { id } = params
 	if (!adminDb) {
 		return NextResponse.json(
 			{ error: 'Firebase Admin not initialized' },
@@ -44,9 +44,9 @@ export async function PATCH(
 
 export async function DELETE(
 	request: NextRequest,
-	context: any,
+	{ params }: { params: { id: string } },
 ) {
-	const { id } = context.params;
+	const { id } = params
 	if (!adminDb) {
 		return NextResponse.json(
 			{ error: 'Firebase Admin not initialized' },
