@@ -118,12 +118,12 @@ export default function AdminDashboardPage() {
 	const totalSales = 'Not Implemented'
 
 	return (
-		<>
+		<div className='min-w-0 space-y-4'>
 			<div className='flex items-center'>
-				<h1 className='font-headline text-3xl font-bold'>Dashboard</h1>
+				<h1 className='font-headline text-2xl font-bold tracking-tight sm:text-3xl'>Dashboard</h1>
 			</div>
-			<div className='grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-7'>
-				<Card className='lg:col-span-4'>
+			<div className='grid min-w-0 gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-7'>
+				<Card className='min-w-0 lg:col-span-4'>
 					<CardHeader>
 						<CardTitle>Review Ratings</CardTitle>
 						<CardDescription>
@@ -138,7 +138,7 @@ export default function AdminDashboardPage() {
 						) : (
 							<ChartContainer
 								config={chartConfig}
-								className='min-h-[280px] w-full'
+								className='min-h-[240px] w-full max-w-full sm:min-h-[280px]'
 							>
 								<BarChart
 									accessibilityLayer
@@ -173,7 +173,7 @@ export default function AdminDashboardPage() {
 						)}
 					</CardContent>
 				</Card>
-				<div className='lg:col-span-3 space-y-4'>
+				<div className='min-w-0 space-y-4 lg:col-span-3'>
 					<StatCard
 						title='Total Users'
 						value={users?.length ?? 0}
@@ -194,6 +194,6 @@ export default function AdminDashboardPage() {
 					/>
 				</div>
 			</div>
-		</>
+		</div>
 	)
 }
