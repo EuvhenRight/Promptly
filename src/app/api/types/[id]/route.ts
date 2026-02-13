@@ -1,9 +1,10 @@
 import { adminDb } from '@/firebase/admin'
 import { NextResponse } from 'next/server'
 
-type RouteParams = { params: { id: string } }
-
-export async function PATCH(request: Request, { params }: RouteParams) {
+export async function PATCH(
+	request: Request,
+	{ params }: { params: { id: string } },
+) {
 	if (!adminDb) {
 		return NextResponse.json(
 			{ error: 'Firebase Admin not initialized' },
@@ -41,7 +42,10 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 	}
 }
 
-export async function DELETE(_request: Request, { params }: RouteParams) {
+export async function DELETE(
+	request: Request,
+	{ params }: { params: { id: string } },
+) {
 	if (!adminDb) {
 		return NextResponse.json(
 			{ error: 'Firebase Admin not initialized' },
