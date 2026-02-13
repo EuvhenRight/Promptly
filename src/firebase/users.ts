@@ -218,31 +218,21 @@ export async function toggleFavoritePrompt(
 	const userRef = doc(firestore, 'users', userId)
 	const promptRef = doc(firestore, 'prompts', promptId)
 
-	await runTransaction(firestore, async transaction => {
-		const userDoc = await transaction.get(userRef)
-		const promptDoc = await transaction.get(promptRef)
-
-		if (!userDoc.exists()) {
-			throw new Error('User profile not found.')
-		}
-		if (!promptDoc.exists()) {
-			throw new Error('Prompt not found.')
-		}
-
-		// Update user's favorite prompts array
-		transaction.update(userRef, {
-			favoritePrompts: isFavorite ? arrayRemove(promptId) : arrayUnion(promptId),
-		})
-
-		// Update prompt's like count
-		const currentLikes = promptDoc.data()?.stats?.likes ?? 0
-		const newLikes = isFavorite ? currentLikes - 1 : currentLikes + 1
-
-		transaction.update(promptRef, {
-			'stats.likes': Math.max(0, newLikes),
-		})
+	// Two separate non-atomic writes. This is necessary because a client-side
+	// transaction cannot update two separate documents with granular field-level
+	// security rules like ours.
+	const userUpdate = updateDoc(userRef, {
+		favoritePrompts: isFavorite ? arrayRemove(promptId) : arrayUnion(promptId),
 	})
+
+	const promptUpdate = updateDoc(promptRef, {
+		'stats.likes': increment(isFavorite ? -1 : 1),
+	})
+
+	// Run them in parallel for better performance.
+	await Promise.all([userUpdate, promptUpdate])
 }
+
 
 /**
  * Increments the view count of a user's profile.

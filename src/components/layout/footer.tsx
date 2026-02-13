@@ -13,6 +13,9 @@ export default function Footer() {
           &copy; {new Date().getFullYear()} Promptly. All rights reserved.
         </p>
         <div className="flex items-center gap-4 text-sm">
+          <Link href="/docs" className="hover:text-foreground transition-colors">
+            Документація
+          </Link>
           <Link href="#" className="hover:text-foreground transition-colors">
             Terms of Service
           </Link>

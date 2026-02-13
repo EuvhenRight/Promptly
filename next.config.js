@@ -1,3 +1,5 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
@@ -11,6 +13,11 @@ const nextConfig = {
       { protocol: 'https', hostname: 'firebasestorage.googleapis.com', port: '', pathname: '/**' },
       { protocol: 'https', hostname: 'storage.googleapis.com', port: '', pathname: '/**' },
     ],
+  },
+  // Explicit Turbopack config so Next.js doesn't warn when using `next dev --turbopack`.
+  // root is the default (project root); having a key here makes the warning logic recognize Turbopack as configured.
+  turbopack: {
+    root: path.join(__dirname),
   },
   /**
    * Custom webpack configuration to disable caching.

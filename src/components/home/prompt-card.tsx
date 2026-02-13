@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge'
 import { useCategories } from '@/hooks/use-categories'
 import type { Prompt, UserProfile } from '@/lib/types'
-import { Eye, Heart, ShoppingBag, ShoppingCart } from 'lucide-react'
+import { Coins, Eye, Heart, ShoppingBag } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Skeleton } from '../ui/skeleton'
@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { doc } from 'firebase/firestore'
 import React from 'react'
+import { PlaceHolderImages } from '@/lib/placeholder-images'
 
 type PromptCardProps = {
 	prompt: Prompt
@@ -26,7 +27,6 @@ const formatStat = (num: number): string => {
 }
 
 export default function PromptCard({ prompt, isInCart }: PromptCardProps) {
-	const imageUrl = prompt.images?.[0]
 	const { getNames } = useCategories()
 	const categoryId = prompt.categoryId ?? prompt.categories?.[0]
 	const categoryNames = getNames(categoryId)
@@ -63,6 +63,26 @@ export default function PromptCard({ prompt, isInCart }: PromptCardProps) {
 		})
 	}
 
+	const imageIdentifier = prompt.images?.[0]
+	let imageUrl: string | undefined
+	let imageWidth: number = 400
+	let imageHeight: number = 500
+
+	if (imageIdentifier) {
+		if (imageIdentifier.startsWith('http')) {
+			imageUrl = imageIdentifier
+		} else {
+			const imageData = PlaceHolderImages.find(p => p.id === imageIdentifier)
+			if (imageData) {
+				imageUrl = imageData.imageUrl
+				imageWidth = imageData.width
+				imageHeight = imageData.height
+			}
+		}
+	}
+
+	const creditPrice = Math.round(prompt.price * 100)
+
 	return (
 		<div>
 			<div className='group relative w-full overflow-hidden rounded-2xl bg-card'>
@@ -71,10 +91,9 @@ export default function PromptCard({ prompt, isInCart }: PromptCardProps) {
 						<Image
 							src={imageUrl}
 							alt={prompt.title}
-							width={500}
-							height={500}
+							width={imageWidth}
+							height={imageHeight}
 							className='w-full h-auto object-cover transition-transform duration-300 ease-in-out group-hover:scale-105'
-							unoptimized
 						/>
 					) : (
 						<Skeleton className='w-full aspect-[4/5]' />
@@ -86,28 +105,30 @@ export default function PromptCard({ prompt, isInCart }: PromptCardProps) {
 						<h3 className='font-bold text-base leading-tight truncate'>
 							{prompt.title}
 						</h3>
-						{prompt.stats && (
-							<div className='mt-1.5 flex items-center justify-between text-xs text-neutral-300'>
+						<div className='mt-1.5 space-y-1.5 text-xs text-neutral-300'>
+							{prompt.stats && (
 								<div className='flex items-center gap-3'>
 									<span className='flex items-center gap-1'>
 										<Eye className='h-4 w-4' />
 										{formatStat(prompt.stats.views)}
 									</span>
 									<span className='flex items-center gap-1'>
-										<ShoppingCart className='h-4 w-4' />
+										<ShoppingBag className='h-4 w-4' />
 										{formatStat(prompt.stats.sales)}
 									</span>
 								</div>
-								{categoryNames[0] && (
+							)}
+							{categoryNames[0] && (
+								<div>
 									<Badge
 										variant='secondary'
 										className='bg-white/20 text-white backdrop-blur-sm border-0 font-medium'
 									>
 										{categoryNames[0]}
 									</Badge>
-								)}
-							</div>
-						)}
+								</div>
+							)}
+						</div>
 					</div>
 				</div>
 
@@ -131,6 +152,13 @@ export default function PromptCard({ prompt, isInCart }: PromptCardProps) {
 						/>
 					</button>
 				)}
+
+				<div className='absolute bottom-4 right-4 z-10'>
+					<Badge className='flex items-center gap-1'>
+						<Coins className='h-3.5 w-3.5' />
+						{prompt.price === 0 ? 'Free' : creditPrice}
+					</Badge>
+				</div>
 			</div>
 		</div>
 	)

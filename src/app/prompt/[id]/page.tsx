@@ -9,6 +9,12 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
 	useCollection,
 	useDoc,
 	useFirestore,
@@ -20,6 +26,7 @@ import {
 	addPromptCommentAndRating,
 	deletePromptComment,
 	incrementPromptView,
+	purchasePromptWithCredits,
 	updatePromptComment,
 } from '@/firebase/prompts'
 import { toggleFavoritePrompt } from '@/firebase/users'
@@ -52,6 +59,7 @@ import {
 	ShoppingBag,
 	Star,
 	Trash2,
+	Coins,
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -66,18 +74,14 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
+	AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { Card } from '@/components/ui/card'
 import { formatDistanceToNow } from 'date-fns'
 import { Separator } from '@/components/ui/separator'
 import { useTags } from '@/hooks/use-tags'
 import { useModels } from '@/hooks/use-models'
+import { PlaceHolderImages } from '@/lib/placeholder-images'
 
 const PromptDetailSkeleton = () => (
 	<div className='grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12'>
@@ -162,6 +166,8 @@ export default function PromptDetailPage() {
 	const [isSubmittingComment, setIsSubmittingComment] = useState(false)
 	const [isDeletingComment, setIsDeletingComment] = useState(false)
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+	const [showPurchaseConfirm, setShowPurchaseConfirm] = useState(false)
+	const [isPurchasing, setIsPurchasing] = useState(false)
 
 	// --- Memoized Derived State ---
 	const isFavorite = useMemo(
@@ -233,6 +239,34 @@ export default function PromptDetailPage() {
 			title: 'Success!',
 			description: `"${prompt.title}" has been added to your cart.`,
 		})
+	}
+
+	const handleBuyNow = async () => {
+		if (!user || !prompt) {
+			toast({
+				variant: 'destructive',
+				title: 'Error',
+				description: 'Please sign in to purchase.',
+			})
+			return
+		}
+		setIsPurchasing(true)
+		try {
+			await purchasePromptWithCredits(user.uid, prompt.id)
+			toast({
+				title: 'Purchase Successful!',
+				description: `You have unlocked "${prompt.title}".`,
+			})
+			setShowPurchaseConfirm(false)
+		} catch (error: any) {
+			toast({
+				variant: 'destructive',
+				title: 'Purchase Failed',
+				description: error.message,
+			})
+		} finally {
+			setIsPurchasing(false)
+		}
 	}
 
 	const handleToggleFavorite = () => {
@@ -456,11 +490,30 @@ export default function PromptDetailPage() {
 		const authorPhotoURL = prompt.authorPhotoURL ?? ''
 		const authorInitial = authorDisplayName.charAt(0)
 
-		const promptImage = prompt.images?.[0]
+		const imageIdentifier = prompt.images?.[0]
+		let promptImage: string | undefined
+		let imageWidth: number = 720
+		let imageHeight: number = 1280
+
+		if (imageIdentifier) {
+			if (imageIdentifier.startsWith('http')) {
+				promptImage = imageIdentifier
+			} else {
+				const imageData = PlaceHolderImages.find(p => p.id === imageIdentifier)
+				if (imageData) {
+					promptImage = imageData.imageUrl
+					imageWidth = imageData.width
+					imageHeight = imageData.height
+				}
+			}
+		}
+
 		const categoryId = prompt.categoryId ?? prompt.categories?.[0]
 		const categoryNames = getNames(categoryId)
 		const tagNames = getTagNames(prompt.tags)
 		const modelName = getModelNames(prompt.modelId)[0]
+
+		const creditPrice = Math.round(prompt.price * 100)
 
 		return (
 			<div className='grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12'>
@@ -470,11 +523,10 @@ export default function PromptDetailPage() {
 							<Image
 								src={promptImage}
 								alt={prompt.title}
-								width={720}
-								height={1280}
+								width={imageWidth}
+								height={imageHeight}
 								className='w-full h-auto object-contain'
 								priority
-								unoptimized
 							/>
 						)}
 					</div>
@@ -587,9 +639,10 @@ export default function PromptDetailPage() {
 						{!canViewContent ? (
 							<>
 								<div className='flex flex-wrap items-center justify-between gap-4'>
-									<h2 className='text-2xl font-bold'>
-										{`$${(Number(prompt.price) ?? 0).toFixed(2)}`}
-									</h2>
+									<div className='flex items-center gap-2 text-2xl font-bold'>
+										<Coins className='h-6 w-6 text-amber-500' />
+										<span>{creditPrice}</span>
+									</div>
 									<div className='flex flex-grow justify-end items-center gap-2 sm:flex-grow-0'>
 										<Button
 											size='lg'
@@ -601,15 +654,79 @@ export default function PromptDetailPage() {
 											<ShoppingBag className='mr-2 h-4 w-4' />
 											{isInCart ? 'In cart' : 'Add to Cart'}
 										</Button>
-										<Button
-											size='lg'
-											className='bg-accent text-accent-foreground hover:bg-accent/90 flex-1 sm:flex-initial'
-											asChild
+										<AlertDialog
+											open={showPurchaseConfirm}
+											onOpenChange={setShowPurchaseConfirm}
 										>
-											<Link href={`/checkout?promptId=${prompt.id}`}>
-												Buy Now
-											</Link>
-										</Button>
+											<AlertDialogTrigger asChild>
+												<Button
+													size='lg'
+													className='bg-accent text-accent-foreground hover:bg-accent/90 flex-1 sm:flex-initial'
+													disabled={!user}
+												>
+													Buy Now
+												</Button>
+											</AlertDialogTrigger>
+											<AlertDialogContent>
+												<AlertDialogHeader>
+													<AlertDialogTitle>Confirm Purchase</AlertDialogTitle>
+													<AlertDialogDescription>
+														Are you sure you want to purchase this prompt?
+													</AlertDialogDescription>
+												</AlertDialogHeader>
+												<div className='space-y-2 text-sm'>
+													<p>
+														<span className='font-semibold'>Prompt:</span>{' '}
+														{prompt.title}
+													</p>
+													<div className='flex justify-between'>
+														<span>Your current balance:</span>
+														<span>{userProfile?.credits ?? 0} credits</span>
+													</div>
+													<div className='flex justify-between'>
+														<span>Prompt cost:</span>
+														<span className='text-destructive'>
+															- {creditPrice} credits
+														</span>
+													</div>
+													<Separator />
+													<div className='flex justify-between font-bold'>
+														<span>Remaining balance:</span>
+														<span>
+															{(userProfile?.credits ?? 0) - creditPrice}{' '}
+															credits
+														</span>
+													</div>
+													{(userProfile?.credits ?? 0) < creditPrice && (
+														<p className='text-destructive font-bold pt-2'>
+															You do not have enough credits for this purchase.
+														</p>
+													)}
+												</div>
+												<AlertDialogFooter>
+													<AlertDialogCancel disabled={isPurchasing}>
+														Cancel
+													</AlertDialogCancel>
+													{(userProfile?.credits ?? 0) >= creditPrice ? (
+														<AlertDialogAction
+															onClick={handleBuyNow}
+															disabled={isPurchasing}
+														>
+															{isPurchasing && (
+																<Loader2 className='mr-2 h-4 w-4 animate-spin' />
+															)}
+															Confirm Purchase
+														</AlertDialogAction>
+													) : (
+														<AlertDialogAction asChild>
+															<Link href='/account/plans#credits'>
+																Buy Credits
+															</Link>
+														</AlertDialogAction>
+													)}
+												</AlertDialogFooter>
+											</AlertDialogContent>
+										</AlertDialog>
 									</div>
 								</div>
 								<div className='p-8 bg-muted rounded-lg text-center relative'>
@@ -680,11 +797,13 @@ export default function PromptDetailPage() {
 								hasUserComment={hasUserComment}
 							/>
 						)}
-						{otherComments.length === 0 && !hasUserComment && !areCommentsLoading && (
-							<p className='text-muted-foreground text-center py-4'>
-								No reviews yet.
-							</p>
-						)}
+						{otherComments.length === 0 &&
+							!hasUserComment &&
+							!areCommentsLoading && (
+								<p className='text-muted-foreground text-center py-4'>
+									No reviews yet.
+								</p>
+							)}
 					</div>
 				</div>
 			</main>

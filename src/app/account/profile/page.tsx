@@ -37,6 +37,7 @@ import {
 	where,
 } from 'firebase/firestore'
 import {
+	Coins,
 	CreditCard,
 	DollarSign,
 	Edit2,
@@ -61,6 +62,7 @@ import {
 	TableHeader,
 	TableRow,
 } from '@/components/ui/table'
+import { PlaceHolderImages } from '@/lib/placeholder-images'
 
 function ProfileSkeleton() {
 	return (
@@ -108,7 +110,27 @@ function PromptGrid({ prompts }: { prompts: Prompt[] }) {
 	return (
 		<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
 			{prompts.map(prompt => {
-				const img = prompt.images?.[0]
+				const imageIdentifier = prompt.images?.[0]
+				let img: string | undefined
+				let imgWidth: number = 400
+				let imgHeight: number = 300
+
+				if (imageIdentifier) {
+					if (imageIdentifier.startsWith('http')) {
+						img = imageIdentifier
+					} else {
+						const imageData = PlaceHolderImages.find(
+							p => p.id === imageIdentifier,
+						)
+						if (imageData) {
+							img = imageData.imageUrl
+							imgWidth = imageData.width
+							imgHeight = imageData.height
+						}
+					}
+				}
+				const creditPrice = Math.round(prompt.price * 100)
+
 				return (
 					<Link
 						key={prompt.id}
@@ -121,9 +143,9 @@ function PromptGrid({ prompts }: { prompts: Prompt[] }) {
 									<Image
 										src={img}
 										alt={prompt.title}
-										fill
-										className='object-cover group-hover:scale-105 transition-transform duration-300'
-										unoptimized
+										width={imgWidth}
+										height={imgHeight}
+										className='object-cover w-full h-full group-hover:scale-105 transition-transform duration-300'
 									/>
 								)}
 							</div>
@@ -131,9 +153,16 @@ function PromptGrid({ prompts }: { prompts: Prompt[] }) {
 								<p className='font-medium line-clamp-1 group-hover:text-primary'>
 									{prompt.title}
 								</p>
-								<p className='text-sm text-muted-foreground'>
-									{prompt.price === 0 ? 'Free' : `$${prompt.price.toFixed(2)}`}
-								</p>
+								<div className='text-sm text-muted-foreground flex items-center gap-1'>
+									{prompt.price === 0 ? (
+										'Free'
+									) : (
+										<>
+											<Coins className='h-4 w-4 text-amber-500' />
+											{creditPrice}
+										</>
+									)}
+								</div>
 							</CardContent>
 						</Card>
 					</Link>
@@ -147,7 +176,9 @@ export default function ProfilePage() {
 	const { user, isUserLoading } = useUser()
 	const firestore = useFirestore()
 	const router = useRouter()
-	const [showFeaturedImage, setShowFeaturedImage] = useState<boolean | null>(null)
+	const [showFeaturedImage, setShowFeaturedImage] = useState<boolean | null>(
+		null,
+	)
 
 	useEffect(() => {
 		const storedPreference = localStorage.getItem('showFeaturedImage')
@@ -206,16 +237,12 @@ export default function ProfilePage() {
 	const purchaseHistoryQuery = useMemoFirebase(
 		() =>
 			purchaseHistoryRef
-				? query(
-						purchaseHistoryRef,
-						orderBy('createdAt', 'desc'),
-					)
+				? query(purchaseHistoryRef, orderBy('createdAt', 'desc'))
 				: null,
 		[purchaseHistoryRef],
 	)
-	const { data: purchaseHistory } = useCollection<PurchaseHistoryRecord>(
-		purchaseHistoryQuery,
-	)
+	const { data: purchaseHistory } =
+		useCollection<PurchaseHistoryRecord>(purchaseHistoryQuery)
 
 	// Fetch prompt titles for history rows that don't have promptTitles (e.g. old records)
 	const [fetchedPromptTitles, setFetchedPromptTitles] = useState<
@@ -243,7 +270,7 @@ export default function ProfilePage() {
 			)
 			const snap = await getDocs(q)
 			const map: Record<string, string> = {}
-			snap.docs.forEach((d) => {
+			snap.docs.forEach(d => {
 				map[d.id] = (d.data().title as string) || 'Prompt'
 			})
 			return map
@@ -256,7 +283,7 @@ export default function ProfilePage() {
 				const map = await fetchBatch(i)
 				Object.assign(all, map)
 			}
-			if (!cancelled) setFetchedPromptTitles((prev) => ({ ...prev, ...all }))
+			if (!cancelled) setFetchedPromptTitles(prev => ({ ...prev, ...all }))
 		})()
 		return () => {
 			cancelled = true
@@ -481,20 +508,11 @@ export default function ProfilePage() {
 															</TableRow>
 														</TableHeader>
 														<TableBody>
-															{purchaseHistory.map((row) => {
+															{purchaseHistory.map(row => {
 																const date =
-																	row.createdAt &&
-																	'toDate' in row.createdAt
+																	row.createdAt && 'toDate' in row.createdAt
 																		? row.createdAt.toDate()
 																		: null
-																const amount =
-																	row.amountCents != null
-																		? (row.amountCents / 100).toFixed(
-																				2,
-																			)
-																		: '—'
-																const currency =
-																	row.currency?.toUpperCase() ?? 'USD'
 																const typeLabel =
 																	row.type === 'credits'
 																		? 'Credits'
@@ -515,43 +533,37 @@ export default function ProfilePage() {
 																					)
 																				: '—'}
 																		</TableCell>
-																		<TableCell>
-																			{typeLabel}
-																		</TableCell>
+																		<TableCell>{typeLabel}</TableCell>
 																		<TableCell className='max-w-0 w-[50%]'>
 																			<div className='flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0'>
 																				{row.promptIds &&
-																					row.promptIds.length > 0 ? (
+																				row.promptIds.length > 0 ? (
 																					<>
-																						{row.promptIds.map(
-																							(id, i) => {
-																								const name =
-																									row.promptTitles?.[i] ??
-																									fetchedPromptTitles[
-																										id
-																									] ??
-																									'Prompt'
-																								return (
-																									<span
-																										key={id}
-																										className='inline-block min-w-0 max-w-full'
+																						{row.promptIds.map((id, i) => {
+																							const name =
+																								row.promptTitles?.[i] ??
+																								fetchedPromptTitles[id] ??
+																								'Prompt'
+																							return (
+																								<span
+																									key={id}
+																									className='inline-block min-w-0 max-w-full'
+																								>
+																									{i > 0 && (
+																										<span className='text-muted-foreground mx-0.5 shrink-0'>
+																											·
+																										</span>
+																									)}
+																									<Link
+																										href={`/prompt/${id}`}
+																										title={name}
+																										className='text-primary underline underline-offset-2 hover:text-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded px-0.5 -mx-0.5 text-sm font-medium cursor-pointer truncate block max-w-full'
 																									>
-																										{i > 0 && (
-																											<span className='text-muted-foreground mx-0.5 shrink-0'>
-																												·
-																											</span>
-																										)}
-																										<Link
-																											href={`/prompt/${id}`}
-																											title={name}
-																											className='text-primary underline underline-offset-2 hover:text-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded px-0.5 -mx-0.5 text-sm font-medium cursor-pointer truncate block max-w-full'
-																										>
-																											{name}
-																										</Link>
-																									</span>
-																								)
-																							},
-																						)}
+																										{name}
+																									</Link>
+																								</span>
+																							)
+																						})}
 																					</>
 																				) : (
 																					<span className='text-muted-foreground'>
@@ -561,7 +573,22 @@ export default function ProfilePage() {
 																			</div>
 																		</TableCell>
 																		<TableCell className='text-right font-medium'>
-																			{currency} {amount}
+																			{row.currency === 'crd' ? (
+																				<div className='flex items-center justify-end gap-1'>
+																					<Coins className='h-4 w-4 text-amber-500' />
+																					<span>{row.amountCents}</span>
+																				</div>
+																			) : row.amountCents != null ? (
+																				new Intl.NumberFormat(
+																					'de-DE',
+																					{
+																						style: 'currency',
+																						currency: 'EUR',
+																					},
+																				).format(row.amountCents / 100)
+																			) : (
+																				'—'
+																			)}
 																		</TableCell>
 																	</TableRow>
 																)

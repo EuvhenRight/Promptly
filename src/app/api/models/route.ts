@@ -13,12 +13,30 @@ export async function GET() {
 		)
 	}
 	try {
-		const snap = await adminDb.collection('models').get()
-		const list: ModelItem[] = snap.docs.map(doc => ({
+		const promptsSnap = await adminDb.collection('prompts').select('modelId').get()
+		const activeModelIds = new Set<string>()
+		promptsSnap.docs.forEach(doc => {
+			const modelId = doc.data().modelId
+			if (modelId) {
+				activeModelIds.add(modelId)
+			}
+		})
+
+		if (activeModelIds.size === 0) {
+			return NextResponse.json([])
+		}
+
+		const modelsSnap = await adminDb.collection('models').get()
+		const allModels: ModelItem[] = modelsSnap.docs.map(doc => ({
 			id: doc.id,
 			name: (doc.data().name as string) || doc.id,
 		}))
-		return NextResponse.json(list)
+
+		const activeModels = allModels.filter(model =>
+			activeModelIds.has(model.id),
+		)
+
+		return NextResponse.json(activeModels)
 	} catch (err) {
 		console.error('Fetch models error:', err)
 		return NextResponse.json(

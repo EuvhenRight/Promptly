@@ -2,7 +2,6 @@ import Stripe from 'stripe';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 
 let stripeSecretKey: string | null = null;
-const secretName = 'projects/studio-2725546260-fde38/secrets/STRIPE_SECRET_KEY/versions/latest';
 let stripeInstance: Stripe | null = null;
 
 async function getStripeSecretKey(): Promise<string> {
@@ -18,6 +17,21 @@ async function getStripeSecretKey(): Promise<string> {
 
   // For production on App Hosting, fetch from Secret Manager.
   try {
+    let projectId: string | undefined;
+    // Firebase App Hosting automatically provides FIREBASE_CONFIG.
+    if (process.env.FIREBASE_CONFIG) {
+        try {
+            projectId = JSON.parse(process.env.FIREBASE_CONFIG).projectId;
+        } catch (e) {
+            console.error('Failed to parse FIREBASE_CONFIG:', e);
+        }
+    }
+
+    if (!projectId) {
+        throw new Error("Firebase project ID could not be determined from environment variables.");
+    }
+    
+    const secretName = `projects/${projectId}/secrets/STRIPE_SECRET_KEY/versions/latest`;
     const client = new SecretManagerServiceClient();
     const [version] = await client.accessSecretVersion({ name: secretName });
     const payload = version.payload?.data?.toString();

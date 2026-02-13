@@ -13,12 +13,28 @@ export async function GET() {
 		)
 	}
 	try {
-		const snap = await adminDb.collection('types').get()
-		const list: TypeItem[] = snap.docs.map(doc => ({
+		const promptsSnap = await adminDb.collection('prompts').select('typeId').get()
+		const activeTypeIds = new Set<string>()
+		promptsSnap.docs.forEach(doc => {
+			const typeId = doc.data().typeId
+			if (typeId) {
+				activeTypeIds.add(typeId)
+			}
+		})
+
+		if (activeTypeIds.size === 0) {
+			return NextResponse.json([])
+		}
+
+		const typesSnap = await adminDb.collection('types').get()
+		const allTypes: TypeItem[] = typesSnap.docs.map(doc => ({
 			id: doc.id,
 			name: (doc.data().name as string) || doc.id,
 		}))
-		return NextResponse.json(list)
+
+		const activeTypes = allTypes.filter(type => activeTypeIds.has(type.id))
+
+		return NextResponse.json(activeTypes)
 	} catch (err) {
 		console.error('Fetch types error:', err)
 		return NextResponse.json(

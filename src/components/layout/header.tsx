@@ -92,6 +92,12 @@ export default function Header() {
 							<div className='mt-8 flex flex-col gap-4'>
 								<nav className='mt-4 flex flex-col gap-2'>
 									<Button variant='ghost' asChild className='justify-start'>
+										<Link href='/cart'>
+											<ShoppingBag className='mr-2 h-4 w-4' />
+											Cart {cartCount > 0 && `(${cartCount})`}
+										</Link>
+									</Button>
+									<Button variant='ghost' asChild className='justify-start'>
 										<Link href='/account/plans'>Pricing</Link>
 									</Button>
 									<Button variant='ghost' asChild className='justify-start'>

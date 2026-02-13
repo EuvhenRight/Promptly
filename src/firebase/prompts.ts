@@ -15,6 +15,7 @@ import {
 	serverTimestamp,
 	updateDoc,
 	writeBatch,
+	arrayUnion,
 } from 'firebase/firestore'
 import {
 	deleteObject,
@@ -23,6 +24,7 @@ import {
 	ref,
 	uploadBytes,
 } from 'firebase/storage'
+import { getAuth } from 'firebase/auth'
 
 /**
  * Uploads an image from a client-side File object to Firebase Storage.
@@ -465,4 +467,34 @@ export async function deletePromptComment({
 		// Delete comment
 		transaction.delete(commentRef)
 	})
+}
+
+/**
+ * "Buys" a prompt using the user's credit balance by calling a secure API endpoint.
+ */
+export async function purchasePromptWithCredits(
+	userId: string,
+	promptId: string,
+): Promise<void> {
+	const auth = getAuth()
+	const user = auth.currentUser
+	if (!user || user.uid !== userId) {
+		throw new Error('You must be signed in to purchase.')
+	}
+
+	const idToken = await user.getIdToken()
+
+	const response = await fetch('/api/purchase', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			Authorization: `Bearer ${idToken}`,
+		},
+		body: JSON.stringify({ promptId }),
+	})
+
+	if (!response.ok) {
+		const result = await response.json()
+		throw new Error(result.error || 'An unknown error occurred during purchase.')
+	}
 }

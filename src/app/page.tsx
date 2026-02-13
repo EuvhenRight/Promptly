@@ -45,11 +45,17 @@ export default function Home() {
 	const { user } = useUser()
 	const firestore = useFirestore()
 	const cartRef = useMemoFirebase(
-		() => (user && firestore ? doc(firestore, 'users', user.uid, 'carts', 'active') : null),
+		() =>
+			user && firestore
+				? doc(firestore, 'users', user.uid, 'carts', 'active')
+				: null,
 		[firestore, user],
 	)
 	const { data: cart } = useDoc<Cart>(cartRef)
-	const cartPromptIds = useMemo(() => new Set(cart?.promptIds ?? []), [cart?.promptIds])
+	const cartPromptIds = useMemo(
+		() => new Set(cart?.promptIds ?? []),
+		[cart?.promptIds],
+	)
 
 	useEffect(() => {
 		if (!typesLoading && types.length > 0 && !isInitialTypeSet) {
@@ -64,19 +70,40 @@ export default function Home() {
 	const handleFilterChange = (
 		id: string,
 		name?: string,
-		type?: 'category' | 'tag' | 'main',
+		type?: 'category' | 'tag' | 'main' | 'model',
 	) => {
 		setActiveFilter(id)
 		setActiveFilterName(name || id)
 
+		// Reset specific filters to start fresh
 		setSelectedCategoryId(null)
 		setSelectedTagId(null)
+		setSelectedModelId(null)
 		setSearchTerm('')
 
-		if (type === 'category') {
-			setSelectedCategoryId(id)
-		} else if (type === 'tag') {
-			setSelectedTagId(id)
+		if (type === 'main') {
+			switch (id) {
+				case 'Hot':
+					setSortBy('stats.views:desc')
+					break
+				case 'Top':
+					setSortBy('rating.average:desc')
+					break
+				case 'New':
+				case 'Featured':
+				default:
+					setSortBy('createdAt:desc')
+					break
+			}
+		} else {
+			setSortBy('createdAt:desc')
+			if (type === 'category') {
+				setSelectedCategoryId(id)
+			} else if (type === 'tag') {
+				setSelectedTagId(id)
+			} else if (type === 'model') {
+				setSelectedModelId(id)
+			}
 		}
 	}
 
@@ -90,6 +117,29 @@ export default function Home() {
 
 	const handleSortChange = (newSortBy: SortByOption) => {
 		setSortBy(newSortBy)
+
+		// Only sync main filter links if no content filter is active
+		const isContentFilterActive =
+			selectedCategoryId || selectedTagId || selectedModelId || searchTerm
+		if (isContentFilterActive) {
+			return
+		}
+
+		// Sync the active main filter based on the sort selection
+		if (newSortBy === 'createdAt:desc') {
+			if (activeFilter !== 'Featured') {
+				setActiveFilter('New')
+			}
+		} else if (newSortBy === 'stats.views:desc') {
+			setActiveFilter('Hot')
+		} else if (newSortBy === 'rating.average:desc') {
+			setActiveFilter('Top')
+		} else {
+			// This is for price sorting. If a main filter is active, deselect it.
+			if (['Featured', 'Hot', 'New', 'Top'].includes(activeFilter)) {
+				setActiveFilter('') // An empty string won't match any link, so none will be highlighted.
+			}
+		}
 	}
 
 	const handleSearch = (term: string) => {

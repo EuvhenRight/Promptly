@@ -24,12 +24,28 @@ export async function GET() {
 		)
 	}
 	try {
-		const snap = await adminDb.collection('tags').get()
-		const list: TagItem[] = snap.docs.map(doc => ({
+		const promptsSnap = await adminDb.collection('prompts').select('tags').get()
+		const activeTagIds = new Set<string>()
+		promptsSnap.docs.forEach(doc => {
+			const tags = doc.data().tags
+			if (Array.isArray(tags)) {
+				tags.forEach(tagId => activeTagIds.add(tagId))
+			}
+		})
+
+		if (activeTagIds.size === 0) {
+			return NextResponse.json([])
+		}
+
+		const tagsSnap = await adminDb.collection('tags').get()
+		const allTags: TagItem[] = tagsSnap.docs.map(doc => ({
 			id: doc.id,
 			name: (doc.data().name as string) || doc.id,
 		}))
-		return NextResponse.json(list)
+
+		const activeTags = allTags.filter(tag => activeTagIds.has(tag.id))
+
+		return NextResponse.json(activeTags)
 	} catch (err) {
 		console.error('Fetch tags error:', err)
 		return NextResponse.json(

@@ -23,6 +23,7 @@ import { useToast } from '@/hooks/use-toast'
 import type { Prompt, PublicProfile } from '@/lib/types'
 import { collection, query, where, limit, doc } from 'firebase/firestore'
 import {
+	Coins,
 	Eye,
 	Facebook,
 	Instagram,
@@ -37,6 +38,7 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { signInWithGoogle } from '@/firebase/auth'
+import { PlaceHolderImages } from '@/lib/placeholder-images'
 
 function PublicProfileSkeleton() {
 	return (
@@ -239,7 +241,6 @@ export default function PublicProfilePage() {
 							fill
 							className='object-cover'
 							priority
-							unoptimized
 						/>
 					)}
 					<div className='absolute inset-0 bg-gradient-to-t from-black/20 to-transparent' />
@@ -339,22 +340,53 @@ export default function PublicProfilePage() {
 						) : (
 							<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
 								{prompts.map(prompt => {
-									const img = prompt.images?.[0]
+									const imageIdentifier = prompt.images?.[0]
+									let img: string | undefined
+									let imgWidth: number = 400
+									let imgHeight: number = 300
+
+									if (imageIdentifier) {
+										if (imageIdentifier.startsWith('http')) {
+											img = imageIdentifier
+										} else {
+											const imageData = PlaceHolderImages.find(
+												p => p.id === imageIdentifier,
+											)
+											if (imageData) {
+												img = imageData.imageUrl
+												imgWidth = imageData.width
+												imgHeight = imageData.height
+											}
+										}
+									}
+									const creditPrice = Math.round(prompt.price * 100)
+
 									return (
 										<Link key={prompt.id} href={`/prompt/${prompt.id}`}>
 											<Card className='overflow-hidden transition-all hover:scale-[1.02] hover:shadow-lg'>
 												<div className='relative aspect-video bg-muted'>
-													{img && (
+													{img ? (
 														<Image
 															src={img}
 															alt={prompt.title}
-															fill
-															className='object-cover'
-															unoptimized
+															width={imgWidth}
+															height={imgHeight}
+															className='object-cover w-full h-full'
 														/>
+													) : (
+														<Skeleton className='w-full h-full' />
 													)}
 													<div className='absolute bottom-2 right-2'>
-														<Badge>{`$${prompt.price}`}</Badge>
+														<Badge className='flex items-center gap-1'>
+															{prompt.price === 0 ? (
+																'Free'
+															) : (
+																<>
+																	<Coins className='h-3.5 w-3.5' />
+																	{creditPrice}
+																</>
+															)}
+														</Badge>
 													</div>
 												</div>
 												<CardContent className='p-3'>

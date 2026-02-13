@@ -66,6 +66,7 @@ import {
 	ArrowUp,
 	ArrowUpDown,
 	ChevronDown,
+	Coins,
 	MoreHorizontal,
 	Pencil,
 	Trash,
@@ -73,6 +74,7 @@ import {
 import Image from 'next/image'
 import Link from 'next/link'
 import * as React from 'react'
+import { PlaceHolderImages } from '@/lib/placeholder-images'
 
 const ActionCell = ({ prompt }: { prompt: Prompt }) => {
 	const { toast } = useToast()
@@ -158,7 +160,20 @@ export const columns: ColumnDef<Prompt>[] = [
 		accessorKey: 'images',
 		header: 'Image',
 		cell: ({ row }) => {
-			const imageUrl = row.original.images?.[0]
+			const imageIdentifier = row.original.images?.[0]
+			let imageUrl: string | undefined
+
+			if (imageIdentifier) {
+				if (imageIdentifier.startsWith('http')) {
+					imageUrl = imageIdentifier
+				} else {
+					const imageData = PlaceHolderImages.find(p => p.id === imageIdentifier)
+					if (imageData) {
+						imageUrl = imageData.imageUrl
+					}
+				}
+			}
+
 			return imageUrl ? (
 				<Image
 					alt={row.original.title}
@@ -166,7 +181,6 @@ export const columns: ColumnDef<Prompt>[] = [
 					height='64'
 					src={imageUrl}
 					width='64'
-					unoptimized
 				/>
 			) : (
 				<div className='h-16 w-16 bg-muted rounded-md flex items-center justify-center text-xs text-muted-foreground'>
@@ -214,7 +228,7 @@ export const columns: ColumnDef<Prompt>[] = [
 				variant='ghost'
 				onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
 			>
-				Price
+				Price (Credits)
 				{column.getIsSorted() === 'asc' ? (
 					<ArrowUp className='ml-2 h-4 w-4' />
 				) : column.getIsSorted() === 'desc' ? (
@@ -226,11 +240,18 @@ export const columns: ColumnDef<Prompt>[] = [
 		),
 		cell: ({ row }) => {
 			const price = parseFloat(row.getValue('price'))
-			const formatted = new Intl.NumberFormat('en-US', {
-				style: 'currency',
-				currency: 'USD',
-			}).format(price)
-			return <div className='text-right font-medium'>{formatted}</div>
+			const creditPrice = Math.round(price * 100)
+			return (
+				<div className='text-right font-medium flex items-center justify-end gap-1'>
+					{price === 0 ? (
+						'Free'
+					) : (
+						<>
+							<Coins className='h-4 w-4 text-amber-500' /> {creditPrice}
+						</>
+					)}
+				</div>
+			)
 		},
 	},
 	{
