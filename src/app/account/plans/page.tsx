@@ -264,7 +264,7 @@ export default function PlansPage() {
 							{/* Starter */}
 							<Card className={cn(currentPlan === 'starter' && 'border-primary ring-2 ring-primary')}>
 								<CardHeader>
-									<Sparkles className='h-8 w-8 text-amber-500' />
+									<Sparkles className='h-8 w-8 text-primary' />
 									<CardTitle>Starter</CardTitle>
 									<CardDescription>
 										For enthusiasts creating occasionally
@@ -305,7 +305,7 @@ export default function PlansPage() {
 									<span>PRO</span>
 								</div>
 								<CardHeader>
-									<Crown className='h-8 w-8 text-primary' />
+									<Crown className='h-8 w-8 text-amber-500' />
 									<CardTitle>Pro</CardTitle>
 									<CardDescription>
 										For experts creating daily
