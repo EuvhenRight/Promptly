@@ -289,7 +289,7 @@ export default function Home() {
 					}
 				},
 				{
-					rootMargin: '1800px',
+					rootMargin: '600px',
 				},
 			)
 
@@ -334,10 +334,18 @@ export default function Home() {
 						purchasedPromptIds={purchasedPromptIds}
 					/>
 
-					<div ref={loadMoreRef} />
+					<div
+						ref={loadMoreRef}
+						className='absolute z-10 bottom-[400px] bg-red-500 text-white p-4 my-4 text-center font-bold'
+					>
+						LOAD MORE TRIGGER
+					</div>
 
 					{shouldShowPaywall && !isAuthModalOpen && (
-						<div className='h-[400px] flex flex-col items-center justify-center text-center space-y-4 my-8'>
+						<div
+							className='h-[400px] flex flex-col items-center justify-center text-center space-y-4 my-8'
+							style={{ height: '400px' }}
+						>
 							<h2 className='font-headline text-3xl font-bold'>
 								Sign in to unlock millions more prompts
 							</h2>
