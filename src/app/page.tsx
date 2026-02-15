@@ -202,7 +202,7 @@ export default function Home() {
 					}
 				},
 				{
-					rootMargin: '200px',
+					rootMargin: '600px',
 				},
 			)
 
@@ -247,7 +247,13 @@ export default function Home() {
 						purchasedPromptIds={purchasedPromptIds}
 					/>
 
-					<div ref={loadMoreRef} />
+					<div
+						ref={loadMoreRef}
+						className='bg-red-500 text-white p-4 my-4 text-center font-bold'
+					>
+						--- SCROLL TRIGGER (Цей блок має бути за 600px до краю екрана, коли
+						спрацює підгрузка) ---
+					</div>
 
 					{loading && (
 						<div className='mt-8 text-center'>
