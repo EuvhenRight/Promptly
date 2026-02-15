@@ -1,6 +1,6 @@
 'use client'
 
-import type { PublicProfile, UserProfile } from '@/lib/types'
+import type { PayoutRequest, PublicProfile, UserProfile } from '@/lib/types'
 import { getAuth, updateProfile } from 'firebase/auth'
 import {
 	Firestore,
@@ -19,6 +19,7 @@ import {
 	increment,
 	writeBatch,
 	serverTimestamp,
+	type Timestamp,
 } from 'firebase/firestore'
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
 
@@ -355,5 +356,63 @@ export async function manageSubscriptionCancellation(
 	const userRef = doc(firestore, 'users', userId)
 	await updateDoc(userRef, {
 		planWillCancelAtPeriodEnd: cancel,
+	})
+}
+
+/**
+ * Creates a payout request for a user if they meet the requirements.
+ */
+export async function requestPayout(
+	firestore: Firestore,
+	userId: string,
+): Promise<void> {
+	if (!userId) throw new Error('User ID is required.')
+
+	const userRef = doc(firestore, 'users', userId)
+	const payoutRequestRef = doc(collection(firestore, 'payouts')) // New request with a new ID
+
+	await runTransaction(firestore, async transaction => {
+		const userDoc = await transaction.get(userRef)
+		if (!userDoc.exists()) {
+			throw new Error('User profile does not exist.')
+		}
+
+		const userData = userDoc.data() as UserProfile
+		const earnings = userData.earnings ?? 0
+		const payoutStatus = userData.payoutStatus ?? 'none'
+		const MIN_PAYOUT_CREDITS = 5000 // 50 EUR in credits
+
+		if (earnings < MIN_PAYOUT_CREDITS) {
+			throw new Error(
+				`You need at least ${MIN_PAYOUT_CREDITS} credits in earnings to request a payout.`,
+			)
+		}
+
+		if (payoutStatus !== 'none' && payoutStatus !== 'paid' && payoutStatus !== 'rejected') {
+			throw new Error(
+				'You already have a pending or processing payout request.',
+			)
+		}
+
+		const payoutAmountCredits = earnings
+		const payoutAmountEuros = payoutAmountCredits / 100 // 100 credits = 1 EUR
+
+		// 1. Create the PayoutRequest document
+		const newPayout: PayoutRequest = {
+			id: payoutRequestRef.id,
+			userId,
+			amountCredits: payoutAmountCredits,
+			amountCurrency: payoutAmountEuros,
+			currency: 'eur',
+			status: 'pending',
+			requestedAt: serverTimestamp() as Timestamp,
+		}
+		transaction.set(payoutRequestRef, newPayout)
+
+		// 2. Update the user's profile: reset earnings and set payout status
+		transaction.update(userRef, {
+			earnings: 0,
+			payoutStatus: 'pending',
+		})
 	})
 }

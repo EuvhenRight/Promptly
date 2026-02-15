@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell, Coins, Settings, Star, User } from 'lucide-react'
+import { Bell, Coins, Settings, Star, User, Wallet } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 const navItems = [
 	{ href: '/account', label: 'Account', icon: Settings },
 	{ href: '/account/plans', label: 'Plans', icon: Star },
+	{ href: '/account/wallet', label: 'Wallet', icon: Wallet },
 	{ href: '/account/notifications', label: 'Notifications', icon: Bell },
 	{ href: '/account/profile', label: 'Profile', icon: User },
 ]

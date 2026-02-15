@@ -77,7 +77,7 @@ service cloud.firestore {
         // 3. The user is managing their subscription cancellation status.
         (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['planWillCancelAtPeriodEnd'])) ||
         // 4. The user is updating their own profile, but NOT protected fields.
-        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'credits', 'purchasedPrompts', 'followers', 'following', 'views', 'planId']));
+        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'credits', 'purchasedPrompts', 'followers', 'following', 'views', 'planId', 'earnings', 'payoutStatus']));
 
       allow delete: if isAdmin();
 
@@ -138,6 +138,13 @@ service cloud.firestore {
     match /models/{modelId} {
       allow get, list: if true;
       allow create, update, delete: if isAdmin();
+    }
+
+    match /payouts/{payoutId} {
+      allow read, list: if isAdmin();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     match /prompts/{promptId} {
