@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/use-toast'
 import type { PayoutRequest, UserProfile } from '@/lib/types'
 import { collection, doc, query, where, orderBy } from 'firebase/firestore'
 import { Coins, Banknote, History, Loader2, Info } from 'lucide-react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import {
