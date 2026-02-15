@@ -29,27 +29,16 @@ service cloud.firestore {
     }
     
     // Robustly checks if ONLY a specific nested or top-level field is changing.
-    // Examples: isOnlyChangingStat('views'), isOnlyChangingStat('stats.likes')
     function isOnlyChangingStat(statPath) {
-        let pathParts = statPath.split('.');
-        let topLevelKey = pathParts[0];
+      let pathParts = statPath.split('.');
+      let topLevelKey = pathParts[0];
 
-        // 1. Check that only the top-level key is changing.
-        if (!request.resource.data.diff(resource.data).affectedKeys().hasOnly([topLevelKey])) {
-            return false;
-        }
-
-        // 2. If it's a nested path, check the inner changes.
-        if (pathParts.size() > 1) {
-            let oldMap = resource.data.get(topLevelKey, {});
-            let newMap = request.resource.data[topLevelKey];
-            let nestedKey = pathParts[1];
-            // Ensure only the nested key we care about is changing within the map.
-            return newMap.diff(oldMap).affectedKeys().hasOnly([nestedKey]);
-        }
-        
-        // 3. If it's a top-level path, the first check was sufficient.
-        return true;
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([topLevelKey]) && (
+        pathParts.size() == 1 || (
+          pathParts.size() > 1 && 
+          request.resource.data[topLevelKey].diff(resource.data.get(topLevelKey, {})).affectedKeys().hasOnly([pathParts[1]])
+        )
+      );
     }
 
     // ----------------------------------------------------------------------
@@ -93,8 +82,8 @@ service cloud.firestore {
     
     // Moved notifications out of the main /users/{userId} block for clarity and to avoid any potential conflicts with parent rules.
     match /users/{userId}/notifications/{notificationId} {
-      allow read: if request.auth.uid == userId; // Allow read (get, list) if the user ID in the path matches the authenticated user.
-      allow write: if false; // Client should never write directly to notifications.
+      allow read: if request.auth.uid == userId;
+      allow write: if false;
     }
 
     match /public-profiles/{userId} {
