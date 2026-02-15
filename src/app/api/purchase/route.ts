@@ -26,8 +26,8 @@ async function handleSinglePromptPurchase(
 			transaction.get(promptRef),
 		]);
 
-		if (!userDoc.exists) throw new Error('User not found.');
-		if (!promptDoc.exists) throw new Error('Prompt not found.');
+		if (!userDoc.exists()) throw new Error('User not found.');
+		if (!promptDoc.exists()) throw new Error('Prompt not found.');
 
 		const userData = userDoc.data()!;
 		promptData = promptDoc.data()!;
@@ -50,6 +50,16 @@ async function handleSinglePromptPurchase(
             const authorRef = db.doc(`users/${authorId}`);
             transaction.update(authorRef, {
                 earnings: admin.firestore.FieldValue.increment(earnings),
+            });
+            // Create notification for the author
+            const notificationRef = db.collection('users').doc(authorId).collection('notifications').doc();
+            transaction.set(notificationRef, {
+                type: 'sale',
+                title: 'Prompt Sold!',
+                body: `Your prompt "${promptData.title}" earned you ${earnings} credits.`,
+                link: `/prompt/${promptId}`,
+                isRead: false,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
             });
         }
 
@@ -93,14 +103,14 @@ async function handleCartPurchase(
 	}
 
 	let totalCreditCost = 0;
-	const promptDocsData: { title: string; id: string, authorId: string, price: number }[] = [];
-    const authorEarnings: { [authorId: string]: number } = {};
+	const promptDocsData: { id: string; title: string; authorId: string; price: number }[] = [];
+    const authorEarnings: { [authorId: string]: { earnings: number, prompts: {title: string, id: string}[] } } = {};
 
 	await db.runTransaction(async transaction => {
 		const userRef = db.doc(`users/${userId}`);
 		const cartRef = db.collection('users').doc(userId).collection('carts').doc('active');
 		const userDoc = await transaction.get(userRef);
-		if (!userDoc.exists) throw new Error('User not found.');
+		if (!userDoc.exists()) throw new Error('User not found.');
 
 		const promptRefs = promptIds.map(id => db.doc(`prompts/${id}`));
 		const promptDocs = await transaction.getAll(...promptRefs);
@@ -110,14 +120,18 @@ async function handleCartPurchase(
 			const pData = pDoc.data()!;
             const creditPrice = Math.round(pData.price * 100);
 
-			promptDocsData.push({ title: pData.title, id: pDoc.id, authorId: pData.authorId, price: creditPrice });
+			promptDocsData.push({ id: pDoc.id, title: pData.title, authorId: pData.authorId, price: creditPrice });
 			totalCreditCost += creditPrice;
             
-            // Calculate earnings for the author
+            // Group earnings by author
             const authorId = pData.authorId;
             if (authorId && authorId !== userId) {
                 const earnings = Math.floor(creditPrice * (1 - PLATFORM_COMMISSION_RATE));
-                authorEarnings[authorId] = (authorEarnings[authorId] || 0) + earnings;
+                if (!authorEarnings[authorId]) {
+                    authorEarnings[authorId] = { earnings: 0, prompts: [] };
+                }
+                authorEarnings[authorId]!.earnings += earnings;
+                authorEarnings[authorId]!.prompts.push({ title: pData.title, id: pDoc.id });
             }
 		}
 
@@ -138,11 +152,23 @@ async function handleCartPurchase(
 			});
 		}
 
-        // Credit earnings to authors
+        // Credit earnings to authors and create notifications
         for (const authorId in authorEarnings) {
+            const authorData = authorEarnings[authorId]!;
             const authorRef = db.doc(`users/${authorId}`);
             transaction.update(authorRef, {
-                earnings: admin.firestore.FieldValue.increment(authorEarnings[authorId]),
+                earnings: admin.firestore.FieldValue.increment(authorData.earnings),
+            });
+
+            const notificationRef = db.collection('users').doc(authorId).collection('notifications').doc();
+            const promptTitles = authorData.prompts.map(p => `"${p.title}"`).join(', ');
+            transaction.set(notificationRef, {
+                type: 'sale',
+                title: `${authorData.prompts.length} Prompt${authorData.prompts.length > 1 ? 's' : ''} Sold!`,
+                body: `You earned ${authorData.earnings} credits from the sale of ${promptTitles}.`,
+                link: authorData.prompts.length === 1 ? `/prompt/${authorData.prompts[0]!.id}` : `/account/wallet`,
+                isRead: false,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
             });
         }
         

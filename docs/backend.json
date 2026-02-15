@@ -294,6 +294,7 @@
       "type": "object",
       "description": "Represents a user's request to withdraw their earnings.",
       "properties": {
+        "id": { "type": "string" },
         "userId": {
           "type": "string"
         },
@@ -325,11 +326,30 @@
         }
       },
       "required": [
+        "id",
         "userId",
         "amountCredits",
         "status",
         "requestedAt"
       ]
+    },
+    "Notification": {
+      "title": "Notification",
+      "type": "object",
+      "description": "Represents a notification for a user (e.g., a sale, a payout status change).",
+      "properties": {
+        "id": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": ["sale", "payout", "follow", "comment"]
+        },
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "link": { "type": "string", "format": "uri" },
+        "isRead": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "type", "title", "createdAt", "isRead"]
     }
   },
   "auth": {
@@ -409,6 +429,26 @@
             {
               "name": "orderId",
               "description": "The ID of the order."
+            }
+          ]
+        }
+      },
+       {
+        "path": "/users/{userId}/notifications/{notificationId}",
+        "definition": {
+          "entityName": "Notification",
+          "schema": {
+            "$ref": "#/backend/entities/Notification"
+          },
+          "description": "Stores notifications for a user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user."
+            },
+            {
+              "name": "notificationId",
+              "description": "The ID of the notification."
             }
           ]
         }

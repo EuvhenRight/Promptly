@@ -159,3 +159,13 @@ export type PayoutRequest = {
 	requestedAt: Timestamp
 	processedAt?: Timestamp
 }
+
+export type Notification = {
+    id: string;
+    type: 'sale' | 'payout' | 'follow' | 'comment';
+    title: string;
+    body: string;
+    link?: string;
+    isRead: boolean;
+    createdAt: Timestamp;
+}
