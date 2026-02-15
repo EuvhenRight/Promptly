@@ -37,12 +37,9 @@ export async function GET() {
 
 	} catch (err) {
 		console.error('Fetch tags error:', err)
-		const errorMessage =
-			err instanceof Error ? err.message : 'An unknown error occurred.'
 		return NextResponse.json(
 			{
 				error: 'Failed to fetch tags from Firestore.',
-				details: errorMessage,
 			},
 			{ status: 500 },
 		)

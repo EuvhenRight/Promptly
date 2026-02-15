@@ -22,11 +22,9 @@ export async function GET() {
 		return NextResponse.json(allTypes)
 	} catch (err) {
 		console.error('Fetch types error:', err)
-		const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.'
 		return NextResponse.json(
 			{
 				error: 'Failed to fetch types from Firestore.',
-                details: errorMessage,
 			},
 			{ status: 500 },
 		)

@@ -334,12 +334,7 @@ export default function Home() {
 						purchasedPromptIds={purchasedPromptIds}
 					/>
 
-					<div
-						ref={loadMoreRef}
-						className='absolute -z-10 bottom-[400px] bg-red-500 text-white p-4 my-4 text-center font-bold'
-					>
-						LOAD MORE TRIGGER
-					</div>
+					<div ref={loadMoreRef} />
 
 					{shouldShowPaywall && !isAuthModalOpen && (
 						<div

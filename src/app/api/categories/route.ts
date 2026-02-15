@@ -30,11 +30,9 @@ export async function GET() {
 		return NextResponse.json(allCategories)
 	} catch (err) {
 		console.error('Fetch categories error:', err)
-        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.'
 		return NextResponse.json(
 			{
 				error: 'Failed to fetch categories from Firestore.',
-                details: errorMessage,
 			},
 			{ status: 500 },
 		)

@@ -48,11 +48,9 @@ export async function GET(request: Request) {
 		return NextResponse.json(items)
 	} catch (err) {
 		console.error('Search bar backgrounds GET error:', err)
-		const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.'
 		return NextResponse.json(
 			{
 				error: 'Failed to fetch backgrounds from Firestore',
-                details: errorMessage,
 			},
 			{ status: 500 },
 		)

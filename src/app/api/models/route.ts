@@ -23,11 +23,9 @@ export async function GET() {
 		return NextResponse.json(allModels)
 	} catch (err) {
 		console.error('Fetch models error:', err)
-		const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.'
 		return NextResponse.json(
 			{
 				error: 'Failed to fetch models from Firestore.',
-                details: errorMessage,
 			},
 			{ status: 500 },
 		)
