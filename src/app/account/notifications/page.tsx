@@ -187,9 +187,9 @@ export default function NotificationsPage() {
 															</Link>
 														)}
 														<span className='text-xs text-muted-foreground'>
-															{formatDistanceToNow(notif.createdAt.toDate(), {
+															{notif.createdAt ? formatDistanceToNow(notif.createdAt.toDate(), {
 																addSuffix: true,
-															})}
+															}) : ''}
 														</span>
 													</div>
 												</div>
