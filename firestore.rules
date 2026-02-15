@@ -91,9 +91,8 @@ service cloud.firestore {
       }
       
       match /notifications/{notificationId} {
-        allow read: if isOwner(userId); // Use read for broader get/list permissions
-        // Only backend can create notifications
-        allow create, update, delete: if false;
+        allow get, list: if request.auth.uid == userId;
+        allow create, update, delete: if false; // No client writes
       }
     }
 
@@ -185,7 +184,7 @@ service cloud.firestore {
         allow create: if isOwner(commentId) && (isAdmin() || hasPurchased(promptId) || get(/databases/$(database)/documents/prompts/$(promptId)).data.price == 0);
 
         // UPDATE/DELETE: User can modify their own comment or an admin can.
-        allow update, delete: if isAdmin() || isOwner(commentId);
+        allow update, delete: if isOwner(commentId) || isAdmin();
       }
     }
 
