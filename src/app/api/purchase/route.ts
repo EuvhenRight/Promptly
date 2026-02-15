@@ -1,3 +1,4 @@
+'use server';
 
 import { adminDb } from '@/firebase/admin';
 import { NextRequest, NextResponse } from 'next/server';
@@ -26,8 +27,8 @@ async function handleSinglePromptPurchase(
 			transaction.get(promptRef),
 		]);
 
-		if (!userDoc.exists()) throw new Error('User not found.');
-		if (!promptDoc.exists()) throw new Error('Prompt not found.');
+		if (!userDoc.exists) throw new Error('User not found.');
+		if (!promptDoc.exists) throw new Error('Prompt not found.');
 
 		const userData = userDoc.data()!;
 		promptData = promptDoc.data()!;
@@ -110,7 +111,7 @@ async function handleCartPurchase(
 		const userRef = db.doc(`users/${userId}`);
 		const cartRef = db.collection('users').doc(userId).collection('carts').doc('active');
 		const userDoc = await transaction.get(userRef);
-		if (!userDoc.exists()) throw new Error('User not found.');
+		if (!userDoc.exists) throw new Error('User not found.');
 
 		const promptRefs = promptIds.map(id => db.doc(`prompts/${id}`));
 		const promptDocs = await transaction.getAll(...promptRefs);
