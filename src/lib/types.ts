@@ -50,6 +50,10 @@ export type UserProfile = {
 	planWillCancelAtPeriodEnd?: boolean
 	/** Wallet balance for image/generation credits (incremented when user buys credits). */
 	credits?: number
+	/** Credit balance earned from prompt sales, available for payout. */
+	earnings?: number
+	/** Current status of a pending payout request. */
+	payoutStatus?: 'none' | 'pending' | 'processing' | 'paid' | 'rejected'
 	purchasedPrompts?: string[]
 	favoritePrompts?: string[]
 	isSeller?: boolean
@@ -143,4 +147,15 @@ export type ScrapeResult = {
 	imageUrl: string
 	sourceId: string
 	tags: string
+}
+
+export type PayoutRequest = {
+	id: string
+	userId: string
+	amountCredits: number
+	amountCurrency: number
+	currency: string
+	status: 'pending' | 'approved' | 'rejected' | 'paid'
+	requestedAt: Timestamp
+	processedAt?: Timestamp
 }

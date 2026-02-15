@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import admin from 'firebase-admin';
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 
+const PLATFORM_COMMISSION_RATE = 0.20; // 20% platform fee
+
 async function handleSinglePromptPurchase(
 	userId: string,
 	promptId: string,
@@ -40,6 +42,16 @@ async function handleSinglePromptPurchase(
 		if (userCredits < creditPrice) {
 			throw new Error('Insufficient credits.');
 		}
+
+        // Add author crediting logic
+        const authorId = promptData.authorId;
+        if (authorId && authorId !== userId) {
+            const earnings = Math.floor(creditPrice * (1 - PLATFORM_COMMISSION_RATE));
+            const authorRef = db.doc(`users/${authorId}`);
+            transaction.update(authorRef, {
+                earnings: admin.firestore.FieldValue.increment(earnings),
+            });
+        }
 
 		transaction.update(userRef, {
 			credits: admin.firestore.FieldValue.increment(-creditPrice),
@@ -81,7 +93,8 @@ async function handleCartPurchase(
 	}
 
 	let totalCreditCost = 0;
-	const promptDocsData: { title: string; id: string }[] = [];
+	const promptDocsData: { title: string; id: string, authorId: string, price: number }[] = [];
+    const authorEarnings: { [authorId: string]: number } = {};
 
 	await db.runTransaction(async transaction => {
 		const userRef = db.doc(`users/${userId}`);
@@ -95,8 +108,17 @@ async function handleCartPurchase(
 		for (const pDoc of promptDocs) {
 			if (!pDoc.exists) throw new Error(`Prompt with ID ${pDoc.id} not found.`);
 			const pData = pDoc.data()!;
-			promptDocsData.push({ title: pData.title, id: pDoc.id });
-			totalCreditCost += Math.round(pData.price * 100);
+            const creditPrice = Math.round(pData.price * 100);
+
+			promptDocsData.push({ title: pData.title, id: pDoc.id, authorId: pData.authorId, price: creditPrice });
+			totalCreditCost += creditPrice;
+            
+            // Calculate earnings for the author
+            const authorId = pData.authorId;
+            if (authorId && authorId !== userId) {
+                const earnings = Math.floor(creditPrice * (1 - PLATFORM_COMMISSION_RATE));
+                authorEarnings[authorId] = (authorEarnings[authorId] || 0) + earnings;
+            }
 		}
 
 		const userCredits = userDoc.data()!.credits ?? 0;
@@ -115,6 +137,14 @@ async function handleCartPurchase(
 				'stats.sales': admin.firestore.FieldValue.increment(1),
 			});
 		}
+
+        // Credit earnings to authors
+        for (const authorId in authorEarnings) {
+            const authorRef = db.doc(`users/${authorId}`);
+            transaction.update(authorRef, {
+                earnings: admin.firestore.FieldValue.increment(authorEarnings[authorId]),
+            });
+        }
         
         // Also clear the cart in the same transaction
         transaction.update(cartRef, { promptIds: [] });

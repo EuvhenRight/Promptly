@@ -41,6 +41,25 @@
           "items": {
             "type": "string"
           }
+        },
+        "credits": {
+          "type": "number",
+          "description": "Credit balance purchased by the user."
+        },
+        "earnings": {
+          "type": "number",
+          "description": "Credit balance earned from prompt sales, available for payout."
+        },
+        "payoutStatus": {
+          "type": "string",
+          "description": "Current status of a pending payout request.",
+          "enum": [
+            "none",
+            "pending",
+            "processing",
+            "paid",
+            "rejected"
+          ]
         }
       },
       "required": [
@@ -269,6 +288,48 @@
         "shippingAddress",
         "status"
       ]
+    },
+    "PayoutRequest": {
+      "title": "Payout Request",
+      "type": "object",
+      "description": "Represents a user's request to withdraw their earnings.",
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "amountCredits": {
+          "type": "number"
+        },
+        "amountCurrency": {
+          "type": "number"
+        },
+        "currency": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "approved",
+            "rejected",
+            "paid"
+          ]
+        },
+        "requestedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "processedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "amountCredits",
+        "status",
+        "requestedAt"
+      ]
     }
   },
   "auth": {
@@ -381,8 +442,18 @@
           },
           "description": "Private content of a prompt, accessible only after purchase or by admins."
         }
+      },
+      {
+        "path": "/payouts/{payoutId}",
+        "definition": {
+          "entityName": "PayoutRequest",
+          "schema": {
+            "$ref": "#/backend/entities/PayoutRequest"
+          },
+          "description": "Stores all user requests for payouts. Accessible only by admins."
+        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to support a shopping cart and order management system for the PromptVerse application. It focuses on user-centric data organization and authorization independence.  The `/users/{userId}/carts` collection stores individual user carts, linking each cart directly to a user. This path-based ownership ensures clear ownership and straightforward security rules. The `/users/{userId}/orders` collection similarly stores user-specific order data. Both cart and order data are segregated into user-specific subcollections to maintain a homogeneous security posture. This design avoids complex queries and simplifies security rules, as access control is primarily based on the authenticated user's ID. The absence of a global 'carts' or 'orders' collection enforces that users can only access their own carts and orders. This structure facilitates secure `list` operations because each user's data is isolated within their own subcollection. No denormalization is explicitly required in this basic cart/order structure as ownership is directly implied by the path."
+    "reasoning": "The Firestore structure is designed to support a shopping cart and order management system for the Promptly application. It focuses on user-centric data organization and authorization independence.  The `/users/{userId}/carts` collection stores individual user carts, linking each cart directly to a user. This path-based ownership ensures clear ownership and straightforward security rules. The `/users/{userId}/orders` collection similarly stores user-specific order data. Both cart and order data are segregated into user-specific subcollections to maintain a homogeneous security posture. This design avoids complex queries and simplifies security rules, as access control is primarily based on the authenticated user's ID. The absence of a global 'carts' or 'orders' collection enforces that users can only access their own carts and orders. This structure facilitates secure `list` operations because each user's data is isolated within their own subcollection. No denormalization is explicitly required in this basic cart/order structure as ownership is directly implied by the path."
   }
 }
