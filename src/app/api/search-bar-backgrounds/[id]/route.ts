@@ -1,17 +1,15 @@
 import { adminDb } from '@/firebase/admin'
 import admin from 'firebase-admin'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
-type RouteParams = { params: Promise<{ id: string }> }
-
-export async function PATCH(request: Request, { params }: RouteParams) {
+export async function PATCH(request: NextRequest) {
+	const id = request.nextUrl.pathname.split('/').pop()
 	if (!adminDb) {
 		return NextResponse.json(
 			{ error: 'Firebase Admin not initialized' },
 			{ status: 503 },
 		)
 	}
-	const { id } = await params
 	if (!id) {
 		return NextResponse.json({ error: 'Missing id' }, { status: 400 })
 	}
@@ -70,14 +68,14 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 	}
 }
 
-export async function DELETE(_request: Request, { params }: RouteParams) {
+export async function DELETE(request: NextRequest) {
+	const id = request.nextUrl.pathname.split('/').pop()
 	if (!adminDb) {
 		return NextResponse.json(
 			{ error: 'Firebase Admin not initialized' },
 			{ status: 503 },
 		)
 	}
-	const { id } = await params
 	if (!id) {
 		return NextResponse.json({ error: 'Missing id' }, { status: 400 })
 	}

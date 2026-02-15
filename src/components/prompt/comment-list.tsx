@@ -1,10 +1,11 @@
 'use client'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { PromptComment } from '@/lib/types'
 import { formatDistanceToNow } from 'date-fns'
-import { Star } from 'lucide-react'
+import { Crown, Star } from 'lucide-react'
 
 interface CommentListProps {
 	comments: PromptComment[]
@@ -62,9 +63,21 @@ export function CommentList({
 					</Avatar>
 					<div className='flex-1'>
 						<div className='flex items-center justify-between'>
-							<span className='font-semibold'>
-								{comment.authorDisplayName ?? 'Anonymous'}
-							</span>
+							<div className='flex items-center gap-2'>
+								<span className='font-semibold'>
+									{comment.authorDisplayName ?? 'Anonymous'}
+								</span>
+								{comment.authorPlanId === 'pro' && (
+									<Badge className='bg-primary text-primary-foreground text-xs px-1.5 py-0'>
+										<Crown className='mr-1 h-3 w-3' /> PRO
+									</Badge>
+								)}
+								{comment.authorPlanId === 'starter' && (
+									<Badge variant='secondary' className='text-xs px-1.5 py-0'>
+										<Star className='mr-1 h-3 w-3' /> Starter
+									</Badge>
+								)}
+							</div>
 							<span className='text-xs text-muted-foreground'>
 								{comment.timestamp
 									? formatDistanceToNow(comment.timestamp.toDate(), {

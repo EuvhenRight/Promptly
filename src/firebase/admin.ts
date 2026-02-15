@@ -1,73 +1,61 @@
-import admin from 'firebase-admin'
-import { getApps, App } from 'firebase-admin/app'
-import { existsSync, readFileSync } from 'fs'
-import { join } from 'path'
+import admin from 'firebase-admin';
+import { getApps } from 'firebase-admin/app';
+import { existsSync, readFileSync } from 'fs';
+import { join } from 'path';
 
-let app: App | null = null;
-
-function initializeAdminApp(): App | null {
-    if (getApps().length > 0) {
-        return getApps()[0];
-    }
-
-    // For server-side, we derive config from server-only env vars
-    // Vercel/Cloudflare: FIREBASE_... vars are set in the project settings
-    // Local dev: service-account.json is used
-    // Firebase App Hosting: Application Default Credentials are used
-    const storageBucket = process.env.FIREBASE_STORAGE_BUCKET || process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
-    if (!storageBucket) {
-        // This log is important for debugging deployment issues.
-        console.error("Firebase Admin: FIREBASE_STORAGE_BUCKET environment variable is not set.");
-        // We don't return null here because initializeApp might still succeed using other means
-        // if storage isn't used by the specific server-side function call.
-    }
-
-    // 1. Vercel / Cloudflare / Production Environment Variables from service account
-    if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
-        try {
-            const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
-            return admin.initializeApp({
-                credential: admin.credential.cert({
-                    projectId: process.env.FIREBASE_PROJECT_ID,
-                    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-                    privateKey: privateKey,
-                }),
-                storageBucket: storageBucket,
-            });
-        } catch (e) {
-            console.error("Error initializing admin from environment variables:", e);
-        }
-    }
-
-    // 2. Local development with service-account.json
+if (getApps().length === 0) {
+  try {
+    // This will succeed on App Hosting and other Google Cloud environments
+    console.log('Attempting to initialize Firebase Admin with Application Default Credentials...');
+    admin.initializeApp();
+    console.log('Firebase Admin SDK initialized successfully with ADC.');
+  } catch (e) {
+    console.warn('Admin SDK initialization with ADC failed, trying service account file...', (e as Error).message);
+    // This is the fallback for local development
     try {
-        const serviceAccountPath = join(process.cwd(), 'service-account.json');
-        if (existsSync(serviceAccountPath)) {
-            const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, 'utf-8'));
-            return admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount),
-                storageBucket: storageBucket,
-            });
-        }
-    } catch (e) {
-        console.error("Error initializing admin from service-account.json:", e);
-    }
-    
-    // 3. Firebase App Hosting / Google Cloud Environment (Application Default Credentials)
-    try {
-        // This will automatically use the runtime's service account.
-        return admin.initializeApp({
-            storageBucket,
+      const serviceAccountPath = join(process.cwd(), 'service-account.json');
+      if (existsSync(serviceAccountPath)) {
+        console.log("Attempting to initialize Firebase Admin with service-account.json...");
+        const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, 'utf-8'));
+        const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || `${serviceAccount.project_id}.appspot.com`;
+
+        admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount),
+          storageBucket: storageBucket,
         });
-    } catch(e) {
-       console.error("Error initializing with Application Default Credentials:", e);
+        console.log('Firebase Admin SDK initialized successfully with service-account.json.');
+      } else {
+        console.error('service-account.json not found, and ADC failed. Admin SDK is not initialized.');
+      }
+    } catch (e2) {
+      console.error('CRITICAL: Firebase Admin SDK initialization failed completely.', e2);
     }
-    
-    console.error("Firebase Admin SDK initialization failed. None of the available methods succeeded.");
-    return null;
+  }
 }
 
-app = initializeAdminApp();
+// Use a getter function to safely access the services.
+// This ensures that even if initialization fails, the app won't crash on module load.
+const getSafeAdminService = <T>(serviceFactory: () => T): T | null => {
+  if (getApps().length > 0) {
+    try {
+      return serviceFactory();
+    } catch (e) {
+      console.error('Failed to get admin service:', e);
+      return null;
+    }
+  }
+  return null;
+};
 
-export const adminDb = app ? admin.firestore() : null;
-export const adminStorage = app ? admin.storage() : null;
+export const adminDb = getSafeAdminService(() => admin.firestore());
+export const adminStorage = getSafeAdminService(() => admin.storage());
+
+// Log a warning if the services are not available in production
+if (process.env.NODE_ENV === 'production') {
+  if (!adminDb) {
+    console.error("FATAL: Firestore Admin instance (adminDb) is not available. API routes will fail.");
+  }
+  if (!adminStorage) {
+    console.error("FATAL: Storage Admin instance (adminStorage) is not available. File uploads will fail.");
+  }
+}

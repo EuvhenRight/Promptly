@@ -56,6 +56,8 @@ export default function Header() {
 	const cartCount = cart?.promptIds?.length ?? 0
 	const credits = userProfile?.credits ?? 0
 
+	const pricingUrl = user ? '/account/plans' : '/plans'
+
 	return (
 		<header className='sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'>
 			<div className='container mx-auto flex h-16 items-center px-4 sm:px-6 lg:px-8'>
@@ -98,7 +100,7 @@ export default function Header() {
 										</Link>
 									</Button>
 									<Button variant='ghost' asChild className='justify-start'>
-										<Link href='/account/plans'>Pricing</Link>
+										<Link href={pricingUrl}>Pricing</Link>
 									</Button>
 									<Button variant='ghost' asChild className='justify-start'>
 										<Link href='/community'>Community</Link>
@@ -112,7 +114,7 @@ export default function Header() {
 				<div className='hidden md:flex items-center gap-6 ml-10'>
 					<nav className='flex items-center gap-6 text-sm'>
 						<Link
-							href='/account/plans'
+							href={pricingUrl}
 							className='transition-colors text-foreground/80 font-medium hover:text-accent dark:hover:text-primary'
 						>
 							Pricing

@@ -74,8 +74,10 @@ service cloud.firestore {
         isAdmin() ||
         // 2. The user is toggling a favorite prompt (only the 'favoritePrompts' array can change).
         (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['favoritePrompts'])) ||
-        // 3. The user is updating their own profile, but NOT protected fields.
-        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'credits', 'purchasedPrompts', 'followers', 'following', 'views']));
+        // 3. The user is managing their subscription cancellation status.
+        (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['planWillCancelAtPeriodEnd'])) ||
+        // 4. The user is updating their own profile, but NOT protected fields.
+        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'credits', 'purchasedPrompts', 'followers', 'following', 'views', 'planId']));
 
       allow delete: if isAdmin();
 
@@ -139,7 +141,10 @@ service cloud.firestore {
     }
 
     match /prompts/{promptId} {
-      allow get, list: if true;
+      allow list: if true; // Allow listing for feeds, client handles visibility.
+      // Get is restricted. You can only get a prompt if it's not private,
+      // or if you are a PRO user or an admin.
+      allow get: if resource.data.isPrivate != true || (isSignedIn() && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.planId == 'pro' || isAdmin()));
       // Creation and deletion is handled via server-side logic (Admin API / Scraper)
       allow create, delete: if isAdmin();
       // Client-side updates are limited to specific stats increments. All other edits go through Admin API.

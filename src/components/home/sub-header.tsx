@@ -6,27 +6,32 @@ import { useCategories } from '@/hooks/use-categories'
 import { useModels } from '@/hooks/use-models'
 import { useTags } from '@/hooks/use-tags'
 import { cn } from '@/lib/utils'
-import { Cpu, FolderOpen, Tag } from 'lucide-react'
+import { Cpu, Crown, FolderOpen, Tag } from 'lucide-react'
 import Link from 'next/link'
+import type { UserProfile } from '@/lib/types'
 
 interface SubHeaderProps {
 	activeFilter: string
 	onFilterChange: (
 		id: string,
 		name?: string,
-		type?: 'category' | 'tag' | 'main' | 'model',
+		type?: 'category' | 'tag' | 'main' | 'model' | 'pro',
 	) => void
 	mainLinks: string[]
+	userProfile: UserProfile | null
 }
 
 export default function SubHeader({
 	activeFilter,
 	onFilterChange,
 	mainLinks,
+	userProfile,
 }: SubHeaderProps) {
 	const { categories, isLoading: categoriesLoading } = useCategories()
 	const { tags, isLoading: tagsLoading } = useTags()
 	const { models, isLoading: modelsLoading } = useModels()
+	const isProOrAdmin =
+		userProfile?.planId === 'pro' || userProfile?.role === 'admin'
 
 	const isLoading = categoriesLoading || tagsLoading || modelsLoading
 
@@ -57,6 +62,22 @@ export default function SubHeader({
 					<div className='hidden sm:block h-6 border-l' />
 					<ScrollArea className='w-full whitespace-nowrap -mx-4 sm:mx-0'>
 						<div className='flex w-max items-center space-x-1 py-2 px-4 sm:px-0'>
+							{isProOrAdmin && (
+								<Button
+									variant='ghost'
+									size='sm'
+									onClick={() => onFilterChange('pro-prompts', 'PRO', 'pro')}
+									className={cn(
+										'rounded-full px-3 h-9 gap-2',
+										activeFilter === 'pro-prompts'
+											? 'bg-primary/10 text-primary font-semibold ring-1 ring-primary/50'
+											: 'hover:bg-muted',
+									)}
+								>
+									<Crown className='h-4 w-4 text-amber-500' />
+									PRO
+								</Button>
+							)}
 							{isLoading ? (
 								<span className='text-sm text-muted-foreground'>Loading…</span>
 							) : (

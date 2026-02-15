@@ -44,6 +44,10 @@ export type UserProfile = {
 	instagramProfile?: string
 	facebookProfile?: string
 	role: 'user' | 'admin'
+	planId?: 'free' | 'starter' | 'pro'
+	planPurchasedAt?: Timestamp
+	planBillingPeriod?: 'monthly' | 'yearly'
+	planWillCancelAtPeriodEnd?: boolean
 	/** Wallet balance for image/generation credits (incremented when user buys credits). */
 	credits?: number
 	purchasedPrompts?: string[]
@@ -74,6 +78,7 @@ export type PublicProfile = Pick<
 	| 'xProfile'
 	| 'instagramProfile'
 	| 'facebookProfile'
+	| 'planId'
 >
 
 export type Prompt = {
@@ -82,6 +87,7 @@ export type Prompt = {
 	authorDisplayName?: string
 	authorPhotoURL?: string
 	authorUsername?: string
+	authorPlanId?: 'free' | 'starter' | 'pro'
 	title: string
 	titleLowercase: string
 	searchTerms: string[]
@@ -122,6 +128,7 @@ export type PromptComment = {
 	userId: string
 	authorDisplayName?: string
 	authorPhotoURL?: string
+	authorPlanId?: 'free' | 'starter' | 'pro'
 	timestamp?: Timestamp
 }
 
