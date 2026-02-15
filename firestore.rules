@@ -89,6 +89,12 @@ service cloud.firestore {
         allow get, list: if true;
         allow create, delete: if isSignedIn() && request.auth.uid == userId;
       }
+      
+      match /notifications/{notificationId} {
+        allow get, list: if isOwner(userId);
+        // Only backend can create notifications
+        allow create, update, delete: if false;
+      }
     }
 
     match /public-profiles/{userId} {

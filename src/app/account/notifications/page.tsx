@@ -26,6 +26,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 
 function NotificationsSkeleton() {
 	return (
@@ -182,7 +183,7 @@ export default function NotificationsPage() {
 																href={notif.link}
 																className='text-sm font-medium text-primary hover:underline flex items-center gap-1'
 															>
-																<FileText className='h-4 w-4' /> View Prompt
+																<FileText className='h-4 w-4' /> View Details
 															</Link>
 														)}
 														<span className='text-xs text-muted-foreground'>
