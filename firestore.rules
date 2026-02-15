@@ -15,25 +15,27 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      // Use .get() to safely access role from Firestore, as claims can be stale.
       return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
-    
-    // Safely checks if a user has purchased a prompt.
-    // Handles cases where 'purchasedPrompts' field doesn't exist.
+
     function hasPurchased(promptId) {
       let userDocData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-      // Use .get() with a default value to avoid errors if the field doesn't exist.
       let purchased = userDocData.get('purchasedPrompts', []);
       return isSignedIn() && purchased.hasAny([promptId]);
     }
-    
+
     // ----------------------------------------------------------------------
     // Collection Group Rules
     // ----------------------------------------------------------------------
 
     match /{path=**}/comments/{commentId} {
       allow list: if isAdmin();
+    }
+    
+    // Independent rule for user notifications to avoid parent rule conflicts
+    match /users/{userId}/notifications/{notificationId} {
+      allow read: if request.auth.uid == userId;
+      allow write: if false; // Only server can write notifications
     }
 
     // ----------------------------------------------------------------------
@@ -53,7 +55,7 @@ service cloud.firestore {
         // 3. The user is managing their subscription cancellation status.
         (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['planWillCancelAtPeriodEnd'])) ||
         // 4. The user is updating their own profile, but NOT protected fields.
-        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'credits', 'purchasedPrompts', 'followers', 'following', 'views', 'planId', 'earnings', 'payoutStatus']));
+        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'credits', 'earnings', 'payoutStatus', 'purchasedPrompts', 'followers', 'following', 'views', 'planId']));
 
       allow delete: if isAdmin();
 
@@ -66,70 +68,60 @@ service cloud.firestore {
         allow create, delete: if isSignedIn() && request.auth.uid == userId;
       }
     }
-    
-    match /users/{userId}/notifications/{notificationId} {
-      allow read: if isOwner(userId);
-      allow write: if false;
-    }
 
     match /public-profiles/{userId} {
       allow get, list: if true;
       allow create: if isOwner(userId);
-      // Update rules are specific to prevent unauthorized modifications
       allow update: if
-        // Rule 1: Owner can update their non-counter fields (description, etc.)
-        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['views', 'followers', 'following']))
-        // Rule 2: Anyone can increment the view count by exactly 1.
-        || (
+        isAdmin() ||
+        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['views', 'followers', 'following'])) ||
+        (
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views']) &&
           request.resource.data.views == resource.data.get('views', 0) + 1
-        )
-        // Rule 3: Any signed-in user can increment/decrement the follower count by exactly 1.
-        || (
+        ) ||
+        (
           isSignedIn() &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers']) &&
           (request.resource.data.followers == resource.data.get('followers', 0) + 1 || request.resource.data.followers == resource.data.get('followers', 0) - 1)
-        )
-        // Rule 4: The owner can increment/decrement their own following count by exactly 1.
-        || (
+        ) ||
+        (
           isOwner(userId) &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['following']) &&
           (request.resource.data.following == resource.data.get('following', 0) + 1 || request.resource.data.following == resource.data.get('following', 0) - 1)
         );
     }
 
-
     match /users/{userId}/carts/{cartId} {
-      allow get, list, create, update, delete: if isOwner(userId);
+      allow read, create, update, delete: if isOwner(userId);
     }
 
     match /users/{userId}/purchaseHistory/{path=**} {
       allow read: if isOwner(userId);
-      allow create, update, delete: if false;
+      allow write: if false;
     }
 
     match /users/{userId}/orders/{orderId} {
-      allow get, list, create, update, delete: if isOwner(userId);
+      allow read, create, update, delete: if isOwner(userId);
     }
 
     match /categories/{categoryId} {
-      allow get, list: if true;
-      allow create, update, delete: if isAdmin();
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     match /tags/{tagId} {
-      allow get, list: if true;
-      allow create, update, delete: if isAdmin();
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     match /types/{typeId} {
-      allow get, list: if true;
-      allow create, update, delete: if isAdmin();
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     match /models/{modelId} {
-      allow get, list: if true;
-      allow create, update, delete: if isAdmin();
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     match /payouts/{payoutId} {
@@ -139,48 +131,34 @@ service cloud.firestore {
     }
 
     match /prompts/{promptId} {
-      allow list: if true; // Allow listing for feeds, client handles visibility.
-      // Get is restricted. You can only get a prompt if it's not private,
-      // or if you are a PRO user or an admin.
+      allow list: if true;
       allow get: if resource.data.isPrivate != true || (isSignedIn() && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.planId == 'pro' || isAdmin()));
-      // Creation and deletion is handled via server-side logic (Admin API / Scraper)
       allow create, delete: if isAdmin();
-      // Client-side updates are limited to specific stats increments. All other edits go through Admin API.
       allow update: if
-        isAdmin()
-        // Allow anyone (even unauth) to increment views by exactly 1
-        || (
-            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats']) &&
-            request.resource.data.stats.views == resource.data.get(['stats', 'views'], 0) + 1 &&
-            request.resource.data.stats.sales == resource.data.get(['stats', 'sales'], 0) &&
-            request.resource.data.stats.likes == resource.data.get(['stats', 'likes'], 0)
-        )
-        // Allow signed-in users to like/unlike (increment/decrement by 1)
-        || (
-            isSignedIn() &&
-            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats']) &&
-            (request.resource.data.stats.likes == resource.data.get(['stats', 'likes'], 0) + 1 || request.resource.data.stats.likes == resource.data.get(['stats', 'likes'], 0) - 1) &&
-            request.resource.data.stats.sales == resource.data.get(['stats', 'sales'], 0) &&
-            request.resource.data.stats.views == resource.data.get(['stats', 'views'], 0)
-        )
-        // Allow a user who purchased the prompt to update its rating
-        || ((hasPurchased(promptId) || resource.data.price == 0) && request.resource.data.rating != resource.data.rating && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating']));
-
+        isAdmin() ||
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats']) &&
+          request.resource.data.stats.views == resource.data.get(['stats', 'views'], 0) + 1 &&
+          request.resource.data.stats.sales == resource.data.get(['stats', 'sales'], 0) &&
+          request.resource.data.stats.likes == resource.data.get(['stats', 'likes'], 0)
+        ) ||
+        (
+          isSignedIn() &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats']) &&
+          (request.resource.data.stats.likes == resource.data.get(['stats', 'likes'], 0) + 1 || request.resource.data.stats.likes == resource.data.get(['stats', 'likes'], 0) - 1) &&
+          request.resource.data.stats.sales == resource.data.get(['stats', 'sales'], 0) &&
+          request.resource.data.stats.views == resource.data.get(['stats', 'views'], 0)
+        ) ||
+        ((hasPurchased(promptId) || resource.data.price == 0) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating']));
 
       match /private/{docId} {
-        // Private content can only be read by admins or users who have purchased the prompt.
         allow get: if docId == 'content' && (isAdmin() || hasPurchased(promptId));
         allow write: if docId == 'content' && isAdmin();
       }
 
       match /comments/{commentId} {
         allow get, list: if true;
-
-        // CREATE: User can create a comment IF they own the comment ID AND
-        // they are an admin OR have purchased/free access.
-        allow create: if isOwner(commentId) && (isAdmin() || hasPurchased(promptId) || get(/databases/$(database)/documents/prompts/$(promptId)).data.price == 0);
-
-        // UPDATE/DELETE: User can modify their own comment or an admin can.
+        allow create: if (isOwner(commentId) && (hasPurchased(promptId) || get(/databases/$(database)/documents/prompts/$(promptId)).data.price == 0)) || isAdmin();
         allow update, delete: if isOwner(commentId) || isAdmin();
       }
     }
@@ -190,8 +168,8 @@ service cloud.firestore {
     }
 
     match /searchBarBackgrounds/{bgId} {
-      allow get, list: if true;
-      allow create, update, delete: if isAdmin();
+      allow read: if true;
+      allow write: if isAdmin();
     }
   }
 }

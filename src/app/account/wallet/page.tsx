@@ -158,7 +158,7 @@ export default function WalletPage() {
 			<Header />
 			<main className='flex-grow container mx-auto px-4 py-8 sm:px-6 lg:px-8'>
 				<div className='flex flex-col lg:flex-row gap-8'>
-					<AccountSidebar credits={credits + earnings} />
+					<AccountSidebar credits={credits} />
 					<div className='flex-1 min-w-0 space-y-8'>
 						<div>
 							<h1 className='font-headline text-3xl font-bold'>Wallet</h1>
@@ -172,10 +172,10 @@ export default function WalletPage() {
 								<CardHeader>
 									<CardTitle className='flex items-center gap-2'>
 										<Coins className='h-5 w-5 text-amber-500' />
-										Purchased Credits
+										Total Credit Balance
 									</CardTitle>
 									<CardDescription>
-										Credits you buy to use on the platform.
+										Your total balance for purchasing prompts. Includes both purchased and earned credits.
 									</CardDescription>
 								</CardHeader>
 								<CardContent>
@@ -191,10 +191,10 @@ export default function WalletPage() {
 								<CardHeader>
 									<CardTitle className='flex items-center gap-2'>
 										<Banknote className='h-5 w-5 text-green-500' />
-										Earnings
+										Available for Payout
 									</CardTitle>
 									<CardDescription>
-										Credits earned from your prompt sales, available for spending or payout.
+										Credits earned from your prompt sales that you can withdraw.
 									</CardDescription>
 								</CardHeader>
 								<CardContent>
@@ -202,7 +202,7 @@ export default function WalletPage() {
 								</CardContent>
 								<CardFooter>
 									<p className='text-xs text-muted-foreground'>
-										Available for payout once you reach the minimum threshold.
+										This is a sub-balance of your total credits.
 									</p>
 								</CardFooter>
 							</Card>

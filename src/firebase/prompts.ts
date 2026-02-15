@@ -383,14 +383,13 @@ export async function addPromptCommentAndRating({
 		// 4. Create a notification for the prompt author
 		const authorId = promptData.authorId
 		if (authorId && authorId !== userId) {
-			// Don't notify if commenting on own prompt
 			const notificationRef = doc(
 				collection(firestore, 'users', authorId, 'notifications'),
 			)
 			transaction.set(notificationRef, {
 				type: 'comment',
-				title: 'New Comment',
-				body: `${userData.displayName} commented on your prompt "${promptData.title}".`,
+				title: 'New Review',
+				body: `${userData.displayName} left a ${rating}-star review on your prompt "${promptData.title}".`,
 				link: `/prompt/${promptId}`,
 				isRead: false,
 				createdAt: serverTimestamp(),

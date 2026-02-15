@@ -39,41 +39,33 @@ async function handleSinglePromptPurchase(
 		}
 
 		creditPrice = Math.round(promptData.price * 100);
-		const userCredits = userData.credits ?? 0;
-		const userEarnings = userData.earnings ?? 0;
+		const userTotalCredits = userData.credits ?? 0;
 
-		if (userCredits + userEarnings < creditPrice) {
+		if (userTotalCredits < creditPrice) {
 			throw new Error('Insufficient credits.');
 		}
 
-		// Spend purchased credits first, then earnings
-		const creditsToDeduct = Math.min(userCredits, creditPrice);
-		const earningsToDeduct = creditPrice - creditsToDeduct;
-
+		// Deduct from the single 'credits' balance
 		const updates: Record<string, any> = {
 			purchasedPrompts: admin.firestore.FieldValue.arrayUnion(promptId),
+			credits: admin.firestore.FieldValue.increment(-creditPrice),
 		};
-		if (creditsToDeduct > 0) {
-			updates.credits = admin.firestore.FieldValue.increment(-creditsToDeduct);
-		}
-		if (earningsToDeduct > 0) {
-			updates.earnings = admin.firestore.FieldValue.increment(-earningsToDeduct);
-		}
 
-		// Add author crediting logic
+		// Credit author
 		const authorId = promptData.authorId;
 		if (authorId && authorId !== userId) {
-			const earnings = Math.floor(creditPrice * (1 - PLATFORM_COMMISSION_RATE));
+			const earningsAmount = Math.floor(creditPrice * (1 - PLATFORM_COMMISSION_RATE));
 			const authorRef = db.doc(`users/${authorId}`);
 			transaction.update(authorRef, {
-				earnings: admin.firestore.FieldValue.increment(earnings),
+				credits: admin.firestore.FieldValue.increment(earningsAmount), // Add to spendable balance
+				earnings: admin.firestore.FieldValue.increment(earningsAmount), // Track for payout
 			});
 			// Create notification for the author
 			const notificationRef = db.collection('users').doc(authorId).collection('notifications').doc();
 			transaction.set(notificationRef, {
 				type: 'sale',
 				title: 'Prompt Sold!',
-				body: `Your prompt "${promptData.title}" earned you ${earnings} credits.`,
+				body: `Your prompt "${promptData.title}" earned you ${earningsAmount} credits.`,
 				link: `/prompt/${promptId}`,
 				isRead: false,
 				createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -118,7 +110,7 @@ async function handleCartPurchase(
 
 	let totalCreditCost = 0;
 	const promptDocsData: { id: string; title: string; authorId: string; price: number }[] = [];
-    const authorEarnings: { [authorId: string]: { earnings: number, prompts: {title: string, id: string}[] } } = {};
+    const authorEarningsMap: { [authorId: string]: { earnings: number, prompts: {title: string, id: string}[] } } = {};
 
 	await db.runTransaction(async transaction => {
 		const userRef = db.doc(`users/${userId}`);
@@ -126,7 +118,6 @@ async function handleCartPurchase(
 		const userDoc = await transaction.get(userRef);
 		if (!userDoc.exists) throw new Error('User not found.');
 		const userData = userDoc.data() as UserProfile;
-
 
 		const promptRefs = promptIds.map(id => db.doc(`prompts/${id}`));
 		const promptDocs = await transaction.getAll(...promptRefs);
@@ -139,38 +130,28 @@ async function handleCartPurchase(
 			promptDocsData.push({ id: pDoc.id, title: pData.title, authorId: pData.authorId, price: creditPrice });
 			totalCreditCost += creditPrice;
             
-            // Group earnings by author
             const authorId = pData.authorId;
             if (authorId && authorId !== userId) {
-                const earnings = Math.floor(creditPrice * (1 - PLATFORM_COMMISSION_RATE));
-                if (!authorEarnings[authorId]) {
-                    authorEarnings[authorId] = { earnings: 0, prompts: [] };
+                const earningsAmount = Math.floor(creditPrice * (1 - PLATFORM_COMMISSION_RATE));
+                if (!authorEarningsMap[authorId]) {
+                    authorEarningsMap[authorId] = { earnings: 0, prompts: [] };
                 }
-                authorEarnings[authorId]!.earnings += earnings;
-                authorEarnings[authorId]!.prompts.push({ title: pData.title, id: pDoc.id });
+                authorEarningsMap[authorId]!.earnings += earningsAmount;
+                authorEarningsMap[authorId]!.prompts.push({ title: pData.title, id: pDoc.id });
             }
 		}
 
-		const userCredits = userData.credits ?? 0;
-		const userEarnings = userData.earnings ?? 0;
+		const userTotalCredits = userData.credits ?? 0;
 
-		if (userCredits + userEarnings < totalCreditCost) {
+		if (userTotalCredits < totalCreditCost) {
 			throw new Error('Insufficient credits.');
 		}
 
-		// Spend purchased credits first, then earnings
-		const creditsToDeduct = Math.min(userCredits, totalCreditCost);
-		const earningsToDeduct = totalCreditCost - creditsToDeduct;
-
+		// Deduct from the single 'credits' balance
 		const updates: Record<string, any> = {
 			purchasedPrompts: admin.firestore.FieldValue.arrayUnion(...promptIds),
+			credits: admin.firestore.FieldValue.increment(-totalCreditCost),
 		};
-		if (creditsToDeduct > 0) {
-			updates.credits = admin.firestore.FieldValue.increment(-creditsToDeduct);
-		}
-		if (earningsToDeduct > 0) {
-			updates.earnings = admin.firestore.FieldValue.increment(-earningsToDeduct);
-		}
 
 		// All checks passed, perform writes
 		transaction.update(userRef, updates);
@@ -182,11 +163,12 @@ async function handleCartPurchase(
 		}
 
         // Credit earnings to authors and create notifications
-        for (const authorId in authorEarnings) {
-            const authorData = authorEarnings[authorId]!;
+        for (const authorId in authorEarningsMap) {
+            const authorData = authorEarningsMap[authorId]!;
             const authorRef = db.doc(`users/${authorId}`);
             transaction.update(authorRef, {
-                earnings: admin.firestore.FieldValue.increment(authorData.earnings),
+                credits: admin.firestore.FieldValue.increment(authorData.earnings), // Add to spendable balance
+                earnings: admin.firestore.FieldValue.increment(authorData.earnings), // Track for payout
             });
 
             const notificationRef = db.collection('users').doc(authorId).collection('notifications').doc();
@@ -201,11 +183,9 @@ async function handleCartPurchase(
             });
         }
         
-        // Also clear the cart in the same transaction
         transaction.update(cartRef, { promptIds: [] });
 	});
 
-	// After successful transaction, write history
 	const historyRef = db
 		.collection('users')
 		.doc(userId)
