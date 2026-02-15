@@ -18,7 +18,7 @@ service cloud.firestore {
       // Use .get() to safely access role from Firestore, as claims can be stale.
       return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
-
+    
     // Safely checks if a user has purchased a prompt.
     // Handles cases where 'purchasedPrompts' field doesn't exist.
     function hasPurchased(promptId) {
@@ -89,11 +89,12 @@ service cloud.firestore {
         allow get, list: if true;
         allow create, delete: if isSignedIn() && request.auth.uid == userId;
       }
-      
-      match /notifications/{notificationId} {
-        allow get, list: if request.auth.uid == userId;
-        allow create, update, delete: if false; // No client writes
-      }
+    }
+    
+    // Moved notifications out of the main /users/{userId} block for clarity and to avoid any potential conflicts with parent rules.
+    match /users/{userId}/notifications/{notificationId} {
+      allow read: if request.auth.uid == userId; // Allow read (get, list) if the user ID in the path matches the authenticated user.
+      allow write: if false; // Client should never write directly to notifications.
     }
 
     match /public-profiles/{userId} {
