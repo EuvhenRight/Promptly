@@ -44,7 +44,6 @@ function WalletSkeleton() {
 				<Skeleton className='h-36' />
 			</div>
 			<Skeleton className='h-64' />
-			<Skeleton className='h-48' />
 		</div>
 	)
 }
@@ -112,20 +111,6 @@ export default function WalletPage() {
 	)
 	const { data: userProfile, isLoading: isProfileLoading } =
 		useDoc<UserProfile>(userProfileRef)
-
-	const payoutsQuery = useMemoFirebase(
-		() =>
-			user
-				? query(
-						collection(firestore, 'payouts'),
-						where('userId', '==', user.uid),
-						orderBy('requestedAt', 'desc'),
-					)
-				: null,
-		[firestore, user],
-	)
-	const { data: payouts, isLoading: isPayoutsLoading } =
-		useCollection<PayoutRequest>(payoutsQuery)
 
 	const credits = userProfile?.credits ?? 0
 	const earnings = userProfile?.earnings ?? 0
@@ -256,70 +241,6 @@ export default function WalletPage() {
 									Request Payout
 								</Button>
 							</CardFooter>
-						</Card>
-
-						<Card>
-							<CardHeader>
-								<CardTitle className='flex items-center gap-2'>
-									<History className='h-5 w-5' />
-									Payout History
-								</CardTitle>
-								<CardDescription>
-									A record of your past payout requests.
-								</CardDescription>
-							</CardHeader>
-							<CardContent>
-								{isPayoutsLoading ? (
-									<Skeleton className='h-24 w-full' />
-								) : !payouts || payouts.length === 0 ? (
-									<p className='text-center text-sm text-muted-foreground py-8'>
-										You have no payout history yet.
-									</p>
-								) : (
-									<Table>
-										<TableHeader>
-											<TableRow>
-												<TableHead>Date</TableHead>
-												<TableHead>Amount</TableHead>
-												<TableHead>Status</TableHead>
-											</TableRow>
-										</TableHeader>
-										<TableBody>
-											{payouts.map(payout => (
-												<TableRow key={payout.id}>
-													<TableCell>
-														{format(
-															payout.requestedAt.toDate(),
-															'dd MMM, yyyy',
-														)}
-													</TableCell>
-													<TableCell>
-														{payout.amountCurrency.toLocaleString('de-DE', {
-															style: 'currency',
-															currency: 'EUR',
-														})}
-													</TableCell>
-													<TableCell>
-														<Badge
-															variant={
-																payout.status === 'paid' ||
-																payout.status === 'approved'
-																	? 'default'
-																	: payout.status === 'rejected'
-																		? 'destructive'
-																		: 'secondary'
-															}
-															className='capitalize'
-														>
-															{payout.status}
-														</Badge>
-													</TableCell>
-												</TableRow>
-											))}
-										</TableBody>
-									</Table>
-								)}
-							</CardContent>
 						</Card>
 					</div>
 				</div>
