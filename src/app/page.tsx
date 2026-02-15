@@ -113,7 +113,6 @@ export default function Home() {
 	const firestore = useFirestore()
 
 	const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
-	const [hasShownAuthModal, setHasShownAuthModal] = useState(false)
 
 	const userProfileRef = useMemoFirebase(
 		() => (user ? doc(firestore, 'users', user.uid) : null),
@@ -283,24 +282,20 @@ export default function Home() {
 				entries => {
 					if (entries[0] && entries[0].isIntersecting && hasMore) {
 						if (shouldShowPaywall) {
-							if (!hasShownAuthModal) {
-								setIsAuthModalOpen(true)
-								setHasShownAuthModal(true)
-							}
-							// Don't load more if paywall is hit
+							setIsAuthModalOpen(true)
 						} else {
 							loadMore()
 						}
 					}
 				},
 				{
-					rootMargin: '600px', // Trigger when 600px away from the element
+					rootMargin: '1800px',
 				},
 			)
 
 			if (node) observer.current.observe(node)
 		},
-		[loading, hasMore, loadMore, shouldShowPaywall, hasShownAuthModal],
+		[loading, hasMore, loadMore, shouldShowPaywall],
 	)
 
 	return (
@@ -341,7 +336,7 @@ export default function Home() {
 
 					<div ref={loadMoreRef} />
 
-					{shouldShowPaywall && (
+					{shouldShowPaywall && !isAuthModalOpen && (
 						<div className='h-[400px] flex flex-col items-center justify-center text-center space-y-4 my-8'>
 							<h2 className='font-headline text-3xl font-bold'>
 								Sign in to unlock millions more prompts
@@ -379,7 +374,7 @@ export default function Home() {
 
 					<AuthModal open={isAuthModalOpen} onOpenChange={setIsAuthModalOpen} />
 
-					{loading && !shouldShowPaywall && (
+					{loading && (
 						<div className='mt-8 text-center'>
 							{prompts.length === 0 ? (
 								<FeedSkeleton />
@@ -396,7 +391,9 @@ export default function Home() {
 					)}
 				</div>
 			</main>
-			<Footer />
+			{(!shouldShowPaywall || (shouldShowPaywall && !isAuthModalOpen)) && (
+				<Footer />
+			)}
 		</div>
 	)
 }
