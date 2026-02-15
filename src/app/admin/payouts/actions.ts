@@ -39,7 +39,6 @@ export async function updatePayoutStatus(
 					`User profile for user ID ${payoutData.userId} not found.`,
 				)
 			}
-			const userData = userDoc.data() as UserProfile
 
 			// Define updates for the payout document
 			const payoutUpdate: { status: string; processedAt?: FieldValue } = {
@@ -69,6 +68,24 @@ export async function updatePayoutStatus(
 			}
 
 			transaction.update(userRef, userUpdate)
+			
+			// Create a notification for the user
+			if (newStatus === 'paid' || newStatus === 'rejected') {
+				const notificationRef = adminDb.collection('users').doc(payoutData.userId).collection('notifications').doc();
+				const title = newStatus === 'paid' ? 'Payout Sent' : 'Payout Rejected';
+				const body = newStatus === 'paid'
+						? `Your payout of €${payoutData.amountCurrency.toFixed(2)} has been sent.`
+						: 'There was an issue with your payout request. Please contact support.';
+				transaction.set(notificationRef, {
+						type: 'payout',
+						title,
+						body,
+						link: '/account/wallet',
+						isRead: false,
+						createdAt: FieldValue.serverTimestamp(),
+				});
+		}
+
 		})
 
 		return { success: true }

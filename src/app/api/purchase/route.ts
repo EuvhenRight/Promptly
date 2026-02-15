@@ -4,6 +4,7 @@ import { adminDb } from '@/firebase/admin';
 import { NextRequest, NextResponse } from 'next/server';
 import admin from 'firebase-admin';
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';
+import type { Prompt, UserProfile } from '@/lib/types';
 
 const PLATFORM_COMMISSION_RATE = 0.20; // 20% platform fee
 
@@ -30,8 +31,8 @@ async function handleSinglePromptPurchase(
 		if (!userDoc.exists) throw new Error('User not found.');
 		if (!promptDoc.exists) throw new Error('Prompt not found.');
 
-		const userData = userDoc.data()!;
-		promptData = promptDoc.data()!;
+		const userData = userDoc.data() as UserProfile;
+		promptData = promptDoc.data() as Prompt;
 
 		if (userData.purchasedPrompts?.includes(promptId)) {
 			return; // User already owns this prompt, transaction succeeds silently
@@ -39,35 +40,47 @@ async function handleSinglePromptPurchase(
 
 		creditPrice = Math.round(promptData.price * 100);
 		const userCredits = userData.credits ?? 0;
+		const userEarnings = userData.earnings ?? 0;
 
-		if (userCredits < creditPrice) {
+		if (userCredits + userEarnings < creditPrice) {
 			throw new Error('Insufficient credits.');
 		}
 
-        // Add author crediting logic
-        const authorId = promptData.authorId;
-        if (authorId && authorId !== userId) {
-            const earnings = Math.floor(creditPrice * (1 - PLATFORM_COMMISSION_RATE));
-            const authorRef = db.doc(`users/${authorId}`);
-            transaction.update(authorRef, {
-                earnings: admin.firestore.FieldValue.increment(earnings),
-            });
-            // Create notification for the author
-            const notificationRef = db.collection('users').doc(authorId).collection('notifications').doc();
-            transaction.set(notificationRef, {
-                type: 'sale',
-                title: 'Prompt Sold!',
-                body: `Your prompt "${promptData.title}" earned you ${earnings} credits.`,
-                link: `/prompt/${promptId}`,
-                isRead: false,
-                createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            });
-        }
+		// Spend purchased credits first, then earnings
+		const creditsToDeduct = Math.min(userCredits, creditPrice);
+		const earningsToDeduct = creditPrice - creditsToDeduct;
 
-		transaction.update(userRef, {
-			credits: admin.firestore.FieldValue.increment(-creditPrice),
+		const updates: Record<string, any> = {
 			purchasedPrompts: admin.firestore.FieldValue.arrayUnion(promptId),
-		});
+		};
+		if (creditsToDeduct > 0) {
+			updates.credits = admin.firestore.FieldValue.increment(-creditsToDeduct);
+		}
+		if (earningsToDeduct > 0) {
+			updates.earnings = admin.firestore.FieldValue.increment(-earningsToDeduct);
+		}
+
+		// Add author crediting logic
+		const authorId = promptData.authorId;
+		if (authorId && authorId !== userId) {
+			const earnings = Math.floor(creditPrice * (1 - PLATFORM_COMMISSION_RATE));
+			const authorRef = db.doc(`users/${authorId}`);
+			transaction.update(authorRef, {
+				earnings: admin.firestore.FieldValue.increment(earnings),
+			});
+			// Create notification for the author
+			const notificationRef = db.collection('users').doc(authorId).collection('notifications').doc();
+			transaction.set(notificationRef, {
+				type: 'sale',
+				title: 'Prompt Sold!',
+				body: `Your prompt "${promptData.title}" earned you ${earnings} credits.`,
+				link: `/prompt/${promptId}`,
+				isRead: false,
+				createdAt: admin.firestore.FieldValue.serverTimestamp(),
+			});
+		}
+
+		transaction.update(userRef, updates);
 
 		transaction.update(promptRef, {
 			'stats.sales': admin.firestore.FieldValue.increment(1),
@@ -112,6 +125,8 @@ async function handleCartPurchase(
 		const cartRef = db.collection('users').doc(userId).collection('carts').doc('active');
 		const userDoc = await transaction.get(userRef);
 		if (!userDoc.exists) throw new Error('User not found.');
+		const userData = userDoc.data() as UserProfile;
+
 
 		const promptRefs = promptIds.map(id => db.doc(`prompts/${id}`));
 		const promptDocs = await transaction.getAll(...promptRefs);
@@ -136,16 +151,29 @@ async function handleCartPurchase(
             }
 		}
 
-		const userCredits = userDoc.data()!.credits ?? 0;
-		if (userCredits < totalCreditCost) {
+		const userCredits = userData.credits ?? 0;
+		const userEarnings = userData.earnings ?? 0;
+
+		if (userCredits + userEarnings < totalCreditCost) {
 			throw new Error('Insufficient credits.');
 		}
 
-		// All checks passed, perform writes
-		transaction.update(userRef, {
-			credits: admin.firestore.FieldValue.increment(-totalCreditCost),
+		// Spend purchased credits first, then earnings
+		const creditsToDeduct = Math.min(userCredits, totalCreditCost);
+		const earningsToDeduct = totalCreditCost - creditsToDeduct;
+
+		const updates: Record<string, any> = {
 			purchasedPrompts: admin.firestore.FieldValue.arrayUnion(...promptIds),
-		});
+		};
+		if (creditsToDeduct > 0) {
+			updates.credits = admin.firestore.FieldValue.increment(-creditsToDeduct);
+		}
+		if (earningsToDeduct > 0) {
+			updates.earnings = admin.firestore.FieldValue.increment(-earningsToDeduct);
+		}
+
+		// All checks passed, perform writes
+		transaction.update(userRef, updates);
 
 		for (const pDocRef of promptRefs) {
 			transaction.update(pDocRef, {

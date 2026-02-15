@@ -158,7 +158,7 @@ export default function WalletPage() {
 			<Header />
 			<main className='flex-grow container mx-auto px-4 py-8 sm:px-6 lg:px-8'>
 				<div className='flex flex-col lg:flex-row gap-8'>
-					<AccountSidebar credits={credits} />
+					<AccountSidebar credits={credits + earnings} />
 					<div className='flex-1 min-w-0 space-y-8'>
 						<div>
 							<h1 className='font-headline text-3xl font-bold'>Wallet</h1>
@@ -194,7 +194,7 @@ export default function WalletPage() {
 										Earnings
 									</CardTitle>
 									<CardDescription>
-										Credits earned from your prompt sales.
+										Credits earned from your prompt sales, available for spending or payout.
 									</CardDescription>
 								</CardHeader>
 								<CardContent>
@@ -220,7 +220,7 @@ export default function WalletPage() {
 							<CardContent>
 								<PayoutStatusInfo status={payoutStatus} />
 							</CardContent>
-							<CardFooter>
+							<CardFooter className='flex-col items-start gap-4'>
 								<Button
 									onClick={handleRequestPayout}
 									disabled={!canRequestPayout || isRequestingPayout}
@@ -230,6 +230,11 @@ export default function WalletPage() {
 									)}
 									Request Payout
 								</Button>
+								{!canRequestPayout && payoutStatus === 'none' && earnings < MIN_PAYOUT_CREDITS && (
+									<p className='text-sm text-muted-foreground'>
+										You have {earnings.toLocaleString()} credits in earnings. You need at least {MIN_PAYOUT_CREDITS.toLocaleString()} to request a payout.
+									</p>
+								)}
 							</CardFooter>
 						</Card>
 					</div>

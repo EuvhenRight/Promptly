@@ -20,7 +20,16 @@ import {
 } from '@/firebase'
 import type { Notification, UserProfile } from '@/lib/types'
 import { collection, doc, orderBy, query } from 'firebase/firestore'
-import { Bell, Coins, FileText, Loader2 } from 'lucide-react'
+import {
+	Bell,
+	Coins,
+	FileText,
+	Heart,
+	Loader2,
+	MessageSquare,
+	UserPlus,
+	Banknote,
+} from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
@@ -62,6 +71,14 @@ function NotificationIcon({ type }: { type: Notification['type'] }) {
 	switch (type) {
 		case 'sale':
 			return <Coins className='h-5 w-5 text-amber-500' />
+		case 'follow':
+			return <UserPlus className='h-5 w-5 text-blue-500' />
+		case 'comment':
+			return <MessageSquare className='h-5 w-5 text-green-500' />
+		case 'like':
+			return <Heart className='h-5 w-5 text-red-500' />
+		case 'payout':
+			return <Banknote className='h-5 w-5 text-indigo-500' />
 		default:
 			return <Bell className='h-5 w-5 text-muted-foreground' />
 	}

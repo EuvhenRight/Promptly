@@ -1,6 +1,6 @@
 'use client'
 
-import type { PayoutRequest, PublicProfile, UserProfile } from '@/lib/types'
+import type { PayoutRequest, PublicProfile, UserProfile, Prompt } from '@/lib/types'
 import { getAuth, updateProfile } from 'firebase/auth'
 import {
 	Firestore,
@@ -219,9 +219,6 @@ export async function toggleFavoritePrompt(
 	const userRef = doc(firestore, 'users', userId)
 	const promptRef = doc(firestore, 'prompts', promptId)
 
-	// Two separate non-atomic writes. This is necessary because a client-side
-	// transaction cannot update two separate documents with granular field-level
-	// security rules like ours.
 	const userUpdate = updateDoc(userRef, {
 		favoritePrompts: isFavorite ? arrayRemove(promptId) : arrayUnion(promptId),
 	})
@@ -230,8 +227,36 @@ export async function toggleFavoritePrompt(
 		'stats.likes': increment(isFavorite ? -1 : 1),
 	})
 
-	// Run them in parallel for better performance.
 	await Promise.all([userUpdate, promptUpdate])
+
+	if (!isFavorite) {
+		try {
+			const promptSnap = await getDoc(promptRef)
+			const userSnap = await getDoc(doc(firestore, 'users', userId)) // The user who liked
+
+			if (promptSnap.exists() && userSnap.exists()) {
+				const promptData = promptSnap.data() as Prompt
+				const likingUser = userSnap.data() as UserProfile
+				const authorId = promptData.authorId
+
+				if (authorId && authorId !== userId) {
+					const notificationRef = doc(
+						collection(firestore, 'users', authorId, 'notifications'),
+					)
+					await setDoc(notificationRef, {
+						type: 'like',
+						title: 'New Like',
+						body: `${likingUser.displayName} liked your prompt "${promptData.title}".`,
+						link: `/prompt/${promptId}`,
+						isRead: false,
+						createdAt: serverTimestamp(),
+					})
+				}
+			}
+		} catch (notificationError) {
+			console.error("Failed to create 'like' notification:", notificationError)
+		}
+	}
 }
 
 
@@ -243,19 +268,15 @@ export function incrementProfileView(firestore: Firestore, userId: string) {
 	if (!userId) return
 	const publicProfileRef = doc(firestore, 'public-profiles', userId)
 
-	// Increment public profile views. This is a non-blocking "fire and forget" operation.
 	updateDoc(publicProfileRef, {
 		views: increment(1),
 	}).catch(err => {
-		// We don't want to bother the user if this fails. Log it for monitoring.
 		console.warn(`Failed to increment profile view count for ${userId}:`, err)
 	})
 }
 
 /**
  * Makes the current user follow a target user.
- * Creates documents in subcollections to represent the relationship.
- * Also updates the follower/following counts on the main profile documents.
  */
 export async function followUser(
 	firestore: Firestore,
@@ -266,42 +287,37 @@ export async function followUser(
 		throw new Error('Invalid user IDs provided.')
 	}
 
-	const batch = writeBatch(firestore)
+	await runTransaction(firestore, async transaction => {
+		const currentUserPublicRef = doc(firestore, 'public-profiles', currentUserId)
+		const targetUserPublicRef = doc(firestore, 'public-profiles', targetUserId)
+		const followingRef = doc(firestore, 'users', currentUserId, 'following', targetUserId)
+		const followerRef = doc(firestore, 'users', targetUserId, 'followers', currentUserId)
+		const notificationRef = doc(collection(firestore, 'users', targetUserId, 'notifications'))
 
-	// Add target to current user's 'following' list (subcollection)
-	const followingRef = doc(
-		firestore,
-		'users',
-		currentUserId,
-		'following',
-		targetUserId,
-	)
-	batch.set(followingRef, { followedAt: serverTimestamp() })
+		const currentUserPublicDoc = await transaction.get(currentUserPublicRef)
+		if (!currentUserPublicDoc.exists()) {
+			throw new Error("Could not find your public profile.")
+		}
+		const currentUserPublicProfile = currentUserPublicDoc.data() as PublicProfile
 
-	// Add current user to target's 'followers' list (subcollection)
-	const followerRef = doc(
-		firestore,
-		'users',
-		targetUserId,
-		'followers',
-		currentUserId,
-	)
-	batch.set(followerRef, { followedAt: serverTimestamp() })
-
-	// Increment counts on public profiles
-	const currentUserPublicRef = doc(firestore, 'public-profiles', currentUserId)
-	const targetUserPublicRef = doc(firestore, 'public-profiles', targetUserId)
-
-	batch.update(currentUserPublicRef, { following: increment(1) })
-	batch.update(targetUserPublicRef, { followers: increment(1) })
-
-	await batch.commit()
+		transaction.set(followingRef, { followedAt: serverTimestamp() })
+		transaction.set(followerRef, { followedAt: serverTimestamp() })
+		transaction.update(currentUserPublicRef, { following: increment(1) })
+		transaction.update(targetUserPublicRef, { followers: increment(1) })
+		
+		transaction.set(notificationRef, {
+			type: 'follow',
+			title: 'New Follower',
+			body: `${currentUserPublicProfile.displayName} is now following you.`,
+			link: `/user/${currentUserPublicProfile.username}`,
+			isRead: false,
+			createdAt: serverTimestamp(),
+		})
+	})
 }
 
 /**
  * Makes the current user unfollow a target user.
- * Removes documents from subcollections.
- * Also updates the follower/following counts on the main profile documents.
  */
 export async function unfollowUser(
 	firestore: Firestore,
@@ -312,36 +328,17 @@ export async function unfollowUser(
 		throw new Error('Invalid user IDs provided.')
 	}
 
-	const batch = writeBatch(firestore)
-
-	// Remove target from current user's 'following' list
-	const followingRef = doc(
-		firestore,
-		'users',
-		currentUserId,
-		'following',
-		targetUserId,
-	)
-	batch.delete(followingRef)
-
-	// Remove current user from target's 'followers' list
-	const followerRef = doc(
-		firestore,
-		'users',
-		targetUserId,
-		'followers',
-		currentUserId,
-	)
-	batch.delete(followerRef)
-
-	// Decrement counts on public profiles
-	const currentUserPublicRef = doc(firestore, 'public-profiles', currentUserId)
-	const targetUserPublicRef = doc(firestore, 'public-profiles', targetUserId)
-
-	batch.update(currentUserPublicRef, { following: increment(-1) })
-	batch.update(targetUserPublicRef, { followers: increment(-1) })
-
-	await batch.commit()
+	await runTransaction(firestore, async transaction => {
+		const currentUserPublicRef = doc(firestore, 'public-profiles', currentUserId)
+		const targetUserPublicRef = doc(firestore, 'public-profiles', targetUserId)
+		const followingRef = doc(firestore, 'users', currentUserId, 'following', targetUserId)
+		const followerRef = doc(firestore, 'users', targetUserId, 'followers', currentUserId)
+		
+		transaction.delete(followingRef)
+		transaction.delete(followerRef)
+		transaction.update(currentUserPublicRef, { following: increment(-1) })
+		transaction.update(targetUserPublicRef, { followers: increment(-1) })
+	})
 }
 
 /**
