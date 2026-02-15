@@ -1,3 +1,5 @@
+'use client'
+
 import {
 	Bot,
 	BookOpen,
@@ -10,6 +12,7 @@ import {
 	MessagesSquare,
 	Tags,
 	Users,
+	CircleDollarSign,
 } from 'lucide-react'
 import type { PanelNavConfig } from './types'
 
@@ -25,8 +28,13 @@ export const ADMIN_NAV_CONFIG: PanelNavConfig = {
 		{ href: '/admin/tags', label: 'Tags', icon: Tags },
 		{ href: '/admin/types', label: 'Types', icon: FileType },
 		{ href: '/admin/models', label: 'Models', icon: Cpu },
-		{ href: '/admin/search-bar-backgrounds', label: 'Search Bar Background', icon: Image },
+		{
+			href: '/admin/search-bar-backgrounds',
+			label: 'Search Bar Background',
+			icon: Image,
+		},
 		{ href: '/admin/users', label: 'Users', icon: Users },
+		{ href: '/admin/payouts', label: 'Payouts', icon: CircleDollarSign },
 		{ href: '/docs', label: 'Docs', icon: BookOpen },
 	],
 }
