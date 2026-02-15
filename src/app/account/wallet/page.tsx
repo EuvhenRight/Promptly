@@ -16,23 +16,12 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
 import { requestPayout } from '@/firebase/users'
 import { useToast } from '@/hooks/use-toast'
-import type { PayoutRequest, UserProfile } from '@/lib/types'
-import { collection, doc, query, where, orderBy } from 'firebase/firestore'
-import { Coins, Banknote, History, Loader2, Info } from 'lucide-react'
+import type { UserProfile } from '@/lib/types'
+import { doc } from 'firebase/firestore'
+import { Banknote, Coins, Info, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@/components/ui/table'
-import { format } from 'date-fns'
-import { useCollection } from '@/firebase/firestore/use-collection'
-import { Badge } from '@/components/ui/badge'
 
 const MIN_PAYOUT_CREDITS = 5000 // 50 EUR
 
@@ -116,7 +105,8 @@ export default function WalletPage() {
 	const earnings = userProfile?.earnings ?? 0
 	const payoutStatus = userProfile?.payoutStatus ?? 'none'
 
-	const canRequestPayout = earnings >= MIN_PAYOUT_CREDITS && payoutStatus === 'none'
+	const canRequestPayout =
+		earnings >= MIN_PAYOUT_CREDITS && payoutStatus === 'none'
 
 	useEffect(() => {
 		if (!isUserLoading && !user) {

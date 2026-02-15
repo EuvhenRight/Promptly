@@ -91,7 +91,7 @@ service cloud.firestore {
       }
       
       match /notifications/{notificationId} {
-        allow get, list: if isOwner(userId);
+        allow read: if isOwner(userId); // Use read for broader get/list permissions
         // Only backend can create notifications
         allow create, update, delete: if false;
       }
@@ -118,7 +118,7 @@ service cloud.firestore {
     }
 
     match /users/{userId}/purchaseHistory/{path=**} {
-      allow get, list: if isOwner(userId);
+      allow read: if isOwner(userId);
       allow create, update, delete: if false;
     }
 
