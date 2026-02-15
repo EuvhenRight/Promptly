@@ -32,9 +32,9 @@ export async function updatePayoutStatus(
 			}
 
 			const payoutData = payoutDoc.data() as PayoutRequest
-			const userRef = adminDb.collection('users').doc(payoutData.userId)
+			const userRef = adminDb!.collection('users').doc(payoutData.userId)
 			const userDoc = await transaction.get(userRef)
-			if (!userDoc.exists) {
+			if (!userDoc.exists()) {
 				throw new Error(
 					`User profile for user ID ${payoutData.userId} not found.`,
 				)
@@ -68,24 +68,28 @@ export async function updatePayoutStatus(
 			}
 
 			transaction.update(userRef, userUpdate)
-			
+
 			// Create a notification for the user
 			if (newStatus === 'paid' || newStatus === 'rejected') {
-				const notificationRef = adminDb.collection('users').doc(payoutData.userId).collection('notifications').doc();
-				const title = newStatus === 'paid' ? 'Payout Sent' : 'Payout Rejected';
-				const body = newStatus === 'paid'
+				const notificationRef = adminDb!
+					.collection('users')
+					.doc(payoutData.userId)
+					.collection('notifications')
+					.doc()
+				const title = newStatus === 'paid' ? 'Payout Sent' : 'Payout Rejected'
+				const body =
+					newStatus === 'paid'
 						? `Your payout of €${payoutData.amountCurrency.toFixed(2)} has been sent.`
-						: 'There was an issue with your payout request. Please contact support.';
+						: 'There was an issue with your payout request. Please contact support.'
 				transaction.set(notificationRef, {
-						type: 'payout',
-						title,
-						body,
-						link: '/account/wallet',
-						isRead: false,
-						createdAt: FieldValue.serverTimestamp(),
-				});
-		}
-
+					type: 'payout',
+					title,
+					body,
+					link: '/account/wallet',
+					isRead: false,
+					createdAt: FieldValue.serverTimestamp(),
+				})
+			}
 		})
 
 		return { success: true }
