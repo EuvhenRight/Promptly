@@ -136,9 +136,8 @@ service cloud.firestore {
     }
 
     match /payouts/{payoutId} {
-      allow read, list: if isAdmin();
+      allow read, list, update: if isAdmin();
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAdmin();
       allow delete: if isAdmin();
     }
 
