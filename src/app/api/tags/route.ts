@@ -1,3 +1,4 @@
+'use server';
 import { adminDb } from '@/firebase/admin'
 import { NextResponse } from 'next/server'
 
@@ -19,38 +20,29 @@ export type TagItem = { id: string; name: string }
 export async function GET() {
 	if (!adminDb) {
 		return NextResponse.json(
-			{ error: 'Firebase Admin not initialized' },
+			{
+				error:
+					'Firebase Admin (adminDb) is not initialized. Check server logs for `admin.ts` initialization errors.',
+			},
 			{ status: 503 },
 		)
 	}
 	try {
-		const promptsSnap = await adminDb.collection('prompts').select('tags').get()
-		const activeTagIds = new Set<string>()
-		promptsSnap.docs.forEach(doc => {
-			const tags = doc.data().tags
-			if (Array.isArray(tags)) {
-				tags.forEach(tagId => activeTagIds.add(tagId))
-			}
-		})
-
-		if (activeTagIds.size === 0) {
-			return NextResponse.json([])
-		}
-
 		const tagsSnap = await adminDb.collection('tags').get()
 		const allTags: TagItem[] = tagsSnap.docs.map(doc => ({
 			id: doc.id,
 			name: (doc.data().name as string) || doc.id,
 		}))
+		return NextResponse.json(allTags)
 
-		const activeTags = allTags.filter(tag => activeTagIds.has(tag.id))
-
-		return NextResponse.json(activeTags)
 	} catch (err) {
 		console.error('Fetch tags error:', err)
+		const errorMessage =
+			err instanceof Error ? err.message : 'An unknown error occurred.'
 		return NextResponse.json(
 			{
-				error: err instanceof Error ? err.message : 'Failed to fetch tags',
+				error: 'Failed to fetch tags from Firestore.',
+				details: errorMessage,
 			},
 			{ status: 500 },
 		)

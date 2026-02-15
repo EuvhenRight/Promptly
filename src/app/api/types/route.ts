@@ -1,3 +1,4 @@
+'use server';
 import { adminDb } from '@/firebase/admin'
 import { NextResponse } from 'next/server'
 
@@ -8,38 +9,24 @@ export type TypeItem = { id: string; name: string }
 export async function GET() {
 	if (!adminDb) {
 		return NextResponse.json(
-			{ error: 'Firebase Admin not initialized' },
+			{ error: 'Firebase Admin (adminDb) is not initialized. Check server logs for `admin.ts` initialization errors.' },
 			{ status: 503 },
 		)
 	}
 	try {
-		const promptsSnap = await adminDb.collection('prompts').select('typeId').get()
-		const activeTypeIds = new Set<string>()
-		promptsSnap.docs.forEach(doc => {
-			const typeId = doc.data().typeId
-			if (typeId) {
-				activeTypeIds.add(typeId)
-			}
-		})
-
-		if (activeTypeIds.size === 0) {
-			return NextResponse.json([])
-		}
-
 		const typesSnap = await adminDb.collection('types').get()
 		const allTypes: TypeItem[] = typesSnap.docs.map(doc => ({
 			id: doc.id,
 			name: (doc.data().name as string) || doc.id,
 		}))
-
-		const activeTypes = allTypes.filter(type => activeTypeIds.has(type.id))
-
-		return NextResponse.json(activeTypes)
+		return NextResponse.json(allTypes)
 	} catch (err) {
 		console.error('Fetch types error:', err)
+		const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.'
 		return NextResponse.json(
 			{
-				error: err instanceof Error ? err.message : 'Failed to fetch types',
+				error: 'Failed to fetch types from Firestore.',
+                details: errorMessage,
 			},
 			{ status: 500 },
 		)
