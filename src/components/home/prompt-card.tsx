@@ -174,7 +174,7 @@ export default function PromptCard({
 					{user && (
 						<button
 							onClick={handleToggleFavorite}
-							className='flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-opacity hover:bg-black/80 opacity-0 group-hover:opacity-100'
+							className='flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-opacity hover:bg-black/80'
 							aria-label='Like prompt'
 						>
 							<Heart
@@ -190,7 +190,7 @@ export default function PromptCard({
 							size='icon'
 							onClick={handleAddToCart}
 							disabled={isInCart}
-							className='flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-opacity hover:bg-black/80 opacity-0 group-hover:opacity-100'
+							className='flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-opacity hover:bg-black/80'
 							aria-label={isInCart ? 'In Cart' : 'Add to Cart'}
 						>
 							{isInCart ? (
