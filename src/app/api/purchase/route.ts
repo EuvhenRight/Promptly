@@ -12,16 +12,17 @@ async function handleSinglePromptPurchase(
 	userId: string,
 	promptId: string,
 ): Promise<NextResponse> {
-	if (!adminDb) {
+	const db = adminDb;
+	if (!db) {
 		return NextResponse.json({ error: 'Server not configured' }, { status: 500 });
 	}
 
 	let creditPrice: number;
 	let promptData: any;
 
-	await adminDb.runTransaction(async transaction => {
-		const userRef = adminDb.doc(`users/${userId}`);
-		const promptRef = adminDb.doc(`prompts/${promptId}`);
+	await db.runTransaction(async transaction => {
+		const userRef = db.doc(`users/${userId}`);
+		const promptRef = db.doc(`prompts/${promptId}`);
 		const [userDoc, promptDoc] = await Promise.all([
 			transaction.get(userRef),
 			transaction.get(promptRef),
@@ -53,12 +54,13 @@ async function handleSinglePromptPurchase(
 		const authorId = promptData.authorId;
 		if (authorId && authorId !== userId) {
 			const earningsAmount = Math.floor(creditPrice * (1 - PLATFORM_COMMISSION_RATE));
-			const authorRef = adminDb.doc(`users/${authorId}`);
-			// Increment only the total credits balance for the author
+			const authorRef = db.doc(`users/${authorId}`);
+			// Increment both credits and earnings for the author
 			transaction.update(authorRef, {
 				credits: admin.firestore.FieldValue.increment(earningsAmount),
+				earnings: admin.firestore.FieldValue.increment(earningsAmount),
 			});
-			const notificationRef = adminDb.collection('users').doc(authorId).collection('notifications').doc();
+			const notificationRef = db.collection('users').doc(authorId).collection('notifications').doc();
 			transaction.set(notificationRef, {
 				type: 'sale',
 				title: 'Prompt Sold!',
@@ -76,7 +78,7 @@ async function handleSinglePromptPurchase(
 	});
 
 	if (promptData) {
-		const historyRef = adminDb
+		const historyRef = db
 			.collection('users')
 			.doc(userId)
 			.collection('purchaseHistory')
@@ -99,7 +101,8 @@ async function handleCartPurchase(
 	userId: string,
 	promptIds: string[],
 ): Promise<NextResponse> {
-	if (!adminDb) {
+	const db = adminDb;
+	if (!db) {
 		return NextResponse.json({ error: 'Server not configured' }, { status: 500 });
 	}
 
@@ -107,14 +110,14 @@ async function handleCartPurchase(
 	const promptDocsData: { id: string; title: string; authorId: string; price: number }[] = [];
     const authorEarningsMap: { [authorId: string]: { earnings: number, prompts: {title: string, id: string}[] } } = {};
 
-	await adminDb.runTransaction(async transaction => {
-		const userRef = adminDb.doc(`users/${userId}`);
-		const cartRef = adminDb.collection('users').doc(userId).collection('carts').doc('active');
+	await db.runTransaction(async transaction => {
+		const userRef = db.doc(`users/${userId}`);
+		const cartRef = db.collection('users').doc(userId).collection('carts').doc('active');
 		const userDoc = await transaction.get(userRef);
-		if (!userDoc.exists) throw new Error('User not found.');
+		if (!userDoc.exists()) throw new Error('User not found.');
 		const userData = userDoc.data() as UserProfile;
 
-		const promptRefs = promptIds.map(id => adminDb.doc(`prompts/${id}`));
+		const promptRefs = promptIds.map(id => db.doc(`prompts/${id}`));
 		const promptDocs = await transaction.getAll(...promptRefs);
 
 		for (const pDoc of promptDocs) {
@@ -155,12 +158,13 @@ async function handleCartPurchase(
 
         for (const authorId in authorEarningsMap) {
             const authorData = authorEarningsMap[authorId]!;
-            const authorRef = adminDb.doc(`users/${authorId}`);
+            const authorRef = db.doc(`users/${authorId}`);
             transaction.update(authorRef, {
                 credits: admin.firestore.FieldValue.increment(authorData.earnings),
+                earnings: admin.firestore.FieldValue.increment(authorData.earnings),
             });
 
-            const notificationRef = adminDb.collection('users').doc(authorId).collection('notifications').doc();
+            const notificationRef = db.collection('users').doc(authorId).collection('notifications').doc();
             const promptTitles = authorData.prompts.map(p => `"${p.title}"`).join(', ');
             transaction.set(notificationRef, {
                 type: 'sale',
@@ -176,7 +180,7 @@ async function handleCartPurchase(
         transaction.update(cartRef, { promptIds: [] });
 	});
 
-	const historyRef = adminDb
+	const historyRef = db
 		.collection('users')
 		.doc(userId)
 		.collection('purchaseHistory')
