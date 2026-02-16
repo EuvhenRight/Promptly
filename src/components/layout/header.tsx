@@ -24,6 +24,7 @@ import {
 	Star,
 	Upload,
 	User,
+	Wallet,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -236,6 +237,12 @@ export default function Header() {
 									>
 										<Star className='mr-2 h-4 w-4' />
 										<span>Plans & Credits</span>
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										onSelect={() => router.push('/account/wallet')}
+									>
+										<Wallet className='mr-2 h-4 w-4' />
+										<span>Wallet</span>
 									</DropdownMenuItem>
 									<DropdownMenuItem
 										onSelect={() => router.push('/account/notifications')}

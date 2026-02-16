@@ -151,7 +151,7 @@ function CheckoutReturnContent() {
 							</Button>
 							{grantedCredits > 0 && (
 								<Button asChild size='lg' variant='outline'>
-									<Link href='/account'>View my wallet</Link>
+									<Link href='/account/wallet'>View my wallet</Link>
 								</Button>
 							)}
 							{grantedPromptIds.length > 0 && (
