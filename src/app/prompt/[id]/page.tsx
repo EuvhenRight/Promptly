@@ -29,7 +29,7 @@ import {
 	purchasePromptWithCredits,
 	updatePromptComment,
 } from '@/firebase/prompts'
-import { toggleFavoritePrompt } from '@/firebase/users'
+import { followUser, toggleFavoritePrompt, unfollowUser } from '@/firebase/users'
 import { useCategories } from '@/hooks/use-categories'
 import { useToast } from '@/hooks/use-toast'
 import type {
@@ -169,8 +169,17 @@ export default function PromptDetailPage() {
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 	const [showPurchaseConfirm, setShowPurchaseConfirm] = useState(false)
 	const [isPurchasing, setIsPurchasing] = useState(false)
+	const [isFollowLoading, setIsFollowLoading] = useState(false)
 
 	// --- Memoized Derived State ---
+	const amIFollowingRef = useMemoFirebase(() => {
+    if (!firestore || !prompt?.authorId || !user?.uid || user.uid === prompt.authorId) return null;
+    return doc(firestore, 'users', prompt.authorId, 'followers', user.uid);
+	}, [firestore, prompt?.authorId, user?.uid]);
+
+	const { data: amIFollowingDoc } = useDoc(amIFollowingRef);
+	const isFollowing = !!amIFollowingDoc;
+
 	const isFavorite = useMemo(
 		() => userProfile?.favoritePrompts?.includes(params.id as string) ?? false,
 		[userProfile, params.id],
@@ -270,6 +279,35 @@ export default function PromptDetailPage() {
 			setIsPurchasing(false)
 		}
 	}
+
+	const handleFollowToggle = async () => {
+		if (!user || !firestore || !prompt) {
+			toast({
+				variant: 'destructive',
+				title: 'Please sign in',
+				description: 'You need to be logged in to follow users.',
+			});
+			return;
+		}
+		setIsFollowLoading(true);
+		try {
+			if (isFollowing) {
+				await unfollowUser(firestore, user.uid, prompt.authorId);
+				toast({ title: `You unfollowed ${prompt.authorDisplayName}` });
+			} else {
+				await followUser(firestore, user.uid, prompt.authorId);
+				toast({ title: `You are now following ${prompt.authorDisplayName}` });
+			}
+		} catch (error: any) {
+			toast({
+				variant: 'destructive',
+				title: 'Error',
+				description: error.message || 'Could not update follow status.',
+			});
+		} finally {
+			setIsFollowLoading(false);
+		}
+	};
 
 	const handleToggleFavorite = () => {
 		if (!user || !firestore || !prompt) {
@@ -583,7 +621,10 @@ export default function PromptDetailPage() {
 							</div>
 						</div>
 						{user && user.uid !== prompt.authorId && (
-							<Button variant='outline'>Follow</Button>
+							<Button variant='outline' onClick={handleFollowToggle} disabled={isFollowLoading}>
+								{isFollowLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+								{isFollowing ? 'Unfollow' : 'Follow'}
+        					</Button>
 						)}
 					</div>
 

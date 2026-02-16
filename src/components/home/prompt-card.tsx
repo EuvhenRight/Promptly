@@ -14,6 +14,8 @@ import { cn } from '@/lib/utils'
 import { doc } from 'firebase/firestore'
 import React from 'react'
 import { PlaceHolderImages } from '@/lib/placeholder-images'
+import { addPromptToCart } from '@/firebase/cart'
+import { Button } from '../ui/button'
 
 type PromptCardProps = {
 	prompt: Prompt
@@ -65,6 +67,26 @@ export default function PromptCard({
 
 		toast({
 			title: isFavorite ? 'Removed from favorites' : 'Added to favorites',
+		})
+	}
+
+	const handleAddToCart = (e: React.MouseEvent) => {
+		e.preventDefault()
+		e.stopPropagation()
+
+		if (!user) {
+			toast({
+				title: 'Please sign in',
+				description: 'You need to be signed in to add items to your cart.',
+			})
+			return
+		}
+		if (!firestore) return
+
+		addPromptToCart(firestore, user.uid, prompt.id)
+		toast({
+			title: 'Added to cart',
+			description: `"${prompt.title}" has been added to your cart.`,
 		})
 	}
 
@@ -146,12 +168,6 @@ export default function PromptCard({
 							PRO
 						</Badge>
 					)}
-					{isInCart && (
-						<span className='flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-xs font-medium text-secondary-foreground backdrop-blur-sm'>
-							<ShoppingBag className='h-3.5 w-3.5' />
-							In cart
-						</span>
-					)}
 				</div>
 
 				{user && (
@@ -167,6 +183,22 @@ export default function PromptCard({
 							)}
 						/>
 					</button>
+				)}
+
+				{prompt.price > 0 && !isPurchased && (
+					<Button
+						size='icon'
+						onClick={handleAddToCart}
+						disabled={isInCart}
+						className='absolute bottom-4 left-4 z-10 h-10 w-10 rounded-full bg-black/30 text-white backdrop-blur-sm transition-all hover:bg-black/50 opacity-0 group-hover:opacity-100'
+						aria-label={isInCart ? 'In Cart' : 'Add to Cart'}
+					>
+						{isInCart ? (
+							<Check className='h-5 w-5' />
+						) : (
+							<ShoppingBag className='h-5 w-5' />
+						)}
+					</Button>
 				)}
 
 				<div className='absolute bottom-4 right-4 z-10'>
