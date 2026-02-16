@@ -21,6 +21,7 @@ const nextConfig = {
       { protocol: 'https', hostname: 'picsum.photos', port: '', pathname: '/**' },
       { protocol: 'https', hostname: 'firebasestorage.googleapis.com', port: '', pathname: '/**' },
       { protocol: 'https', hostname: 'storage.googleapis.com', port: '', pathname: '/**' },
+      { protocol: 'https', hostname: 'cdn.prompthero.com', port: '', pathname: '/**' },
     ],
   },
   // Explicit Turbopack config so Next.js doesn't warn when using `next dev --turbopack`.
