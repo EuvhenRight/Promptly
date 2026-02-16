@@ -32,7 +32,7 @@ export async function updatePayoutStatus(
 			}
 
 			const payoutData = payoutDoc.data() as PayoutRequest
-			const userRef = adminDb!.collection('users').doc(payoutData.userId)
+			const userRef = adminDb.collection('users').doc(payoutData.userId)
 			const userDoc = await transaction.get(userRef)
 			if (!userDoc.exists) {
 				throw new Error(
@@ -50,18 +50,19 @@ export async function updatePayoutStatus(
 			transaction.update(payoutRef, payoutUpdate)
 
 			// Define updates for the user document
-			let userUpdate: { payoutStatus: string; earnings?: FieldValue } = {
+			let userUpdate: { payoutStatus: string; credits?: FieldValue; earnings?: FieldValue } = {
 				payoutStatus: newStatus,
 			}
 
-			// If rejected, refund the earnings to the user
+			// If rejected, refund the earnings to the user's total credits and earnings balance
 			if (newStatus === 'rejected') {
 				userUpdate = {
 					payoutStatus: 'none', // Reset status so they can request again
-					earnings: FieldValue.increment(payoutData.amountCredits),
+					credits: FieldValue.increment(payoutData.amountCredits), // Refund to total balance
+					earnings: FieldValue.increment(payoutData.amountCredits), // Refund to earnings balance
 				}
 			} else if (newStatus === 'paid') {
-				// Payout is complete, reset user status
+				// Payout is complete, reset user status. The balance was already deducted on request.
 				userUpdate = {
 					payoutStatus: 'none',
 				}
@@ -71,7 +72,7 @@ export async function updatePayoutStatus(
 
 			// Create a notification for the user
 			if (newStatus === 'paid' || newStatus === 'rejected') {
-				const notificationRef = adminDb!
+				const notificationRef = adminDb
 					.collection('users')
 					.doc(payoutData.userId)
 					.collection('notifications')

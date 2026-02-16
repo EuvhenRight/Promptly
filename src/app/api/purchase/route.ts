@@ -12,17 +12,16 @@ async function handleSinglePromptPurchase(
 	userId: string,
 	promptId: string,
 ): Promise<NextResponse> {
-	const db = adminDb;
-	if (!db) {
+	if (!adminDb) {
 		return NextResponse.json({ error: 'Server not configured' }, { status: 500 });
 	}
 
 	let creditPrice: number;
 	let promptData: any;
 
-	await db.runTransaction(async transaction => {
-		const userRef = db.doc(`users/${userId}`);
-		const promptRef = db.doc(`prompts/${promptId}`);
+	await adminDb.runTransaction(async transaction => {
+		const userRef = adminDb.doc(`users/${userId}`);
+		const promptRef = adminDb.doc(`prompts/${promptId}`);
 		const [userDoc, promptDoc] = await Promise.all([
 			transaction.get(userRef),
 			transaction.get(promptRef),
@@ -45,22 +44,22 @@ async function handleSinglePromptPurchase(
 			throw new Error('Insufficient credits.');
 		}
 
-		const updates: Record<string, any> = {
+		// Deduct from the user's total credit balance
+		transaction.update(userRef, {
 			purchasedPrompts: admin.firestore.FieldValue.arrayUnion(promptId),
 			credits: admin.firestore.FieldValue.increment(-creditPrice),
-		};
-
-		transaction.update(userRef, updates);
+		});
 		
 		const authorId = promptData.authorId;
 		if (authorId && authorId !== userId) {
 			const earningsAmount = Math.floor(creditPrice * (1 - PLATFORM_COMMISSION_RATE));
-			const authorRef = db.doc(`users/${authorId}`);
+			const authorRef = adminDb.doc(`users/${authorId}`);
+			// Increment both total credits and the earnings sub-balance for the author
 			transaction.update(authorRef, {
 				credits: admin.firestore.FieldValue.increment(earningsAmount),
 				earnings: admin.firestore.FieldValue.increment(earningsAmount),
 			});
-			const notificationRef = db.collection('users').doc(authorId).collection('notifications').doc();
+			const notificationRef = adminDb.collection('users').doc(authorId).collection('notifications').doc();
 			transaction.set(notificationRef, {
 				type: 'sale',
 				title: 'Prompt Sold!',
@@ -77,7 +76,7 @@ async function handleSinglePromptPurchase(
 	});
 
 	if (promptData) {
-		const historyRef = db
+		const historyRef = adminDb
 			.collection('users')
 			.doc(userId)
 			.collection('purchaseHistory')
@@ -100,8 +99,7 @@ async function handleCartPurchase(
 	userId: string,
 	promptIds: string[],
 ): Promise<NextResponse> {
-	const db = adminDb;
-	if (!db) {
+	if (!adminDb) {
 		return NextResponse.json({ error: 'Server not configured' }, { status: 500 });
 	}
 
@@ -109,14 +107,14 @@ async function handleCartPurchase(
 	const promptDocsData: { id: string; title: string; authorId: string; price: number }[] = [];
     const authorEarningsMap: { [authorId: string]: { earnings: number, prompts: {title: string, id: string}[] } } = {};
 
-	await db.runTransaction(async transaction => {
-		const userRef = db.doc(`users/${userId}`);
-		const cartRef = db.collection('users').doc(userId).collection('carts').doc('active');
+	await adminDb.runTransaction(async transaction => {
+		const userRef = adminDb.doc(`users/${userId}`);
+		const cartRef = adminDb.collection('users').doc(userId).collection('carts').doc('active');
 		const userDoc = await transaction.get(userRef);
 		if (!userDoc.exists) throw new Error('User not found.');
 		const userData = userDoc.data() as UserProfile;
 
-		const promptRefs = promptIds.map(id => db.doc(`prompts/${id}`));
+		const promptRefs = promptIds.map(id => adminDb.doc(`prompts/${id}`));
 		const promptDocs = await transaction.getAll(...promptRefs);
 
 		for (const pDoc of promptDocs) {
@@ -144,12 +142,10 @@ async function handleCartPurchase(
 			throw new Error('Insufficient credits.');
 		}
 
-		const updates: Record<string, any> = {
+		transaction.update(userRef, {
 			purchasedPrompts: admin.firestore.FieldValue.arrayUnion(...promptIds),
 			credits: admin.firestore.FieldValue.increment(-totalCreditCost),
-		};
-
-		transaction.update(userRef, updates);
+		});
 
 		for (const pDocRef of promptRefs) {
 			transaction.update(pDocRef, {
@@ -159,13 +155,13 @@ async function handleCartPurchase(
 
         for (const authorId in authorEarningsMap) {
             const authorData = authorEarningsMap[authorId]!;
-            const authorRef = db.doc(`users/${authorId}`);
+            const authorRef = adminDb.doc(`users/${authorId}`);
             transaction.update(authorRef, {
                 credits: admin.firestore.FieldValue.increment(authorData.earnings),
                 earnings: admin.firestore.FieldValue.increment(authorData.earnings),
             });
 
-            const notificationRef = db.collection('users').doc(authorId).collection('notifications').doc();
+            const notificationRef = adminDb.collection('users').doc(authorId).collection('notifications').doc();
             const promptTitles = authorData.prompts.map(p => `"${p.title}"`).join(', ');
             transaction.set(notificationRef, {
                 type: 'sale',
@@ -180,7 +176,7 @@ async function handleCartPurchase(
         transaction.update(cartRef, { promptIds: [] });
 	});
 
-	const historyRef = db
+	const historyRef = adminDb
 		.collection('users')
 		.doc(userId)
 		.collection('purchaseHistory')

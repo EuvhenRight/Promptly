@@ -194,7 +194,7 @@ export default function WalletPage() {
 										Available for Payout
 									</CardTitle>
 									<CardDescription>
-										Credits earned from your prompt sales that you can withdraw.
+										Credits earned from your prompt sales that you can withdraw. This is part of your total balance.
 									</CardDescription>
 								</CardHeader>
 								<CardContent>
@@ -202,7 +202,7 @@ export default function WalletPage() {
 								</CardContent>
 								<CardFooter>
 									<p className='text-xs text-muted-foreground'>
-										This is a sub-balance of your total credits.
+										100 credits = €1
 									</p>
 								</CardFooter>
 							</Card>

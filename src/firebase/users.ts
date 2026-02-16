@@ -444,7 +444,8 @@ export async function requestPayout(
 
 		// 2. Update the user's profile: subtract from both balances and set status
 		transaction.update(userRef, {
-			earnings: 0, // Reset earnings, but do not deduct from main credits balance
+			credits: increment(-payoutAmountCredits), // Deduct from total balance
+			earnings: 0, // Reset earnings
 			payoutStatus: 'pending',
 		})
 	})
