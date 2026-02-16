@@ -19,10 +19,9 @@ service cloud.firestore {
     }
 
     function hasPurchased(promptId) {
-      let userDocData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-      // Use .get() for safer access to potentially missing fields
-      let purchased = userDocData.get('purchasedPrompts', []);
-      return isSignedIn() && purchased.hasAny([promptId]);
+      return isSignedIn() &&
+        'purchasedPrompts' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.purchasedPrompts.hasAny([promptId]);
     }
 
     // ----------------------------------------------------------------------
@@ -116,21 +115,25 @@ service cloud.firestore {
 
     match /prompts/{promptId} {
       allow list: if true;
-      allow get: if resource.data.isPrivate != true || (isSignedIn() && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('planId', 'free') == 'pro' || isAdmin()));
+      allow get: if resource.data.isPrivate != true || (isSignedIn() && (('planId' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.planId == 'pro') || isAdmin()));
       allow create, delete: if isAdmin();
       allow update: if
-        isAdmin() || // Admins can do any update
-        ( // Rule for views: anyone can increment by 1
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats.views']) &&
-          request.resource.data.stats.views == resource.data.stats.views + 1
+        isAdmin() ||
+        ( // Rule for views: anyone can increment views by 1
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats']) &&
+          request.resource.data.stats.views == resource.data.stats.views + 1 &&
+          request.resource.data.stats.likes == resource.data.stats.likes &&
+          request.resource.data.stats.sales == resource.data.stats.sales
         ) ||
-        ( // Rule for likes: signed-in users can increment/decrement by 1
+        ( // Rule for likes: signed-in users can increment/decrement likes by 1
           isSignedIn() &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats.likes']) &&
-          (request.resource.data.stats.likes == resource.data.stats.likes + 1 || request.resource.data.stats.likes == resource.data.stats.likes - 1)
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats']) &&
+          (request.resource.data.stats.likes == resource.data.stats.likes + 1 || request.resource.data.stats.likes == resource.data.stats.likes - 1) &&
+          request.resource.data.stats.views == resource.data.stats.views &&
+          request.resource.data.stats.sales == resource.data.stats.sales
         ) ||
         ( // Rule for rating: purchased users can update rating
-          (hasPurchased(promptId) || resource.data.price == 0) &&
+          (hasPurchased(promptId) || resource.data.price == 0 || isAdmin()) &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating'])
         );
 
@@ -145,7 +148,7 @@ service cloud.firestore {
         // Allow creation if user has purchased, the prompt is free, or user is an admin.
         allow create: if isSignedIn() && (hasPurchased(promptId) || get(/databases/$(database)/documents/prompts/$(promptId)).data.price == 0 || isAdmin());
         // Allow update/delete if user is the author of the comment or an admin.
-        allow update, delete: if isOwner(request.resource.data.userId) || isAdmin();
+        allow update, delete: if isOwner(resource.data.userId) || isAdmin();
       }
     }
 
