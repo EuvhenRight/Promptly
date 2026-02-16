@@ -192,7 +192,8 @@ export default function PromptDetailPage() {
 		userProfile?.purchasedPrompts?.includes(params.id as string) ?? false
 	const isFree = prompt?.price === 0
 	const isAdmin = userProfile?.role === 'admin'
-	const canViewContent = prompt && (isPurchased || isFree || isAdmin)
+	const isAuthor = user?.uid === prompt?.authorId
+	const canViewContent = prompt && (isPurchased || isFree || isAdmin || isAuthor)
 	const canComment = canViewContent && user
 
 	// --- Effects ---
@@ -422,8 +423,8 @@ export default function PromptDetailPage() {
 											</Badge>
 										)}
 										<span className='text-xs text-muted-foreground'>
-											{userComment.timestamp instanceof Timestamp
-												? formatDistanceToNow(userComment.timestamp.toDate(), {
+											{comment.timestamp instanceof Timestamp
+												? formatDistanceToNow(comment.timestamp.toDate(), {
 														addSuffix: true,
 													})
 												: ''}
@@ -774,7 +775,7 @@ export default function PromptDetailPage() {
 							<>
 								<div className='flex flex-wrap items-center justify-between gap-4'>
 									<h2 className='text-2xl font-bold'>
-										{prompt.price === 0 ? 'Free' : 'Purchased'}
+										{prompt.price === 0 ? 'Free' : isAuthor ? 'Your Prompt' : 'Purchased'}
 									</h2>
 									<Button
 										size='lg'

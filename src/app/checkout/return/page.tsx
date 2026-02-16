@@ -15,6 +15,7 @@ function CheckoutReturnContent() {
 	const searchParams = useSearchParams()
 	const router = useRouter()
 	const sessionId = searchParams.get('session_id')
+	const type = searchParams.get('type')
 	const fulfillCalled = useRef(false)
 
 	const [status, setStatus] = useState<Status>('loading')
@@ -146,28 +147,41 @@ function CheckoutReturnContent() {
 							)}
 						</p>
 						<div className='flex flex-col sm:flex-row gap-3 justify-center'>
-							<Button asChild size='lg'>
-								<Link href='/'>Back to home</Link>
-							</Button>
-							{grantedCredits > 0 && (
-								<Button asChild size='lg' variant='outline'>
-									<Link href='/account/wallet'>View my wallet</Link>
-								</Button>
-							)}
-							{grantedPromptIds.length > 0 && (
-								<Button asChild size='lg' variant='outline'>
-									<Link
-										href={
-											grantedPromptIds.length === 1
-												? `/prompt/${grantedPromptIds[0]}`
-												: '/account/profile'
-										}
-									>
-										{grantedPromptIds.length === 1
-											? 'View your prompt'
-											: 'View my prompts'}
-									</Link>
-								</Button>
+							{type === 'cart' ? (
+								<>
+									<Button asChild size='lg'>
+										<Link href='/'>Back to home</Link>
+									</Button>
+									<Button asChild size='lg' variant='outline'>
+										<Link href='/account/profile'>View my prompts</Link>
+									</Button>
+								</>
+							) : (
+								<>
+									<Button asChild size='lg'>
+										<Link href='/'>Back to home</Link>
+									</Button>
+									{grantedCredits > 0 && (
+										<Button asChild size='lg' variant='outline'>
+											<Link href='/account/wallet'>View my wallet</Link>
+										</Button>
+									)}
+									{grantedPromptIds.length > 0 && (
+										<Button asChild size='lg' variant='outline'>
+											<Link
+												href={
+													grantedPromptIds.length === 1
+														? `/prompt/${grantedPromptIds[0]}`
+														: '/account/profile'
+												}
+											>
+												{grantedPromptIds.length === 1
+													? 'View your prompt'
+													: 'View my prompts'}
+											</Link>
+										</Button>
+									)}
+								</>
 							)}
 						</div>
 					</div>
