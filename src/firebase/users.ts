@@ -258,7 +258,6 @@ export async function toggleFavoritePrompt(
 				}
 			}
 		} catch (notificationError) {
-			console.log("uid from toggleFavoritePrompt", getAuth().currentUser?.uid);
 			console.error("Failed to create 'like' notification:", notificationError)
 			// Non-critical error, don't throw to the user
 		}
@@ -403,17 +402,6 @@ export async function requestPayout(
 	userId: string,
 	payoutAmountCredits: number,
 ): Promise<void> {
-	const auth = getAuth();
-	console.log("DIAGNOSTIC: Auth UID", auth.currentUser?.uid);
-	console.log("DIAGNOSTIC: Target User Doc Path", `users/${userId}`);
-
-	const updateData = {
-			credits: `decrement by ${payoutAmountCredits}`,
-			earnings: `decrement by ${payoutAmountCredits}`,
-			payoutStatus: 'pending',
-	};
-	console.log("DIAGNOSTIC: Intended Update Data", updateData);
-
 	if (!userId) throw new Error('User ID is required.')
 
 	const payoutAmount = Math.floor(payoutAmountCredits)
@@ -432,12 +420,13 @@ export async function requestPayout(
 
 		const userData = userDoc.data() as UserProfile
 		const userCredits = userData.credits ?? 0
+		const userEarnings = userData.earnings ?? 0
 		const payoutStatus = userData.payoutStatus ?? 'none'
 		const MIN_PAYOUT_CREDITS = 5000 // 50 EUR in credits
 
-		if (payoutAmount > userCredits) {
+		if (payoutAmount > userEarnings) {
 			throw new Error(
-				`Requested amount (${payoutAmount.toLocaleString()}) exceeds your available balance (${userCredits.toLocaleString()}).`,
+				`Requested amount (${payoutAmount.toLocaleString()}) exceeds your available earnings for payout (${userEarnings.toLocaleString()}).`,
 			)
 		}
 
