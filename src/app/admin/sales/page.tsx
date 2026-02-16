@@ -30,6 +30,7 @@ import {
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { format } from 'date-fns'
 import { TopSellersTable, type TopSeller } from './top-sellers-table'
+import { TopProductsTable, type TopProduct } from './top-products-table'
 
 // Reusable StatCard component
 function StatCard({
@@ -101,6 +102,7 @@ export default function AdminSalesPage() {
 	const [stats, setStats] = useState<Stats | null>(null)
 	const [revenueChartData, setRevenueChartData] = useState<RevenueChartItem[]>([])
 	const [topSellers, setTopSellers] = useState<TopSeller[]>([])
+	const [topProducts, setTopProducts] = useState<TopProduct[]>([])
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
@@ -122,6 +124,7 @@ export default function AdminSalesPage() {
 				}))
 				setSales(salesWithDates)
 				setRevenueChartData(data.revenueChartData || [])
+				setTopProducts(data.topProducts || [])
 				// Top sellers are always all-time, so we only set them once
                 if (topSellers.length === 0) {
 				    setTopSellers(data.topSellers || [])
@@ -134,7 +137,7 @@ export default function AdminSalesPage() {
 			.finally(() => {
 				setLoading(false)
 			})
-	}, [period, topSellers.length]) // Re-fetch when period changes
+	}, [period, topSellers.length])
 
     const chartTickFormatter = (value: string) => {
         if (period === '1d') {
@@ -234,25 +237,46 @@ export default function AdminSalesPage() {
 						)}
 					</CardContent>
 				</Card>
-				<Card>
-					<CardHeader>
-						<CardTitle>Top Sellers (All Time)</CardTitle>
-						<CardDescription>
-							Ranking by earnings from prompt sales.
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
-						{loading && topSellers.length === 0 ? ( // Show loader only on initial load
-							<div className='flex justify-center py-8'>
-								<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
-							</div>
-						) : error ? (
-							<p className='text-destructive'>Error: {error}</p>
-						) : (
-							<TopSellersTable sellers={topSellers} />
-						)}
-					</CardContent>
-				</Card>
+				<div className="lg:col-span-1 space-y-6">
+					<Card>
+						<CardHeader>
+							<CardTitle>Top Sellers (All Time)</CardTitle>
+							<CardDescription>
+								Ranking by earnings from prompt sales.
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							{loading && topSellers.length === 0 ? (
+								<div className='flex justify-center py-8'>
+									<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
+								</div>
+							) : error ? (
+								<p className='text-destructive'>Error: {error}</p>
+							) : (
+								<TopSellersTable sellers={topSellers} />
+							)}
+						</CardContent>
+					</Card>
+					<Card>
+						<CardHeader>
+							<CardTitle>Top Products</CardTitle>
+							<CardDescription>
+								Bestselling items for the selected period.
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							{loading ? (
+								<div className='flex justify-center py-8'>
+									<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
+								</div>
+							) : error ? (
+								<p className='text-destructive'>Error: {error}</p>
+							) : (
+								<TopProductsTable products={topProducts} />
+							)}
+						</CardContent>
+					</Card>
+				</div>
 			</div>
 
 			<Card>

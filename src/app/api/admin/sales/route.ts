@@ -1,6 +1,7 @@
 import { adminDb } from '@/firebase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import type { SaleRecord, UserProfile, Prompt } from '@/lib/types'
+import admin, { firestore } from 'firebase-admin'
 import { Timestamp } from 'firebase-admin/firestore'
 import {
 	subDays,
@@ -159,11 +160,73 @@ export async function GET(request: NextRequest) {
 			}))
 			.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
+		// --- Process Top Products for the period ---
+		const promptsById = new Map<string, { title: string }>()
+		const promptIdsToFetch = new Set<string>()
+		salesSnap.docs.forEach(doc => {
+			const sale = doc.data() as SaleRecord
+			if (sale.promptIds && sale.promptIds.length > 0) {
+				sale.promptIds.forEach(id => promptIdsToFetch.add(id))
+			}
+		})
+
+		if (promptIdsToFetch.size > 0) {
+			const ids = Array.from(promptIdsToFetch)
+			const chunks: string[][] = []
+			for (let i = 0; i < ids.length; i += 30) {
+				chunks.push(ids.slice(i, i + 30))
+			}
+			for (const chunk of chunks) {
+				const promptsSnap = await adminDb.collection('prompts').where(firestore.FieldPath.documentId(), 'in', chunk).get()
+				promptsSnap.forEach(doc => {
+					promptsById.set(doc.id, { title: (doc.data() as Prompt).title })
+				})
+			}
+		}
+
+		const productStats = new Map<string, { salesCount: number; totalRevenue: number; name: string; type: 'prompt' | 'credits' | 'subscription' }>()
+		salesSnap.docs.forEach(doc => {
+			const sale = doc.data() as SaleRecord
+			const revenue = sale.currency === 'eur' ? sale.revenueDetails.gross / 100 : 0
+		
+			if (sale.type === 'prompt' || sale.type === 'cart') {
+				sale.promptIds?.forEach(id => {
+					const key = `prompt-${id}`;
+					const existing = productStats.get(key) || { salesCount: 0, totalRevenue: 0, name: promptsById.get(id)?.title || 'Unknown Prompt', type: 'prompt' };
+					existing.salesCount += 1;
+					existing.totalRevenue += revenue; // This assumes each item in cart has its own sale record with correct revenue
+					productStats.set(key, existing);
+				});
+			} else if (sale.type === 'credits') {
+				const creditsAmount = sale.revenueDetails.gross;
+				const key = `credits-${creditsAmount}`;
+				const existing = productStats.get(key) || { salesCount: 0, totalRevenue: 0, name: `${sale.creditsAmount} Credits`, type: 'credits' };
+				existing.salesCount += 1;
+				existing.totalRevenue += revenue;
+				productStats.set(key, existing);
+			} else if (sale.type === 'subscription') {
+				const plan = (sale as any).plan ?? 'starter';
+				const billing = (sale as any).billing ?? 'monthly';
+				const planName = plan === 'pro' ? 'PRO Plan' : 'Starter Plan';
+				const key = `sub-${plan}-${billing}`;
+				const existing = productStats.get(key) || { salesCount: 0, totalRevenue: 0, name: `${planName} (${billing})`, type: 'subscription' };
+				existing.salesCount += 1;
+				existing.totalRevenue += revenue;
+				productStats.set(key, existing);
+			}
+		});
+		
+		const topProducts = Array.from(productStats.entries())
+			.map(([id, stats]) => ({ id, ...stats }))
+			.sort((a, b) => b.totalRevenue - a.totalRevenue)
+			.slice(0, 10);
+
 		return NextResponse.json({
 			stats: periodStats,
 			sales,
 			revenueChartData: formattedChartData,
 			topSellers,
+			topProducts,
 		})
 	} catch (err) {
 		console.error('Error fetching sales data:', err)
