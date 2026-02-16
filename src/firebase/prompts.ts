@@ -340,7 +340,7 @@ export async function addPromptCommentAndRating({
 		const [promptDoc, userDoc, commentDoc] = await Promise.all([
 			transaction.get(promptRef),
 			transaction.get(userRef),
-			transaction.get(commentDoc),
+			transaction.get(commentRef),
 		])
 
 		if (commentDoc.exists()) {
