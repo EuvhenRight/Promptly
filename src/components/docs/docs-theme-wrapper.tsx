@@ -25,7 +25,7 @@ export function DocsThemeWrapper({ children }: { children: React.ReactNode }) {
 	}, [])
 
 	const wrapperClass = cn(
-		'docs-wrapper flex h-screen flex-col overflow-hidden border-t border-border bg-background',
+		'docs-wrapper flex h-screen flex-col overflow-hidden bg-background',
 		mounted && resolvedTheme === 'dark' && 'dark',
 	)
 
