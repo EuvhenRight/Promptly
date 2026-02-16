@@ -8,6 +8,12 @@ import {
 	CardTitle,
 } from '@/components/ui/card'
 import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+  } from "@/components/ui/tabs"
+import {
 	CircleDollarSign,
 	CreditCard,
 	Loader2,
@@ -67,6 +73,8 @@ function StatCard({
 	)
 }
 
+type Period = '1d' | '7d' | '30d' | 'all'
+
 type Stats = {
 	totalRevenue: number
 	platformEarnings: number
@@ -74,8 +82,8 @@ type Stats = {
 	promptSalesCount: number
 }
 
-type DailyRevenue = {
-	date: string
+type RevenueChartItem = {
+	date: string // ISO string or format like 'YYYY-MM-DD HH:00'
 	Revenue: number
 }
 
@@ -88,9 +96,10 @@ const chartConfig = {
 
 // Main Page Component
 export default function AdminSalesPage() {
+    const [period, setPeriod] = useState<Period>('30d')
 	const [sales, setSales] = useState<EnrichedSaleRecord[]>([])
 	const [stats, setStats] = useState<Stats | null>(null)
-	const [dailyRevenue, setDailyRevenue] = useState<DailyRevenue[]>([])
+	const [revenueChartData, setRevenueChartData] = useState<RevenueChartItem[]>([])
 	const [topSellers, setTopSellers] = useState<TopSeller[]>([])
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
@@ -98,7 +107,7 @@ export default function AdminSalesPage() {
 	useEffect(() => {
 		setLoading(true)
 		setError(null)
-		fetch('/api/admin/sales')
+		fetch(`/api/admin/sales?period=${period}`)
 			.then(res => {
 				if (!res.ok) {
 					throw new Error('Failed to fetch sales data')
@@ -112,8 +121,11 @@ export default function AdminSalesPage() {
 					createdAt: new Date(sale.createdAt),
 				}))
 				setSales(salesWithDates)
-				setDailyRevenue(data.dailyRevenue || [])
-				setTopSellers(data.topSellers || [])
+				setRevenueChartData(data.revenueChartData || [])
+				// Top sellers are always all-time, so we only set them once
+                if (topSellers.length === 0) {
+				    setTopSellers(data.topSellers || [])
+                }
 			})
 			.catch(err => {
 				setError(err.message)
@@ -122,11 +134,31 @@ export default function AdminSalesPage() {
 			.finally(() => {
 				setLoading(false)
 			})
-	}, [])
+	}, [period, topSellers.length]) // Re-fetch when period changes
+
+    const chartTickFormatter = (value: string) => {
+        if (period === '1d') {
+            return format(new Date(value), 'HH:00');
+        }
+        if (period === 'all') {
+            return format(new Date(value), 'MMM yyyy');
+        }
+        return format(new Date(value), 'MMM d');
+    };
 
 	return (
 		<div className='space-y-6'>
-			<h1 className='text-lg font-semibold md:text-2xl'>Sales Dashboard</h1>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+			    <h1 className='text-lg font-semibold md:text-2xl'>Sales Dashboard</h1>
+                <Tabs value={period} onValueChange={(value) => setPeriod(value as Period)} className="w-full sm:w-auto">
+                    <TabsList className="grid w-full grid-cols-4">
+                        <TabsTrigger value="1d">24H</TabsTrigger>
+                        <TabsTrigger value="7d">7D</TabsTrigger>
+                        <TabsTrigger value="30d">30D</TabsTrigger>
+                        <TabsTrigger value="all">All</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+            </div>
 			<div className='grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4'>
 				<StatCard
 					title='Total Revenue'
@@ -159,27 +191,27 @@ export default function AdminSalesPage() {
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 				<Card className="lg:col-span-2">
 					<CardHeader>
-						<CardTitle>Revenue Last 30 Days</CardTitle>
+						<CardTitle>Revenue Breakdown</CardTitle>
 					</CardHeader>
 					<CardContent>
 						{loading ? (
 							<div className='flex justify-center items-center h-72'>
 								<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
 							</div>
-						) : dailyRevenue.length === 0 ? (
+						) : revenueChartData.length === 0 ? (
 							<p className='text-muted-foreground text-center py-8'>
-								No revenue data for the last 30 days.
+								No revenue data for this period.
 							</p>
 						) : (
 							<ChartContainer config={chartConfig} className='min-h-[280px] w-full'>
-								<BarChart accessibilityLayer data={dailyRevenue} margin={{ top: 20 }}>
+								<BarChart accessibilityLayer data={revenueChartData} margin={{ top: 20 }}>
 									<CartesianGrid vertical={false} />
 									<XAxis
 										dataKey='date'
 										tickLine={false}
 										tickMargin={10}
 										axisLine={false}
-										tickFormatter={value => format(new Date(value), 'MMM d')}
+										tickFormatter={chartTickFormatter}
 									/>
 									<YAxis
 										tickFormatter={value => `€${value}`}
@@ -204,13 +236,13 @@ export default function AdminSalesPage() {
 				</Card>
 				<Card>
 					<CardHeader>
-						<CardTitle>Top Sellers</CardTitle>
+						<CardTitle>Top Sellers (All Time)</CardTitle>
 						<CardDescription>
 							Ranking by earnings from prompt sales.
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
-						{loading ? (
+						{loading && topSellers.length === 0 ? ( // Show loader only on initial load
 							<div className='flex justify-center py-8'>
 								<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
 							</div>
@@ -227,7 +259,7 @@ export default function AdminSalesPage() {
 				<CardHeader>
 					<CardTitle>Recent Sales</CardTitle>
 					<CardDescription>
-						A list of the most recent transactions.
+						A list of the most recent transactions for the selected period.
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
