@@ -89,6 +89,9 @@ import { PlaceHolderImages } from '@/lib/placeholder-images'
 import {
 	Dialog,
 	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
 	DialogTrigger,
 } from '@/components/ui/dialog'
 
@@ -622,6 +625,10 @@ export default function PromptDetailPage() {
 										</Button>
 									</DialogTrigger>
 									<DialogContent className='max-w-7xl w-full p-0 bg-transparent border-none shadow-none'>
+										<DialogHeader className="sr-only">
+											<DialogTitle>Fullscreen image for: {prompt.title}</DialogTitle>
+											<DialogDescription>A larger, fullscreen view of the example image for this prompt.</DialogDescription>
+										</DialogHeader>
 										<Image
 											src={promptImage}
 											alt={prompt.title}
