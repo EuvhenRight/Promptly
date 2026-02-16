@@ -57,6 +57,7 @@ import {
 	Heart,
 	Loader2,
 	MoreHorizontal,
+	PlusCircle,
 	ShoppingCart,
 	Star,
 	Trash2,
@@ -625,7 +626,7 @@ export default function PromptDetailPage() {
 											<span className='sr-only'>View fullscreen</span>
 										</Button>
 									</DialogTrigger>
-									<DialogContent className='max-w-7xl w-full p-0 bg-transparent border-none shadow-none'>
+									<DialogContent hideCloseButton className='max-w-7xl w-full p-0 bg-transparent border-none shadow-none'>
 										<DialogHeader>
 											<DialogTitle className='sr-only'>
 												Fullscreen image for: {prompt.title}
