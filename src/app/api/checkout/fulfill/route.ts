@@ -101,6 +101,7 @@ export async function POST(req: NextRequest) {
 					buyerId: userId,
 					sellerId: null, // Platform sale
 					promptIds: [],
+					creditsAmount: creditsAmount,
 					revenueDetails: {
 						gross: amountTotal, // in cents
 						platformFee: amountTotal, // All revenue is platform fee
@@ -156,6 +157,8 @@ export async function POST(req: NextRequest) {
 				buyerId: userId,
 				sellerId: null,
 				promptIds: [],
+				plan: plan,
+				billing: billing,
 				revenueDetails: {
 					gross: amountTotal,
 					platformFee: amountTotal,

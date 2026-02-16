@@ -198,21 +198,35 @@ export async function GET(request: NextRequest) {
 					productStats.set(key, existing);
 				});
 			} else if (sale.type === 'credits') {
-				const creditsAmount = sale.revenueDetails.gross;
-				const key = `credits-${creditsAmount}`;
-				const existing = productStats.get(key) || { salesCount: 0, totalRevenue: 0, name: `${sale.creditsAmount} Credits`, type: 'credits' };
-				existing.salesCount += 1;
-				existing.totalRevenue += revenue;
-				productStats.set(key, existing);
+				const creditsAmount = sale.creditsAmount
+				if (creditsAmount) {
+					const key = `credits-${creditsAmount}`
+					const existing =
+						productStats.get(key) || {
+							salesCount: 0,
+							totalRevenue: 0,
+							name: `${creditsAmount} Credits`,
+							type: 'credits',
+						}
+					existing.salesCount += 1
+					existing.totalRevenue += revenue
+					productStats.set(key, existing)
+				}
 			} else if (sale.type === 'subscription') {
-				const plan = (sale as any).plan ?? 'starter';
-				const billing = (sale as any).billing ?? 'monthly';
-				const planName = plan === 'pro' ? 'PRO Plan' : 'Starter Plan';
-				const key = `sub-${plan}-${billing}`;
-				const existing = productStats.get(key) || { salesCount: 0, totalRevenue: 0, name: `${planName} (${billing})`, type: 'subscription' };
-				existing.salesCount += 1;
-				existing.totalRevenue += revenue;
-				productStats.set(key, existing);
+				const plan = sale.plan ?? 'starter'
+				const billing = sale.billing ?? 'monthly'
+				const planName = plan === 'pro' ? 'PRO Plan' : 'Starter Plan'
+				const key = `sub-${plan}-${billing}`
+				const existing =
+					productStats.get(key) || {
+						salesCount: 0,
+						totalRevenue: 0,
+						name: `${planName} (${billing})`,
+						type: 'subscription',
+					}
+				existing.salesCount += 1
+				existing.totalRevenue += revenue
+				productStats.set(key, existing)
 			}
 		});
 		

@@ -164,6 +164,9 @@ export type SaleRecord = {
 	sellerId?: string
 	promptIds?: string[]
 	promptTitles?: string[]
+	creditsAmount?: number
+	plan?: 'starter' | 'pro'
+	billing?: 'monthly' | 'yearly'
 	revenueDetails: {
 		gross: number
 		platformFee: number
