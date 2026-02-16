@@ -155,6 +155,24 @@ export type ScrapeResult = {
 	tags: string
 }
 
+export type SaleRecord = {
+	id: string
+	type: 'prompt' | 'credits' | 'subscription' | 'cart'
+	status: 'completed' | 'refunded'
+	createdAt: Timestamp
+	buyerId: string
+	sellerId?: string
+	promptIds?: string[]
+	promptTitles?: string[]
+	revenueDetails: {
+		gross: number
+		platformFee: number
+		sellerEarning: number
+	}
+	currency: string
+	paymentMethod: 'stripe' | 'credits'
+}
+
 export type PayoutRequest = {
 	id: string
 	userId: string

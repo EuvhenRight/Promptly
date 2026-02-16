@@ -23,6 +23,7 @@ export const ADMIN_NAV_CONFIG: PanelNavConfig = {
 	items: [
 		{ href: '/admin', label: 'Dashboard', icon: Home },
 		{ href: '/admin/prompts', label: 'Prompts', icon: FileText },
+		{ href: '/admin/sales', label: 'Sales', icon: CircleDollarSign },
 		{ href: '/admin/comments', label: 'Comments', icon: MessagesSquare },
 		{ href: '/admin/categories', label: 'Categories', icon: FolderOpen },
 		{ href: '/admin/tags', label: 'Tags', icon: Tags },
