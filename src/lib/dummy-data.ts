@@ -1,13 +1,6 @@
-import type { Prompt as PromptType, UserProfile } from './types';
+import type { Prompt as PromptType } from './types';
 
 export type Prompt = PromptType;
-
-export type Creator = UserProfile;
-
-export type FilterOption = {
-  id: string;
-  name: string;
-};
 
 export const DUMMY_PROMPTS: Prompt[] = [
   {
@@ -305,86 +298,6 @@ export const DUMMY_PROMPTS: Prompt[] = [
     stats: { views: 0, sales: 0, likes: 0 },
   },
 ];
-
-export const DUMMY_CREATORS: Creator[] = [
-  {
-    uid: '1',
-    email: 'pixel@forge.com',
-    displayName: 'PixelForge',
-    photoURL: 'https://picsum.photos/seed/1/40/40',
-    role: 'user',
-    isSeller: true,
-    stats: { totalSales: 56200, monthlySales: 4300, weeklySales: 950, reputation: 99 },
-  },
-  {
-    uid: '2',
-    email: 'artisan@ai.com',
-    displayName: 'ArtisanAI',
-    photoURL: 'https://picsum.photos/seed/2/40/40',
-    role: 'user',
-    isSeller: true,
-    stats: { totalSales: 78000, monthlySales: 5100, weeklySales: 1200, reputation: 98 },
-  },
-  {
-    uid: '3',
-    email: 'dream@weaver.com',
-    displayName: 'DreamWeaver',
-    photoURL: 'https://picsum.photos/seed/3/40/40',
-    role: 'user',
-    isSeller: true,
-    stats: { totalSales: 41500, monthlySales: 3200, weeklySales: 750, reputation: 97 },
-  },
-  {
-    uid: '4',
-    email: 'synth@sprite.com',
-    displayName: 'SynthSprite',
-    photoURL: 'https://picsum.photos/seed/4/40/40',
-    role: 'user',
-    isSeller: true,
-    stats: { totalSales: 25000, monthlySales: 2800, weeklySales: 600, reputation: 95 },
-  },
-    {
-    uid: '5',
-    email: 'giga@prompt.com',
-    displayName: 'GigaPrompt',
-    photoURL: 'https://picsum.photos/seed/5/40/40',
-    role: 'user',
-    isSeller: true,
-    stats: { totalSales: 18500, monthlySales: 1900, weeklySales: 450, reputation: 96 },
-  },
-];
-
-export const DUMMY_FILTERS = {
-  categories: [
-    { id: 'sci-fi', name: 'Science Fiction' },
-    { id: 'fantasy', name: 'Fantasy' },
-    { id: 'characters', name: 'Characters' },
-    { id: 'environments', name: 'Environments' },
-    { id: 'abstract', name: 'Abstract' },
-    { id: 'photorealism', name: 'Photorealism' },
-  ],
-  models: [
-    { id: 'sdxl', name: 'SDXL' },
-    { id: 'midjourney-v6', name: 'Midjourney v6' },
-    { id: 'dall-e-3', name: 'DALL-E 3' },
-    { id: 'stable-diffusion-2', name: 'Stable Diffusion 2.1' },
-  ],
-};
-
-export const DUMMY_MODELS_AND_STYLES = [
-  { id: 'video', name: 'Video' },
-  { id: 'chatgpt-image', name: 'ChatGPT Image' },
-  { id: 'midjourney', name: 'Midjourney' },
-  { id: 'flux', name: 'FLUX' },
-  { id: 'sora', name: 'Sora' },
-  { id: 'stable-diffusion', name: 'Stable Diffusion' },
-  { id: 'portraits', name: 'Portraits' },
-  { id: 'photography', name: 'Photography' },
-  { id: 'anime', name: 'Anime' },
-  { id: 'logo', name: 'Logo' },
-  { id: 'character-design', name: 'Character Design' },
-];
-
 
 // This is a helper to find placeholder images from the JSON file
 // We are re-exporting it from here for convenience in components
