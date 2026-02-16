@@ -28,10 +28,7 @@ const MIN_PAYOUT_CREDITS = 5000 // 50 EUR
 function WalletSkeleton() {
 	return (
 		<div className='space-y-8'>
-			<div className='grid md:grid-cols-2 gap-6'>
-				<Skeleton className='h-36' />
-				<Skeleton className='h-36' />
-			</div>
+			<Skeleton className='h-36' />
 			<Skeleton className='h-64' />
 		</div>
 	)
@@ -102,11 +99,10 @@ export default function WalletPage() {
 		useDoc<UserProfile>(userProfileRef)
 
 	const credits = userProfile?.credits ?? 0
-	const earnings = userProfile?.earnings ?? 0
 	const payoutStatus = userProfile?.payoutStatus ?? 'none'
 
 	const canRequestPayout =
-		earnings >= MIN_PAYOUT_CREDITS && payoutStatus === 'none'
+		credits >= MIN_PAYOUT_CREDITS && payoutStatus === 'none'
 
 	useEffect(() => {
 		if (!isUserLoading && !user) {
@@ -163,50 +159,30 @@ export default function WalletPage() {
 						<div>
 							<h1 className='font-headline text-3xl font-bold'>Wallet</h1>
 							<p className='mt-1 text-muted-foreground'>
-								Manage your credits, earnings, and payouts.
+								Manage your credits and request payouts.
 							</p>
 						</div>
 
-						<div className='grid md:grid-cols-2 gap-6'>
-							<Card>
-								<CardHeader>
-									<CardTitle className='flex items-center gap-2'>
-										<Coins className='h-5 w-5 text-amber-500' />
-										Total Credit Balance
-									</CardTitle>
-									<CardDescription>
-										Your total balance for purchasing prompts. Includes both purchased and earned credits.
-									</CardDescription>
-								</CardHeader>
-								<CardContent>
-									<p className='text-4xl font-bold'>{credits.toLocaleString()}</p>
-								</CardContent>
-								<CardFooter>
-									<Button asChild>
-										<Link href='/account/plans#credits'>Buy More Credits</Link>
-									</Button>
-								</CardFooter>
-							</Card>
-							<Card>
-								<CardHeader>
-									<CardTitle className='flex items-center gap-2'>
-										<Banknote className='h-5 w-5 text-green-500' />
-										Available for Payout
-									</CardTitle>
-									<CardDescription>
-										Credits earned from your prompt sales that you can withdraw. This is part of your total balance.
-									</CardDescription>
-								</CardHeader>
-								<CardContent>
-									<p className='text-4xl font-bold'>{earnings.toLocaleString()}</p>
-								</CardContent>
-								<CardFooter>
-									<p className='text-xs text-muted-foreground'>
-										100 credits = €1
-									</p>
-								</CardFooter>
-							</Card>
-						</div>
+						<Card>
+							<CardHeader>
+								<CardTitle className='flex items-center gap-2'>
+									<Coins className='h-5 w-5 text-amber-500' />
+									Credit Balance
+								</CardTitle>
+								<CardDescription>
+									Your total balance for purchasing prompts, including both
+									purchased and earned credits.
+								</CardDescription>
+							</CardHeader>
+							<CardContent>
+								<p className='text-4xl font-bold'>{credits.toLocaleString()}</p>
+							</CardContent>
+							<CardFooter>
+								<Button asChild>
+									<Link href='/account/plans#credits'>Buy More Credits</Link>
+								</Button>
+							</CardFooter>
+						</Card>
 
 						<Card>
 							<CardHeader>
@@ -230,11 +206,15 @@ export default function WalletPage() {
 									)}
 									Request Payout
 								</Button>
-								{!canRequestPayout && payoutStatus === 'none' && earnings < MIN_PAYOUT_CREDITS && (
-									<p className='text-sm text-muted-foreground'>
-										You have {earnings.toLocaleString()} credits in earnings. You need at least {MIN_PAYOUT_CREDITS.toLocaleString()} to request a payout.
-									</p>
-								)}
+								{!canRequestPayout &&
+									payoutStatus === 'none' &&
+									credits < MIN_PAYOUT_CREDITS && (
+										<p className='text-sm text-muted-foreground'>
+											You have {credits.toLocaleString()} credits. You need at least{' '}
+											{MIN_PAYOUT_CREDITS.toLocaleString()} to request a
+											payout.
+										</p>
+									)}
 							</CardFooter>
 						</Card>
 					</div>

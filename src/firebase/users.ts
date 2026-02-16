@@ -392,6 +392,7 @@ export async function manageSubscriptionCancellation(
 
 /**
  * Creates a payout request for a user if they meet the requirements.
+ * This now works with a single unified credit balance.
  */
 export async function requestPayout(
 	firestore: Firestore,
@@ -409,13 +410,13 @@ export async function requestPayout(
 		}
 
 		const userData = userDoc.data() as UserProfile
-		const earnings = userData.earnings ?? 0
+		const totalCredits = userData.credits ?? 0
 		const payoutStatus = userData.payoutStatus ?? 'none'
 		const MIN_PAYOUT_CREDITS = 5000 // 50 EUR in credits
 
-		if (earnings < MIN_PAYOUT_CREDITS) {
+		if (totalCredits < MIN_PAYOUT_CREDITS) {
 			throw new Error(
-				`You need at least ${MIN_PAYOUT_CREDITS} credits in earnings to request a payout.`,
+				`You need at least ${MIN_PAYOUT_CREDITS} credits to request a payout.`,
 			)
 		}
 
@@ -427,7 +428,8 @@ export async function requestPayout(
 			throw new Error('You already have a pending or processing payout request.')
 		}
 
-		const payoutAmountCredits = earnings
+		// The payout amount is the user's entire credit balance
+		const payoutAmountCredits = totalCredits
 		const payoutAmountEuros = payoutAmountCredits / 100 // 100 credits = 1 EUR
 
 		// 1. Create the PayoutRequest document
@@ -442,10 +444,10 @@ export async function requestPayout(
 		}
 		transaction.set(payoutRequestRef, newPayout)
 
-		// 2. Update the user's profile: subtract from both balances and set status
+		// 2. Update the user's profile: set balances to 0 and update status
 		transaction.update(userRef, {
-			credits: increment(-payoutAmountCredits), // Deduct from total balance
-			earnings: 0, // Reset earnings
+			credits: 0,
+			earnings: 0, 
 			payoutStatus: 'pending',
 		})
 	})
