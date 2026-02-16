@@ -7,9 +7,6 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@/components/ui/card'
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase'
-import { SaleRecord, UserProfile } from '@/lib/types'
-import { collection, query } from 'firebase/firestore'
 import {
 	CircleDollarSign,
 	CreditCard,
@@ -17,6 +14,7 @@ import {
 	Package,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { SalesTable, type EnrichedSaleRecord } from './sales-table'
 
 // Reusable StatCard component
 function StatCard({
@@ -60,19 +58,19 @@ function StatCard({
 	)
 }
 
+type Stats = {
+	totalRevenue: number
+	platformEarnings: number
+	totalSalesCount: number
+	promptSalesCount: number
+}
+
 // Main Page Component
 export default function AdminSalesPage() {
-	const firestore = useFirestore()
-	const [sales, setSales] = useState<SaleRecord[]>([])
+	const [sales, setSales] = useState<EnrichedSaleRecord[]>([])
+	const [stats, setStats] = useState<Stats | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
-
-	// Fetch all users to map IDs to names
-	const usersQuery = useMemoFirebase(
-		() => (firestore ? query(collection(firestore, 'users')) : null),
-		[firestore],
-	)
-	const { isLoading: usersLoading } = useCollection<UserProfile>(usersQuery)
 
 	useEffect(() => {
 		setLoading(true)
@@ -85,8 +83,9 @@ export default function AdminSalesPage() {
 				return res.json()
 			})
 			.then(data => {
+				setStats(data.stats)
 				// The API returns dates as ISO strings, so we need to convert them back to Date objects
-				const salesWithDates = data.map((sale: any) => ({
+				const salesWithDates = data.sales.map((sale: any) => ({
 					...sale,
 					createdAt: new Date(sale.createdAt),
 				}))
@@ -101,67 +100,35 @@ export default function AdminSalesPage() {
 			})
 	}, [])
 
-	const {
-		totalRevenue,
-		platformEarnings,
-		totalSalesCount,
-		promptSalesCount,
-	} = useMemo(() => {
-		let totalRevenue = 0
-		let platformEarnings = 0
-
-		sales.forEach(sale => {
-			if (sale.currency === 'eur') {
-				totalRevenue += sale.revenueDetails.gross / 100 // Convert cents to EUR
-				platformEarnings += sale.revenueDetails.platformFee / 100
-			}
-		})
-
-		return {
-			totalRevenue,
-			platformEarnings,
-			totalSalesCount: sales.length,
-			promptSalesCount: sales.filter(
-				s => s.type === 'prompt' || s.type === 'cart',
-			).length,
-		}
-	}, [sales])
-
-	const isLoading = loading || usersLoading
-
-	if (error) {
-		return <p className='text-destructive'>Error: {error}</p>
-	}
-
 	return (
 		<div className='space-y-6'>
 			<h1 className='text-lg font-semibold md:text-2xl'>Sales Dashboard</h1>
 			<div className='grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4'>
 				<StatCard
 					title='Total Revenue'
-					value={totalRevenue}
+					value={stats?.totalRevenue ?? 0}
 					icon={CircleDollarSign}
-					isLoading={isLoading}
+					isLoading={loading}
 					format='currency'
 				/>
 				<StatCard
 					title='Platform Earnings'
-					value={platformEarnings}
+					value={stats?.platformEarnings ?? 0}
 					icon={CreditCard}
-					isLoading={isLoading}
+					isLoading={loading}
 					format='currency'
 				/>
 				<StatCard
 					title='Total Sales'
-					value={totalSalesCount}
+					value={stats?.totalSalesCount ?? 0}
 					icon={Package}
-					isLoading={isLoading}
+					isLoading={loading}
 				/>
 				<StatCard
 					title='Prompts Sold'
-					value={promptSalesCount}
+					value={stats?.promptSalesCount ?? 0}
 					icon={Package}
-					isLoading={isLoading}
+					isLoading={loading}
 				/>
 			</div>
 
@@ -173,14 +140,14 @@ export default function AdminSalesPage() {
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
-					{isLoading ? (
+					{loading ? (
 						<div className='flex justify-center py-8'>
 							<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
 						</div>
+					) : error ? (
+						<p className='text-destructive'>Error: {error}</p>
 					) : (
-						<p className='text-muted-foreground'>
-							Sales table coming soon...
-						</p>
+						<SalesTable sales={sales} />
 					)}
 				</CardContent>
 			</Card>

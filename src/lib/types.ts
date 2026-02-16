@@ -171,6 +171,11 @@ export type SaleRecord = {
 	}
 	currency: string
 	paymentMethod: 'stripe' | 'credits'
+	// Optional enriched data from server
+	buyerDisplayName?: string
+	buyerPhotoURL?: string
+	sellerDisplayName?: string
+	sellerPhotoURL?: string
 }
 
 export type PayoutRequest = {
