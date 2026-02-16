@@ -61,6 +61,9 @@ import {
 	Star,
 	Trash2,
 	Coins,
+	Download,
+	Expand,
+	Share2,
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -83,6 +86,11 @@ import { Separator } from '@/components/ui/separator'
 import { useTags } from '@/hooks/use-tags'
 import { useModels } from '@/hooks/use-models'
 import { PlaceHolderImages } from '@/lib/placeholder-images'
+import {
+	Dialog,
+	DialogContent,
+	DialogTrigger,
+} from '@/components/ui/dialog'
 
 const PromptDetailSkeleton = () => (
 	<div className='grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12'>
@@ -407,6 +415,11 @@ export default function PromptDetailPage() {
 		}
 	}
 
+	const handleShare = () => {
+		navigator.clipboard.writeText(window.location.href)
+		toast({ title: 'Link copied to clipboard!' })
+	}
+
 	const { getNames } = useCategories()
 	const { getNames: getTagNames } = useTags()
 	const { getNames: getModelNames } = useModels()
@@ -568,7 +581,7 @@ export default function PromptDetailPage() {
 		return (
 			<div className='grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12'>
 				<div className='space-y-4'>
-					<div className='w-full overflow-hidden rounded-lg border bg-muted'>
+					<div className='group relative w-full overflow-hidden rounded-lg border bg-muted'>
 						{promptImage && (
 							<Image
 								src={promptImage}
@@ -579,6 +592,55 @@ export default function PromptDetailPage() {
 								className='w-full h-auto object-contain'
 								priority
 							/>
+						)}
+						{promptImage && (
+							<div className='absolute right-4 top-4 z-10 flex flex-col items-center gap-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100'>
+								<a
+									href={promptImage}
+									download={`promptly_${prompt.id}.png`}
+									target='_blank'
+									rel='noopener noreferrer'
+								>
+									<Button
+										variant='secondary'
+										size='icon'
+										className='h-10 w-10 rounded-full bg-black/50 text-white backdrop-blur-sm hover:bg-black/70'
+									>
+										<Download className='h-5 w-5' />
+										<span className='sr-only'>Download image</span>
+									</Button>
+								</a>
+								<Dialog>
+									<DialogTrigger asChild>
+										<Button
+											variant='secondary'
+											size='icon'
+											className='h-10 w-10 rounded-full bg-black/50 text-white backdrop-blur-sm hover:bg-black/70'
+										>
+											<Expand className='h-5 w-5' />
+											<span className='sr-only'>View fullscreen</span>
+										</Button>
+									</DialogTrigger>
+									<DialogContent className='max-w-5xl p-2'>
+										<Image
+											src={promptImage}
+											alt={prompt.title}
+											width={1920}
+											height={1080}
+											className='h-auto w-full rounded-md object-contain'
+										/>
+									</DialogContent>
+								</Dialog>
+								<Button
+									variant='secondary'
+									size='icon'
+									onClick={handleShare}
+									className='h-10 w-10 rounded-full bg-black/50 text-white backdrop-blur-sm hover:bg-black/70'
+								>
+									<Share2 className='h-5 w-5' />
+									<span className='sr-only'>Share prompt</span>
+								</Button>
+							</div>
 						)}
 					</div>
 				</div>
