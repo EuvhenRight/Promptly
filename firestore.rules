@@ -39,9 +39,7 @@ service cloud.firestore {
     match /users/{userId}/notifications/{notificationId} {
       allow read: if isOwner(userId);
       // Server-side actions (like sale notifications) bypass this rule via Admin SDK.
-      // This prevents users from creating notifications for other users from the client.
-      allow create: if false;
-      allow update, delete: if false; 
+      allow write: if false;
     }
 
     // ----------------------------------------------------------------------
@@ -78,16 +76,9 @@ service cloud.firestore {
 
     match /public-profiles/{userId} {
       allow read: if true;
-      allow create: if request.auth.uid == userId && request.resource.data.uid == userId;
-      allow update: if 
-        isAdmin() ||
-        // Owner can update their profile, but not the counters/plan
-        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['views', 'followers', 'following', 'planId'])) ||
-        // Anyone can increment views
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views']) && request.resource.data.views == resource.data.views + 1) ||
-        // Any signed-in user can change a followers/following count by +/- 1
-        (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers']) && (request.resource.data.followers == resource.data.followers + 1 || request.resource.data.followers == resource.data.followers - 1)) ||
-        (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['following']) && (request.resource.data.following == resource.data.following + 1 || request.resource.data.following == resource.data.following - 1));
+      // Temporarily disable write rules to isolate the read issue.
+      // This will break following/unfollowing functionality.
+      allow write: if false;
     }
 
     match /users/{userId}/carts/{cartId} {
