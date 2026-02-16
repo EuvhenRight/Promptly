@@ -1,9 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
-import { scrapePromptHero } from './actions'
-import type { ScrapeResult } from '@/lib/types'
+import { scrapeAndAutoCreate } from './actions'
 import { useToast } from '@/hooks/use-toast'
 import {
 	Card,
@@ -14,34 +12,22 @@ import {
 } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { Loader2, AlertTriangle, Edit } from 'lucide-react'
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@/components/ui/table'
-import Image from 'next/image'
+import { Loader2, AlertTriangle, CheckCircle } from 'lucide-react'
+import { useUser } from '@/firebase'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
-type ScrapedPrompt = ScrapeResult & {
-	status: 'success'
+type ScrapeResults = {
+	successCount: number
+	errorCount: number
+	errors: { url: string; reason: string }[]
 }
-
-type ScrapeError = {
-	url: string
-	error: string
-	status: 'error'
-}
-
-type ScrapeItem = ScrapedPrompt | ScrapeError
 
 export function Scraper() {
 	const { toast } = useToast()
+	const { user } = useUser()
 	const [urls, setUrls] = useState('')
 	const [isScraping, setIsScraping] = useState(false)
-	const [results, setResults] = useState<ScrapeItem[]>([])
+	const [results, setResults] = useState<ScrapeResults | null>(null)
 
 	const handleScrape = async () => {
 		const urlList = urls
@@ -56,56 +42,45 @@ export function Scraper() {
 			})
 			return
 		}
+		if (!user) {
+			toast({
+				variant: 'destructive',
+				title: 'Not signed in',
+				description: 'You must be signed in to perform this action.',
+			})
+			return
+		}
 
 		setIsScraping(true)
-		setResults([])
-		const scrapePromises = urlList.map(
-			async (url): Promise<ScrapeItem> => {
-				try {
-					const result = await scrapePromptHero(url)
-					if ('error' in result) {
-						if (result.duplicate) {
-							return {
-								url,
-								error: 'Duplicate: This prompt has already been imported.',
-								status: 'error',
-							}
-						}
-						throw new Error(result.error)
-					}
-					return { ...result, status: 'success' }
-				} catch (error: any) {
-					return { url, error: error.message, status: 'error' }
-				}
-			},
-		)
+		setResults(null)
 
-		const settledResults = await Promise.all(scrapePromises)
-		setResults(settledResults)
+		const scrapeResults = await scrapeAndAutoCreate(urlList, user.uid)
 
-		const successCount = settledResults.filter(
-			r => r.status === 'success',
-		).length
-		const errorCount = settledResults.length - successCount
-
+		setResults(scrapeResults)
 		toast({
-			title: 'Scraping Complete',
-			description: `${successCount} prompts scraped successfully. ${
-				errorCount > 0 ? `${errorCount} failed.` : ''
+			title: 'Auto-Creation Complete',
+			description: `${scrapeResults.successCount} prompts created. ${
+				scrapeResults.errorCount > 0 ? `${scrapeResults.errorCount} failed.` : ''
 			}`,
 		})
 
 		setIsScraping(false)
 	}
 
+	const urlCount = urls
+		.split('\n')
+		.map(u => u.trim())
+		.filter(Boolean).length
+
 	return (
 		<>
 			<Card>
 				<CardHeader>
-					<CardTitle>Bulk Scrape from URL</CardTitle>
+					<CardTitle>Bulk Scrape & Auto-Create</CardTitle>
 					<CardDescription>
-						Paste multiple PromptHero URLs (one per line) to scrape them in
-						bulk.
+						Paste multiple PromptHero URLs (one per line). The system will scrape
+						them, randomly fill in the remaining data, and create the prompts
+						automatically.
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -117,107 +92,60 @@ export function Scraper() {
 							disabled={isScraping}
 							rows={5}
 						/>
-						<Button onClick={handleScrape} disabled={isScraping}>
+						<Button
+							onClick={handleScrape}
+							disabled={isScraping || urlCount === 0}
+						>
 							{isScraping ? (
 								<Loader2 className='mr-2 h-4 w-4 animate-spin' />
 							) : null}
-							{`Scrape ${
-								urls
-									.split('\n')
-									.map(u => u.trim())
-									.filter(Boolean).length || ''
-							} URL(s)`}
+							{isScraping
+								? `Processing ${urlCount} URL(s)...`
+								: `Scrape & Create ${urlCount > 0 ? urlCount : ''} Prompt(s)`}
 						</Button>
 					</div>
 				</CardContent>
 			</Card>
 
-			{results.length > 0 && (
+			{results && (
 				<Card className='mt-6'>
 					<CardHeader>
-						<CardTitle>Scraped Results</CardTitle>
-						<CardDescription>
-							Review the scraped prompts below and click "Edit & Create" to
-							finalize them.
-						</CardDescription>
+						<CardTitle>Scraping Results</CardTitle>
 					</CardHeader>
-					<CardContent>
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead className='w-[100px]'>Image</TableHead>
-									<TableHead>Details</TableHead>
-									<TableHead className='text-right w-[150px]'>
-										Actions
-									</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{results.map((item, index) => {
-									if (item.status === 'error') {
-										return (
-											<TableRow
-												key={`error-${index}`}
-												className='bg-destructive/10'
-											>
-												<TableCell>
-													<div className='w-16 h-16 bg-muted rounded-md flex items-center justify-center'>
-														<AlertTriangle className='h-6 w-6 text-destructive' />
-													</div>
-												</TableCell>
-												<TableCell>
-													<p className='font-semibold text-destructive'>
-														Scrape Failed
-													</p>
-													<p
-														className='text-xs text-destructive/80 truncate'
-														title={item.url}
-													>
-														{item.url}
-													</p>
-													<p className='text-sm mt-1'>{item.error}</p>
-												</TableCell>
-												<TableCell className='text-right'>-</TableCell>
-											</TableRow>
-										)
-									}
-									const queryParams = new URLSearchParams(
-										item as ScrapeResult,
-									).toString()
-									return (
-										<TableRow key={item.sourceId}>
-											<TableCell>
-												<Image
-													src={item.imageUrl}
-													alt={item.title}
-													width={80}
-													height={80}
-													className='rounded-md object-cover w-16 h-16'
-												/>
-											</TableCell>
-											<TableCell>
-												<p className='font-semibold truncate' title={item.title}>
-													{item.title}
-												</p>
-												<p
-													className='text-xs text-muted-foreground line-clamp-2'
-													title={item.privateContent}
+					<CardContent className='space-y-4'>
+						<Alert
+							variant='default'
+							className='bg-green-100/80 dark:bg-green-900/30 border-green-200 dark:border-green-800'
+						>
+							<CheckCircle className='h-4 w-4 text-green-600 dark:text-green-400' />
+							<AlertDescription className='text-green-800 dark:text-green-300'>
+								Successfully created {results.successCount} prompts.
+							</AlertDescription>
+						</Alert>
+
+						{results.errorCount > 0 && (
+							<Alert variant='destructive'>
+								<AlertTriangle className='h-4 w-4' />
+								<AlertDescription>
+									<p className='font-bold mb-2'>
+										{results.errorCount} prompts failed:
+									</p>
+									<ul className='list-disc pl-5 space-y-1 text-xs'>
+										{results.errors.map((item, index) => (
+											<li key={index}>
+												<strong
+													className='block truncate max-w-sm'
+													title={item.url}
 												>
-													{item.privateContent}
-												</p>
-											</TableCell>
-											<TableCell className='text-right'>
-												<Button asChild variant='outline'>
-													<Link href={`/admin/prompts/new?${queryParams}`}>
-														<Edit className='mr-2 h-4 w-4' /> Edit & Create
-													</Link>
-												</Button>
-											</TableCell>
-										</TableRow>
-									)
-								})}
-							</TableBody>
-						</Table>
+													{item.url}
+												</strong>
+												<span>Reason: {item.reason}</span>
+											</li>
+										))}
+									</ul>
+								</AlertDescription>
+							</Alert>
+						)}
 					</CardContent>
 				</Card>
 			)}

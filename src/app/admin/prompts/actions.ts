@@ -3,7 +3,8 @@
 
 import * as cheerio from 'cheerio';
 import { adminStorage, adminDb } from '@/firebase/admin';
-import type { ScrapeResult } from '@/lib/types';
+import type { ScrapeResult, UserProfile } from '@/lib/types';
+import { FieldValue } from 'firebase-admin/firestore';
 
 async function uploadImageToAdminStorage(buffer: Buffer, fileName: string): Promise<string> {
   if (!adminStorage) {
@@ -189,4 +190,185 @@ export async function scrapePromptHero(
       error: error.message || 'An unexpected error occurred during scraping.',
     };
   }
+}
+
+// --- NEW CODE STARTS HERE ---
+
+// Copied from src/firebase/prompts.ts
+function getSearchTerms(title: string): string[] {
+    const titleLower = title.toLowerCase();
+    const terms = new Set(titleLower.split(/\s+/).filter(Boolean));
+    return Array.from(terms);
+}
+
+type CreatePromptData = {
+    title: string;
+    description: string;
+    price: number;
+    isPrivate: boolean;
+    imageUrl?: string;
+    privateContent: string;
+    categoryId: string;
+    typeId: string;
+    modelId: string;
+    tags: string; // This is a comma-separated string of IDs
+    sourceId?: string | null;
+};
+
+async function adminCreatePrompt(
+    adminId: string,
+    data: CreatePromptData,
+): Promise<{ success: boolean; error?: string; promptId?: string }> {
+    if (!adminDb) {
+        return { success: false, error: 'Admin DB not initialized' };
+    }
+    const newPromptRef = adminDb.collection('prompts').doc();
+    const privateContentRef = newPromptRef.collection('private').doc('content');
+
+    const batch = adminDb.batch();
+
+    try {
+        const authorRef = adminDb.collection('users').doc(adminId);
+        const authorSnap = await authorRef.get();
+        if (!authorSnap.exists) {
+            throw new Error('Could not create prompt: author profile not found.');
+        }
+        const authorData = authorSnap.data() as UserProfile;
+
+        const publicData = {
+            authorId: adminId,
+            authorDisplayName: authorData.displayName,
+            authorPhotoURL: authorData.photoURL,
+            authorUsername: authorData.username,
+            authorPlanId: authorData.planId ?? 'free',
+            title: data.title,
+            titleLowercase: data.title.toLowerCase(),
+            searchTerms: getSearchTerms(data.title),
+            description: data.description || '',
+            price: data.price,
+            isPrivate: data.isPrivate ?? false,
+            images: data.imageUrl ? [data.imageUrl] : [],
+            rating: { average: 0, count: 0 },
+            tags: data.tags ? data.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [],
+            categoryId: data.categoryId || '',
+            categories: data.categoryId ? [data.categoryId] : [],
+            typeId: data.typeId || '',
+            modelId: data.modelId || '',
+            createdAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
+            stats: { views: 0, sales: 0, likes: 0 },
+        };
+
+        const privateData = {
+            text: data.privateContent,
+        };
+
+        batch.set(newPromptRef, publicData);
+        batch.set(privateContentRef, privateData);
+
+        if (data.sourceId) {
+            const scrapedPromptRef = adminDb.collection('scraped_prompts').doc(data.sourceId);
+            batch.set(scrapedPromptRef, {
+                promptId: newPromptRef.id,
+                createdAt: FieldValue.serverTimestamp(),
+            });
+        }
+
+        await batch.commit();
+
+        return { success: true, promptId: newPromptRef.id };
+    } catch (error: any) {
+        console.error('Error creating prompt:', error);
+        return {
+            success: false,
+            error: error.message || 'Failed to create prompt.',
+        };
+    }
+}
+
+
+async function getCollectionItems(collectionName: string): Promise<{ id: string; name: string }[]> {
+    if (!adminDb) return [];
+    const snap = await adminDb.collection(collectionName).get();
+    if (snap.empty) return [];
+    return snap.docs.map(doc => ({ id: doc.id, name: doc.data().name as string }));
+}
+
+export async function scrapeAndAutoCreate(urls: string[], adminId: string): Promise<{ successCount: number; errorCount: number; errors: { url: string; reason: string }[] }> {
+    if (!adminDb) {
+        throw new Error('Firebase Admin not initialized.');
+    }
+
+    const [categories, tags, models, types] = await Promise.all([
+        getCollectionItems('categories'),
+        getCollectionItems('tags'),
+        getCollectionItems('models'),
+        getCollectionItems('types'),
+    ]);
+
+    const imagesTypeId = types.find(t => t.name === 'Images')?.id;
+
+    let successCount = 0;
+    let errorCount = 0;
+    const errors: { url: string; reason: string }[] = [];
+
+    for (const url of urls) {
+        try {
+            const scrapeResult = await scrapePromptHero(url);
+
+            if ('error' in scrapeResult) {
+                if (scrapeResult.duplicate) {
+                     // Skip duplicates silently for a better UX
+                    continue;
+                }
+                throw new Error(scrapeResult.error);
+            }
+
+            const imageUrl = await rehostImage(scrapeResult.imageUrl, scrapeResult.sourceId);
+
+            const title = scrapeResult.title.split(' ').slice(0, 6).join(' ');
+            
+            const priceCredits = (() => {
+                const rand = Math.random();
+                if (rand < 0.1) return 0; // 10% chance of being free
+                return (Math.floor(Math.random() * 10) + 1) * 100; // 100 to 1000 credits, multiple of 100
+            })();
+            const priceDollars = priceCredits / 100;
+
+            const isPrivate = Math.random() < 0.1;
+            const categoryId = categories.length > 0 ? categories[Math.floor(Math.random() * categories.length)].id : '';
+            const modelId = models.length > 0 ? models[Math.floor(Math.random() * models.length)].id : '';
+            
+            const numTags = tags.length > 1 ? Math.floor(Math.random() * 3) + 1 : tags.length;
+            const randomTags = [...tags].sort(() => 0.5 - Math.random()).slice(0, numTags).map(t => t.id).join(', ');
+
+
+            const promptData: CreatePromptData = {
+                title,
+                description: '',
+                price: priceDollars,
+                isPrivate,
+                categoryId,
+                typeId: imagesTypeId || '',
+                modelId,
+                tags: randomTags,
+                privateContent: scrapeResult.privateContent,
+                imageUrl,
+                sourceId: scrapeResult.sourceId,
+            };
+
+            const createResult = await adminCreatePrompt(adminId, promptData);
+
+            if (createResult.success) {
+                successCount++;
+            } else {
+                throw new Error(createResult.error || 'Failed to save prompt.');
+            }
+        } catch (e: any) {
+            errorCount++;
+            errors.push({ url, reason: e.message });
+        }
+    }
+
+    return { successCount, errorCount, errors };
 }
