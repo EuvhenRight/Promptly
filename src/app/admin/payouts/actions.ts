@@ -32,7 +32,7 @@ export async function updatePayoutStatus(
 			}
 
 			const payoutData = payoutDoc.data() as PayoutRequest
-			const userRef = adminDb.collection('users').doc(payoutData.userId)
+			const userRef = adminDb!.collection('users').doc(payoutData.userId)
 			const userDoc = await transaction.get(userRef)
 			if (!userDoc.exists) {
 				throw new Error(
