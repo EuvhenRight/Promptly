@@ -27,8 +27,8 @@ async function handleSinglePromptPurchase(
 			transaction.get(promptRef),
 		]);
 
-		if (!userDoc.exists) throw new Error('User not found.');
-		if (!promptDoc.exists) throw new Error('Prompt not found.');
+		if (!userDoc.exists()) throw new Error('User not found.');
+		if (!promptDoc.exists()) throw new Error('Prompt not found.');
 
 		const userData = userDoc.data() as UserProfile;
 		promptData = promptDoc.data() as Prompt;
@@ -54,10 +54,9 @@ async function handleSinglePromptPurchase(
 		if (authorId && authorId !== userId) {
 			const earningsAmount = Math.floor(creditPrice * (1 - PLATFORM_COMMISSION_RATE));
 			const authorRef = adminDb.doc(`users/${authorId}`);
-			// Increment both total credits and the earnings sub-balance for the author
+			// Increment only the total credits balance for the author
 			transaction.update(authorRef, {
 				credits: admin.firestore.FieldValue.increment(earningsAmount),
-				earnings: admin.firestore.FieldValue.increment(earningsAmount),
 			});
 			const notificationRef = adminDb.collection('users').doc(authorId).collection('notifications').doc();
 			transaction.set(notificationRef, {
@@ -67,6 +66,7 @@ async function handleSinglePromptPurchase(
 				link: `/prompt/${promptId}`,
 				isRead: false,
 				createdAt: admin.firestore.FieldValue.serverTimestamp(),
+				userId: authorId,
 			});
 		}
 
@@ -158,7 +158,6 @@ async function handleCartPurchase(
             const authorRef = adminDb.doc(`users/${authorId}`);
             transaction.update(authorRef, {
                 credits: admin.firestore.FieldValue.increment(authorData.earnings),
-                earnings: admin.firestore.FieldValue.increment(authorData.earnings),
             });
 
             const notificationRef = adminDb.collection('users').doc(authorId).collection('notifications').doc();
@@ -170,6 +169,7 @@ async function handleCartPurchase(
                 link: authorData.prompts.length === 1 ? `/prompt/${authorData.prompts[0]!.id}` : `/account/wallet`,
                 isRead: false,
                 createdAt: admin.firestore.FieldValue.serverTimestamp(),
+								userId: authorId,
             });
         }
         

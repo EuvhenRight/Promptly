@@ -216,6 +216,7 @@ export async function toggleFavoritePrompt(
 	isFavorite: boolean,
 ): Promise<void> {
 	if (!userId) throw new Error('User ID is required.')
+	console.log("uid from toggleFavoritePrompt", userId)
 
 	const userRef = doc(firestore, 'users', userId)
 	const promptRef = doc(firestore, 'prompts', promptId)
@@ -245,7 +246,6 @@ export async function toggleFavoritePrompt(
 					const notificationRef = doc(
 						collection(firestore, 'users', authorId, 'notifications'),
 					)
-					// Use setDoc instead of batch.set for standalone operation
 					await setDoc(notificationRef, {
 						userId: authorId,
 						type: 'like',
@@ -292,6 +292,7 @@ export async function followUser(
 	if (!currentUserId || !targetUserId || currentUserId === targetUserId) {
 		throw new Error('Invalid user IDs provided.')
 	}
+	console.log("uid from followUser", currentUserId)
 
 	await runTransaction(firestore, async transaction => {
 		const currentUserPublicRef = doc(firestore, 'public-profiles', currentUserId)
@@ -410,7 +411,7 @@ export async function requestPayout(
 	}
 
 	const userRef = doc(firestore, 'users', userId)
-	const payoutRequestRef = doc(collection(firestore, 'payouts')) // New request with a new ID
+	const payoutRequestRef = doc(collection(firestore, 'payouts'))
 
 	await runTransaction(firestore, async transaction => {
 		const userDoc = await transaction.get(userRef)
@@ -420,13 +421,12 @@ export async function requestPayout(
 
 		const userData = userDoc.data() as UserProfile
 		const userCredits = userData.credits ?? 0
-		const userEarnings = userData.earnings ?? 0
 		const payoutStatus = userData.payoutStatus ?? 'none'
-		const MIN_PAYOUT_CREDITS = 5000 // 50 EUR in credits
+		const MIN_PAYOUT_CREDITS = 5000
 
-		if (payoutAmount > userEarnings) {
+		if (payoutAmount > userCredits) {
 			throw new Error(
-				`Requested amount (${payoutAmount.toLocaleString()}) exceeds your available earnings for payout (${userEarnings.toLocaleString()}).`,
+				`Requested amount (${payoutAmount.toLocaleString()}) exceeds your available balance (${userCredits.toLocaleString()}).`,
 			)
 		}
 
@@ -446,7 +446,6 @@ export async function requestPayout(
 
 		const payoutAmountEuros = payoutAmount / 100 // 100 credits = 1 EUR
 
-		// 1. Create the PayoutRequest document
 		const newPayout: PayoutRequest = {
 			id: payoutRequestRef.id,
 			userId,
@@ -458,11 +457,10 @@ export async function requestPayout(
 		}
 		transaction.set(payoutRequestRef, newPayout)
 
-		// 2. Update the user's profile: deduct from BOTH balances and update status
-		transaction.update(userRef, {
+		const updateData = {
 			credits: increment(-payoutAmount),
-			earnings: increment(-payoutAmount),
-			payoutStatus: 'pending',
-		})
+			payoutStatus: 'pending' as const,
+		}
+		transaction.update(userRef, updateData)
 	})
 }

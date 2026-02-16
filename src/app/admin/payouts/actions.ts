@@ -50,7 +50,7 @@ export async function updatePayoutStatus(
 			transaction.update(payoutRef, payoutUpdate)
 
 			// Define updates for the user document
-			let userUpdate: { payoutStatus: string; credits?: FieldValue; earnings?: FieldValue } = {
+			let userUpdate: { payoutStatus: string; credits?: FieldValue } = {
 				payoutStatus: newStatus,
 			}
 
@@ -59,7 +59,6 @@ export async function updatePayoutStatus(
 				userUpdate = {
 					payoutStatus: 'none',
 					credits: FieldValue.increment(payoutData.amountCredits),
-					earnings: FieldValue.increment(payoutData.amountCredits),
 				}
 			} else if (newStatus === 'paid') {
 				// The payout is successful. The balances were already deducted. Just reset the status.

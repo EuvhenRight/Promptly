@@ -21,7 +21,6 @@ service cloud.firestore {
     }
     
     function hasPurchased(promptId) {
-      // Safely check if the purchasedPrompts field exists before accessing it.
       return isSignedIn() &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         'purchasedPrompts' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data &&
@@ -58,10 +57,9 @@ service cloud.firestore {
         // Payout request transaction
         (
           isOwner(userId) &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['credits', 'earnings', 'payoutStatus']) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['credits', 'payoutStatus']) &&
           request.resource.data.payoutStatus == 'pending' &&
-          request.resource.data.credits < resource.data.credits &&
-          request.resource.data.earnings < resource.data.earnings
+          request.resource.data.credits < resource.data.credits
         );
       allow delete: if isAdmin();
 
