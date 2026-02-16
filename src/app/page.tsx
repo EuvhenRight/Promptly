@@ -111,8 +111,16 @@ export default function Home() {
 	const { types, isLoading: typesLoading } = useTypes()
 	const { user } = useUser()
 	const firestore = useFirestore()
+	const [hideMyPrompts, setHideMyPrompts] = useState(false)
 
 	const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+
+	useEffect(() => {
+		const stored = localStorage.getItem('hideMyPrompts')
+		if (stored) {
+			setHideMyPrompts(JSON.parse(stored))
+		}
+	}, [])
 
 	const userProfileRef = useMemoFirebase(
 		() => (user ? doc(firestore, 'users', user.uid) : null),
@@ -249,6 +257,7 @@ export default function Home() {
 			sortBy,
 			searchTerm: debouncedSearchTerm,
 			privateOnly: showPrivateOnly,
+			excludeAuthorId: hideMyPrompts ? user?.uid : null,
 		})
 
 	const observer = useRef<IntersectionObserver | null>(null)
