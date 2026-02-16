@@ -15,6 +15,14 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { SalesTable, type EnrichedSaleRecord } from './sales-table'
+import {
+	ChartConfig,
+	ChartContainer,
+	ChartTooltip,
+	ChartTooltipContent,
+} from '@/components/ui/chart'
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
+import { format } from 'date-fns'
 
 // Reusable StatCard component
 function StatCard({
@@ -65,10 +73,23 @@ type Stats = {
 	promptSalesCount: number
 }
 
+type DailyRevenue = {
+	date: string
+	Revenue: number
+}
+
+const chartConfig = {
+	Revenue: {
+		label: 'Revenue',
+		color: 'hsl(var(--primary))',
+	},
+} satisfies ChartConfig
+
 // Main Page Component
 export default function AdminSalesPage() {
 	const [sales, setSales] = useState<EnrichedSaleRecord[]>([])
 	const [stats, setStats] = useState<Stats | null>(null)
+	const [dailyRevenue, setDailyRevenue] = useState<DailyRevenue[]>([])
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
@@ -84,12 +105,12 @@ export default function AdminSalesPage() {
 			})
 			.then(data => {
 				setStats(data.stats)
-				// The API returns dates as ISO strings, so we need to convert them back to Date objects
 				const salesWithDates = data.sales.map((sale: any) => ({
 					...sale,
 					createdAt: new Date(sale.createdAt),
 				}))
 				setSales(salesWithDates)
+				setDailyRevenue(data.dailyRevenue || [])
 			})
 			.catch(err => {
 				setError(err.message)
@@ -131,6 +152,52 @@ export default function AdminSalesPage() {
 					isLoading={loading}
 				/>
 			</div>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>Revenue Last 30 Days</CardTitle>
+				</CardHeader>
+				<CardContent>
+					{loading ? (
+						<div className='flex justify-center items-center h-72'>
+							<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
+						</div>
+					) : dailyRevenue.length === 0 ? (
+						<p className='text-muted-foreground text-center py-8'>
+							No revenue data for the last 30 days.
+						</p>
+					) : (
+						<ChartContainer config={chartConfig} className='min-h-[280px] w-full'>
+							<BarChart accessibilityLayer data={dailyRevenue} margin={{ top: 20 }}>
+								<CartesianGrid vertical={false} />
+								<XAxis
+									dataKey='date'
+									tickLine={false}
+									tickMargin={10}
+									axisLine={false}
+									tickFormatter={value => format(new Date(value), 'MMM d')}
+								/>
+								<YAxis
+									tickFormatter={value => `€${value}`}
+									tickLine={false}
+									axisLine={false}
+									width={40}
+								/>
+								<ChartTooltip
+									cursor={false}
+									content={
+										<ChartTooltipContent
+											formatter={value => `€${(value as number).toFixed(2)}`}
+											indicator='dot'
+										/>
+									}
+								/>
+								<Bar dataKey='Revenue' fill='var(--color-Revenue)' radius={4} />
+							</BarChart>
+						</ChartContainer>
+					)}
+				</CardContent>
+			</Card>
 
 			<Card>
 				<CardHeader>
