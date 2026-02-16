@@ -20,6 +20,7 @@ service cloud.firestore {
 
     function hasPurchased(promptId) {
       let userDocData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      // Use .get() for safer access to potentially missing fields
       let purchased = userDocData.get('purchasedPrompts', []);
       return isSignedIn() && purchased.hasAny([promptId]);
     }
@@ -47,9 +48,7 @@ service cloud.firestore {
       allow create: if isOwner(userId);
       allow update: if
         isAdmin() ||
-        (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['favoritePrompts'])) ||
-        (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['planWillCancelAtPeriodEnd'])) ||
-        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'credits', 'earnings', 'payoutStatus', 'purchasedPrompts', 'followers', 'following', 'views', 'planId']));
+        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'credits', 'earnings', 'payoutStatus', 'purchasedPrompts', 'followers', 'following', 'views', 'planId', 'planPurchasedAt', 'planBillingPeriod', 'planWillCancelAtPeriodEnd']));
       allow delete: if isAdmin();
 
       match /followers/{followerId} {
@@ -67,10 +66,13 @@ service cloud.firestore {
       allow create: if isOwner(userId);
       allow update: if 
         isAdmin() ||
-        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['views', 'followers', 'following'])) ||
+        // Owner can update their profile, but not the counters/plan
+        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['views', 'followers', 'following', 'planId'])) ||
+        // Anyone can increment views
         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views']) && request.resource.data.views == resource.data.views + 1) ||
+        // Any signed-in user can change a followers/following count by +/- 1
         (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers']) && (request.resource.data.followers == resource.data.followers + 1 || request.resource.data.followers == resource.data.followers - 1)) ||
-        (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['following']) && (request.resource.data.following == resource.data.following + 1 || request.resource.data.following == resource.data.following - 1));
+        (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['following']) && (request.resource.data.following == resource.data.following + 1 || request.resource.data.following == resource.data.following - 1));
     }
 
     match /users/{userId}/carts/{cartId} {
@@ -114,17 +116,17 @@ service cloud.firestore {
 
     match /prompts/{promptId} {
       allow list: if true;
-      allow get: if resource.data.isPrivate != true || (isSignedIn() && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.planId == 'pro' || isAdmin()));
+      allow get: if resource.data.isPrivate != true || (isSignedIn() && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('planId', 'free') == 'pro' || isAdmin()));
       allow create, delete: if isAdmin();
       allow update: if
-        isAdmin() ||
+        isAdmin() || // Admins can do any update
         ( // Rule for views: anyone can increment by 1
-          request.resource.data.stats.diff(resource.data.stats).affectedKeys().hasOnly(['views']) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats.views']) &&
           request.resource.data.stats.views == resource.data.stats.views + 1
         ) ||
         ( // Rule for likes: signed-in users can increment/decrement by 1
           isSignedIn() &&
-          request.resource.data.stats.diff(resource.data.stats).affectedKeys().hasOnly(['likes']) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats.likes']) &&
           (request.resource.data.stats.likes == resource.data.stats.likes + 1 || request.resource.data.stats.likes == resource.data.stats.likes - 1)
         ) ||
         ( // Rule for rating: purchased users can update rating
