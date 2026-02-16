@@ -340,7 +340,7 @@ export async function addPromptCommentAndRating({
 		const [promptDoc, userDoc, commentDoc] = await Promise.all([
 			transaction.get(promptRef),
 			transaction.get(userRef),
-			transaction.get(commentRef),
+			transaction.get(commentDoc),
 		])
 
 		if (commentDoc.exists()) {
@@ -387,6 +387,7 @@ export async function addPromptCommentAndRating({
 				collection(firestore, 'users', authorId, 'notifications'),
 			)
 			transaction.set(notificationRef, {
+				userId: authorId,
 				type: 'comment',
 				title: 'New Review',
 				body: `${userData.displayName} left a ${rating}-star review on your prompt "${promptData.title}".`,

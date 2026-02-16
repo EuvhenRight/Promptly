@@ -168,6 +168,7 @@ export type PayoutRequest = {
 
 export type Notification = {
     id: string;
+    userId: string;
     type: 'sale' | 'payout' | 'follow' | 'comment' | 'like';
     title: string;
     body: string;

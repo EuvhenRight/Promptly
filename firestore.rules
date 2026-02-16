@@ -15,7 +15,6 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      // Use `exists` to prevent errors if the user document is not yet created.
       return isSignedIn() &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
@@ -23,12 +22,12 @@ service cloud.firestore {
     
     function hasPurchased(promptId) {
       // Safely check if the purchasedPrompts field exists before accessing it.
-      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      let userDocExists = exists(/databases/$(database)/documents/users/$(request.auth.uid));
       return isSignedIn() &&
-        userDoc.data.size() > 0 &&
-        'purchasedPrompts' in userDoc.data &&
-        userDoc.data.purchasedPrompts is list &&
-        userDoc.data.purchasedPrompts.hasAny([promptId]);
+        userDocExists &&
+        'purchasedPrompts' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.purchasedPrompts is list &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.purchasedPrompts.hasAny([promptId]);
     }
     
     // ----------------------------------------------------------------------
@@ -41,10 +40,7 @@ service cloud.firestore {
     
     match /users/{userId}/notifications/{notificationId} {
       allow read: if isOwner(userId);
-      // Allow signed-in users to create notifications. This is essential for
-      // transactions that include notification creation (likes, comments, follows).
-      allow create: if isSignedIn();
-      // Disallow updates or deletes from the client.
+      allow create: if isSignedIn() && request.resource.data.userId == userId;
       allow update, delete: if false; 
     }
 
@@ -128,7 +124,6 @@ service cloud.firestore {
       allow list: if true;
       // Allow read if prompt is not private OR user has a pro plan OR user is an admin
       allow get: if resource.data.isPrivate != true || (
-        isSignedIn() &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.planId == 'pro'
       ) || isAdmin();
@@ -149,7 +144,7 @@ service cloud.firestore {
           request.resource.data.stats.sales == resource.data.stats.sales
         ) ||
         ( // Rule for rating: purchased users can update rating
-          (hasPurchased(promptId) || get(/databases/$(database)/documents/prompts/$(promptId)).data.price == 0 || isAdmin()) &&
+          (hasPurchased(promptId) || resource.data.price == 0 || isAdmin()) &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating'])
         );
 
@@ -162,7 +157,7 @@ service cloud.firestore {
       match /comments/{commentId} {
         allow get, list: if true;
         // Allow creation if user has purchased, the prompt is free, or user is an admin.
-        allow create: if isSignedIn() && (hasPurchased(promptId) || get(/databases/$(database)/documents/prompts/$(promptId)).data.price == 0 || isAdmin());
+        allow create: if isSignedIn() && (hasPurchased(promptId) || resource.data.price == 0 || isAdmin());
         // Allow update/delete if user is the author of the comment or an admin.
         allow update, delete: if isOwner(resource.data.userId) || isAdmin();
       }

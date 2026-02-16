@@ -1,7 +1,7 @@
 'use server'
 
 import { adminDb } from '@/firebase/admin'
-import type { PayoutRequest, UserProfile } from '@/lib/types'
+import type { PayoutRequest } from '@/lib/types'
 import { FieldValue } from 'firebase-admin/firestore'
 
 /**
@@ -83,6 +83,7 @@ export async function updatePayoutStatus(
 						? `Your payout of €${payoutData.amountCurrency.toFixed(2)} has been sent.`
 						: 'There was an issue with your payout request. Please contact support.'
 				transaction.set(notificationRef, {
+					userId: payoutData.userId,
 					type: 'payout',
 					title,
 					body,

@@ -192,7 +192,8 @@ export async function updateUserProfile(
 			const authUpdates: { displayName?: string; photoURL?: string } = {}
 			if (data.displayName !== undefined)
 				authUpdates.displayName = data.displayName
-			if (data.photoURL !== undefined) authUpdates.photoURL = data.photoURL
+			if (data.photoURL !== undefined)
+				authUpdates.photoURL = data.photoURL
 			if (Object.keys(authUpdates).length > 0) {
 				await updateProfile(currentUser, authUpdates)
 			}
@@ -229,8 +230,6 @@ export async function toggleFavoritePrompt(
 		'stats.likes': increment(isFavorite ? -1 : 1),
 	})
 
-	await batch.commit()
-
 	// Send notification on like (not on unlike)
 	if (!isFavorite) {
 		try {
@@ -246,7 +245,9 @@ export async function toggleFavoritePrompt(
 					const notificationRef = doc(
 						collection(firestore, 'users', authorId, 'notifications'),
 					)
+					// Use setDoc instead of batch.set for standalone operation
 					await setDoc(notificationRef, {
+						userId: authorId,
 						type: 'like',
 						title: 'New Like!',
 						body: `${likingUser.displayName} liked your prompt "${promptData.title}".`,
@@ -261,6 +262,8 @@ export async function toggleFavoritePrompt(
 			// Non-critical error, don't throw to the user
 		}
 	}
+
+	await batch.commit()
 }
 
 /**
@@ -327,6 +330,7 @@ export async function followUser(
 		transaction.update(targetUserPublicRef, { followers: increment(1) })
 
 		transaction.set(notificationRef, {
+			userId: targetUserId,
 			type: 'follow',
 			title: 'New Follower',
 			body: `${currentUserPublicProfile.displayName} started following you.`,
