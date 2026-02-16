@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge'
 import { useCategories } from '@/hooks/use-categories'
 import type { Prompt, UserProfile } from '@/lib/types'
-import { Check, Coins, Crown, Eye, Heart, ShoppingCart } from 'lucide-react'
+import { Check, Coins, Crown, Eye, Heart, PlusCircle } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Skeleton } from '../ui/skeleton'
@@ -16,6 +16,7 @@ import React from 'react'
 import { PlaceHolderImages } from '@/lib/placeholder-images'
 import { addPromptToCart } from '@/firebase/cart'
 import { Button } from '../ui/button'
+import { ShoppingCart } from 'lucide-react'
 
 type PromptCardProps = {
 	prompt: Prompt
@@ -170,7 +171,7 @@ export default function PromptCard({
 					)}
 				</div>
 
-				<div className='absolute top-3 right-3 z-10 flex flex-col items-end gap-2'>
+				<div className='absolute top-3 right-3 z-10 flex flex-col items-end gap-2 opacity-0 transition-opacity group-hover:opacity-100'>
 					{user && (
 						<button
 							onClick={handleToggleFavorite}
