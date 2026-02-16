@@ -76,13 +76,12 @@ service cloud.firestore {
 
     match /public-profiles/{userId} {
       // Allow public read for get and list requests.
-      allow read: if true;
+      allow get, list: if true;
 
       // Allow profile creation only by the owner.
       allow create: if request.auth.uid == userId;
 
       // Allow updates by the owner OR for counter fields by any signed-in user.
-      // This is permissive for counters but required for the client-side follow logic.
       allow update: if (request.auth.uid == userId) ||
                       (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasAny(['views', 'followers', 'following']));
 
