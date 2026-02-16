@@ -231,6 +231,10 @@ export function usePromptsFeed({
 		excludeAuthorId,
 	])
 
+	const loadMore = useCallback(() => {
+		fetchPrompts(false)
+	}, [fetchPrompts])
+
 	return { prompts, loading, error, hasMore, loadMore, totalCount }
 }
 
