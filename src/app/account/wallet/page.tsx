@@ -99,10 +99,11 @@ export default function WalletPage() {
 		useDoc<UserProfile>(userProfileRef)
 
 	const credits = userProfile?.credits ?? 0
+	const earnings = userProfile?.earnings ?? 0
 	const payoutStatus = userProfile?.payoutStatus ?? 'none'
 
 	const canRequestPayout =
-		credits >= MIN_PAYOUT_CREDITS && payoutStatus === 'none'
+		earnings >= MIN_PAYOUT_CREDITS && payoutStatus === 'none'
 
 	useEffect(() => {
 		if (!isUserLoading && !user) {
@@ -167,7 +168,7 @@ export default function WalletPage() {
 							<CardHeader>
 								<CardTitle className='flex items-center gap-2'>
 									<Coins className='h-5 w-5 text-amber-500' />
-									Credit Balance
+									Total Credit Balance
 								</CardTitle>
 								<CardDescription>
 									Your total balance for purchasing prompts, including both
@@ -193,7 +194,17 @@ export default function WalletPage() {
 									{MIN_PAYOUT_CREDITS / 100}).
 								</CardDescription>
 							</CardHeader>
-							<CardContent>
+							<CardContent className='space-y-4'>
+								<div className='rounded-lg border p-4'>
+									<div className='flex items-center justify-between'>
+										<span className='text-muted-foreground'>
+											Available for Payout
+										</span>
+										<span className='font-bold text-lg'>
+											{earnings.toLocaleString()}
+										</span>
+									</div>
+								</div>
 								<PayoutStatusInfo status={payoutStatus} />
 							</CardContent>
 							<CardFooter className='flex-col items-start gap-4'>
@@ -208,11 +219,11 @@ export default function WalletPage() {
 								</Button>
 								{!canRequestPayout &&
 									payoutStatus === 'none' &&
-									credits < MIN_PAYOUT_CREDITS && (
+									earnings < MIN_PAYOUT_CREDITS && (
 										<p className='text-sm text-muted-foreground'>
-											You have {credits.toLocaleString()} credits. You need at least{' '}
-											{MIN_PAYOUT_CREDITS.toLocaleString()} to request a
-											payout.
+											You have {earnings.toLocaleString()} credits in earnings. You
+											need at least {MIN_PAYOUT_CREDITS.toLocaleString()} to
+											request a payout.
 										</p>
 									)}
 							</CardFooter>

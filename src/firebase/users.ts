@@ -410,13 +410,13 @@ export async function requestPayout(
 		}
 
 		const userData = userDoc.data() as UserProfile
-		const totalCredits = userData.credits ?? 0
+		const userEarnings = userData.earnings ?? 0
 		const payoutStatus = userData.payoutStatus ?? 'none'
 		const MIN_PAYOUT_CREDITS = 5000 // 50 EUR in credits
 
-		if (totalCredits < MIN_PAYOUT_CREDITS) {
+		if (userEarnings < MIN_PAYOUT_CREDITS) {
 			throw new Error(
-				`You need at least ${MIN_PAYOUT_CREDITS} credits to request a payout.`,
+				`You need at least ${MIN_PAYOUT_CREDITS} credits in earnings to request a payout.`,
 			)
 		}
 
@@ -428,8 +428,8 @@ export async function requestPayout(
 			throw new Error('You already have a pending or processing payout request.')
 		}
 
-		// The payout amount is the user's entire credit balance
-		const payoutAmountCredits = totalCredits
+		// The payout amount is the user's entire EARNINGS balance
+		const payoutAmountCredits = userEarnings
 		const payoutAmountEuros = payoutAmountCredits / 100 // 100 credits = 1 EUR
 
 		// 1. Create the PayoutRequest document
@@ -444,10 +444,10 @@ export async function requestPayout(
 		}
 		transaction.set(payoutRequestRef, newPayout)
 
-		// 2. Update the user's profile: set balances to 0 and update status
+		// 2. Update the user's profile: deduct from BOTH balances and update status
 		transaction.update(userRef, {
-			credits: 0,
-			earnings: 0, 
+			credits: increment(-payoutAmountCredits),
+			earnings: increment(-payoutAmountCredits),
 			payoutStatus: 'pending',
 		})
 	})
