@@ -20,6 +20,13 @@ import {
 	TableHeader,
 	TableRow,
 } from '@/components/ui/table'
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -235,7 +242,7 @@ export function SalesTable({ sales }: { sales: EnrichedSaleRecord[] }) {
 
 	return (
 		<div className='w-full'>
-			<div className='flex items-center py-4'>
+			<div className='flex items-center gap-2 py-4'>
 				<Input
 					placeholder='Filter by buyer...'
 					value={(table.getColumn('buyer')?.getFilterValue() as string) ?? ''}
@@ -244,6 +251,25 @@ export function SalesTable({ sales }: { sales: EnrichedSaleRecord[] }) {
 					}
 					className='max-w-sm'
 				/>
+				<Select
+					value={
+						(table.getColumn('type')?.getFilterValue() as string) ?? 'all'
+					}
+					onValueChange={value => {
+						table.getColumn('type')?.setFilterValue(value === 'all' ? '' : value)
+					}}
+				>
+					<SelectTrigger className='w-[180px]'>
+						<SelectValue placeholder='Filter by type' />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value='all'>All Types</SelectItem>
+						<SelectItem value='prompt'>Prompt</SelectItem>
+						<SelectItem value='cart'>Cart</SelectItem>
+						<SelectItem value='credits'>Credits</SelectItem>
+						<SelectItem value='subscription'>Subscription</SelectItem>
+					</SelectContent>
+				</Select>
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
 						<Button variant='outline' className='ml-auto'>
