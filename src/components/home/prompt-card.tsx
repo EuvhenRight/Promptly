@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge'
 import { useCategories } from '@/hooks/use-categories'
 import type { Prompt, UserProfile } from '@/lib/types'
-import { Check, Coins, Crown, Eye, Heart, PlusCircle } from 'lucide-react'
+import { Check, Coins, Crown, Eye, Heart, PlusCircle, ShoppingBag } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Skeleton } from '../ui/skeleton'
@@ -187,7 +187,7 @@ export default function PromptCard({
 							size='icon'
 							onClick={handleAddToCart}
 							disabled={isInCart}
-							className='h-10 w-10 rounded-full bg-black/50 text-white backdrop-blur-sm transition-opacity hover:bg-black/70 opacity-0 group-hover:opacity-100'
+							className='flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-opacity hover:bg-black/70 opacity-0 group-hover:opacity-100'
 							aria-label={isInCart ? 'In Cart' : 'Add to Cart'}
 						>
 							{isInCart ? (
