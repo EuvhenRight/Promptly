@@ -73,12 +73,6 @@ function PayoutStatusInfo({ status }: { status: UserProfile['payoutStatus'] }) {
 			description:
 				'Your request is awaiting review. This usually takes 3-5 business days.',
 		},
-		approved: {
-			icon: <CheckCircle className='h-4 w-4 text-blue-500' />,
-			title: 'Payout Approved',
-			description:
-				'Your request has been approved and will be processed soon.',
-		},
 		processing: {
 			icon: <Loader2 className='h-4 w-4 animate-spin text-blue-500' />,
 			title: 'Payout Processing',
@@ -98,7 +92,7 @@ function PayoutStatusInfo({ status }: { status: UserProfile['payoutStatus'] }) {
 		},
 	}
 
-	if (!status || status === 'none') {
+	if (!status || status === 'none' || status === 'approved') {
 		return null
 	}
 
@@ -135,6 +129,7 @@ export default function WalletPage() {
 		useDoc<UserProfile>(userProfileRef)
 
 	const credits = userProfile?.credits ?? 0
+	const earnings = userProfile?.earnings ?? 0
 	const payoutStatus = userProfile?.payoutStatus ?? 'none'
 
 	const payoutSchema = createPayoutSchema(credits)
@@ -205,20 +200,41 @@ export default function WalletPage() {
 							</p>
 						</div>
 
-						<Card>
-							<CardHeader>
-								<CardTitle className='flex items-center gap-2'>
-									<Coins className='h-5 w-5 text-amber-500' />
-									Total Credit Balance
-								</CardTitle>
-							</CardHeader>
-							<CardContent>
-								<p className='text-4xl font-bold'>{credits.toLocaleString()}</p>
-								<p className='text-xs text-muted-foreground mt-1'>
-									Includes purchased and earned credits.
-								</p>
-							</CardContent>
-						</Card>
+						<div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
+							<Card>
+								<CardHeader>
+									<CardTitle className='flex items-center gap-2'>
+										<Coins className='h-5 w-5 text-amber-500' />
+										Total Credit Balance
+									</CardTitle>
+								</CardHeader>
+								<CardContent>
+									<p className='text-4xl font-bold'>
+										{credits.toLocaleString()}
+									</p>
+									<p className='text-xs text-muted-foreground mt-1'>
+										Includes purchased and earned credits.
+									</p>
+								</CardContent>
+							</Card>
+
+							<Card>
+								<CardHeader>
+									<CardTitle className='flex items-center gap-2'>
+										<Banknote className='h-5 w-5 text-green-500' />
+										Available for Payout
+									</CardTitle>
+								</CardHeader>
+								<CardContent>
+									<p className='text-4xl font-bold'>
+										{earnings.toLocaleString()}
+									</p>
+									<p className='text-xs text-muted-foreground mt-1'>
+										This is the portion of your balance earned from sales.
+									</p>
+								</CardContent>
+							</Card>
+						</div>
 
 						<Card>
 							<CardHeader>
