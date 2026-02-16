@@ -10,6 +10,7 @@ import Header from '@/components/layout/header'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import TopCreators from '@/components/community/top-creators'
+import SubmitPromptCta from '@/components/community/SubmitPromptCta'
 
 export default function CommunityPage() {
 	return (
@@ -25,6 +26,7 @@ export default function CommunityPage() {
 									<TopCreators />
 								</CardContent>
 							</Card>
+							<SubmitPromptCta />
 						</aside>
 
 						<div className='lg:col-span-6'>
