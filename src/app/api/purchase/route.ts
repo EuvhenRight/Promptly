@@ -28,8 +28,8 @@ async function handleSinglePromptPurchase(
 			transaction.get(promptRef),
 		]);
 
-		if (!userDoc.exists()) throw new Error('User not found.');
-		if (!promptDoc.exists()) throw new Error('Prompt not found.');
+		if (!userDoc.exists) throw new Error('User not found.');
+		if (!promptDoc.exists) throw new Error('Prompt not found.');
 
 		const userData = userDoc.data() as UserProfile;
 		promptData = promptDoc.data() as Prompt;
@@ -114,7 +114,7 @@ async function handleCartPurchase(
 		const userRef = db.doc(`users/${userId}`);
 		const cartRef = db.collection('users').doc(userId).collection('carts').doc('active');
 		const userDoc = await transaction.get(userRef);
-		if (!userDoc.exists()) throw new Error('User not found.');
+		if (!userDoc.exists) throw new Error('User not found.');
 		const userData = userDoc.data() as UserProfile;
 
 		const promptRefs = promptIds.map(id => db.doc(`prompts/${id}`));
@@ -173,7 +173,7 @@ async function handleCartPurchase(
                 link: authorData.prompts.length === 1 ? `/prompt/${authorData.prompts[0]!.id}` : `/account/wallet`,
                 isRead: false,
                 createdAt: admin.firestore.FieldValue.serverTimestamp(),
-								userId: authorId,
+				userId: authorId,
             });
         }
         
