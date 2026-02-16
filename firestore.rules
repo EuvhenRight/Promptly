@@ -20,17 +20,17 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
-
+    
     function hasPurchased(promptId) {
       // Safely check if the purchasedPrompts field exists before accessing it.
       let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
       return isSignedIn() &&
-        userDoc != null &&
+        userDoc.data.size() > 0 &&
         'purchasedPrompts' in userDoc.data &&
         userDoc.data.purchasedPrompts is list &&
         userDoc.data.purchasedPrompts.hasAny([promptId]);
     }
-
+    
     // ----------------------------------------------------------------------
     // Collection Group & Independent Rules
     // ----------------------------------------------------------------------
@@ -41,7 +41,11 @@ service cloud.firestore {
     
     match /users/{userId}/notifications/{notificationId} {
       allow read: if isOwner(userId);
-      allow write: if false; 
+      // Allow signed-in users to create notifications. This is essential for
+      // transactions that include notification creation (likes, comments, follows).
+      allow create: if isSignedIn();
+      // Disallow updates or deletes from the client.
+      allow update, delete: if false; 
     }
 
     // ----------------------------------------------------------------------
@@ -59,11 +63,11 @@ service cloud.firestore {
 
       match /followers/{followerId} {
         allow get, list: if true;
-        allow create, delete: if isSignedIn() && request.auth.uid == followerId;
+        allow create, delete: if isSignedIn() && (request.auth.uid == followerId || request.auth.uid == userId);
       }
       match /following/{followingId} {
         allow get, list: if true;
-        allow create, delete: if isSignedIn() && request.auth.uid == userId;
+        allow create, delete: if isSignedIn() && (request.auth.uid == userId || request.auth.uid == followingId);
       }
     }
 
@@ -123,9 +127,11 @@ service cloud.firestore {
     match /prompts/{promptId} {
       allow list: if true;
       // Allow read if prompt is not private OR user has a pro plan OR user is an admin
-      allow get: if resource.data.isPrivate != true || (isSignedIn() && (
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.planId == 'pro') || isAdmin()
-      ));
+      allow get: if resource.data.isPrivate != true || (
+        isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.planId == 'pro'
+      ) || isAdmin();
       allow create, delete: if isAdmin();
       allow update: if
         isAdmin() ||
