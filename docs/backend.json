@@ -91,6 +91,25 @@
             "admin"
           ]
         },
+        "planId": {
+          "type": "string",
+          "description": "The identifier of the user's current subscription plan.",
+          "enum": ["free", "starter", "pro"]
+        },
+        "planPurchasedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the current plan was purchased or renewed."
+        },
+        "planBillingPeriod": {
+          "type": "string",
+          "description": "The billing cycle for the subscription.",
+          "enum": ["monthly", "yearly"]
+        },
+        "planWillCancelAtPeriodEnd": {
+          "type": "boolean",
+          "description": "If true, the subscription will not auto-renew at the end of the current period."
+        },
         "purchasedPrompts": {
           "type": "array",
           "description": "An array of prompt IDs that the user has purchased.",
