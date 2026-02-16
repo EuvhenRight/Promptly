@@ -3,7 +3,7 @@ import { getStripe } from '@/lib/stripe'
 import admin from 'firebase-admin'
 import type Stripe from 'stripe'
 import { NextRequest } from 'next/server'
-import type { Prompt, UserProfile } from '@/lib/types'
+import type { Prompt, UserProfile, SaleRecord } from '@/lib/types'
 
 const PLATFORM_COMMISSION_RATE = 0.20 // 20% platform fee
 
@@ -87,10 +87,10 @@ export async function POST(req: NextRequest) {
 		if (type === 'credits' && userId && amountTotal) {
 			const creditsAmount = parseInt(metadata.credits ?? '0', 10)
 			if (creditsAmount > 0) {
-				const userRef = adminDb.collection('users').doc(userId)
-				const salesRef = adminDb.collection('sales').doc(sessionId)
+				const userRef = adminDb!.collection('users').doc(userId)
+				const salesRef = adminDb!.collection('sales').doc(sessionId)
 
-				const batch = adminDb.batch()
+				const batch = adminDb!.batch()
 				batch.update(userRef, {
 					credits: admin.firestore.FieldValue.increment(creditsAmount),
 				})
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
 				await batch.commit()
 
 				await writePurchaseHistory(
-					adminDb,
+					adminDb!,
 					userId,
 					sessionId,
 					session,
@@ -137,10 +137,12 @@ export async function POST(req: NextRequest) {
 			const planName = plan === 'pro' ? 'Promptly PRO' : 'Promptly Starter'
 			const creditsAmount = plan === 'pro' ? 7200 : 3600
 
-			const batch = adminDb.batch()
-			const userRef = adminDb.collection('users').doc(userId)
-			const publicProfileRef = adminDb.collection('public-profiles').doc(userId)
-			const salesRef = adminDb.collection('sales').doc(sessionId)
+			const batch = adminDb!.batch()
+			const userRef = adminDb!.collection('users').doc(userId)
+			const publicProfileRef = adminDb!
+				.collection('public-profiles')
+				.doc(userId)
+			const salesRef = adminDb!.collection('sales').doc(sessionId)
 
 			batch.update(userRef, {
 				planId: plan,
@@ -170,7 +172,7 @@ export async function POST(req: NextRequest) {
 
 			await batch.commit()
 
-			await writePurchaseHistory(adminDb, userId, sessionId, session, 'plan', {
+			await writePurchaseHistory(adminDb!, userId, sessionId, session, 'plan', {
 				plan,
 				billing,
 				creditsAmount,
@@ -206,16 +208,16 @@ export async function POST(req: NextRequest) {
 		}
 
 		if (promptIds.length > 0 && amountTotal) {
-			await adminDb.runTransaction(async transaction => {
-				const userRef = adminDb.collection('users').doc(userId)
+			await adminDb!.runTransaction(async transaction => {
+				const userRef = adminDb!.collection('users').doc(userId)
 				transaction.update(userRef, {
 					purchasedPrompts: admin.firestore.FieldValue.arrayUnion(...promptIds),
 				})
 
 				const promptRefs = promptIds.map(id =>
-					adminDb.collection('prompts').doc(id),
+					adminDb!.collection('prompts').doc(id),
 				)
-				const promptDocs = await adminDb.getAll(...promptRefs)
+				const promptDocs = await adminDb!.getAll(...promptRefs)
 
 				for (const doc of promptDocs) {
 					if (doc.exists) {
@@ -224,7 +226,7 @@ export async function POST(req: NextRequest) {
 						const sellerId = promptData.authorId
 						const priceInCents = Math.round(promptData.price * 100)
 
-						const saleRef = adminDb.collection('sales').doc()
+						const saleRef = adminDb!.collection('sales').doc()
 						const sellerEarning = Math.floor(
 							priceInCents * (1 - PLATFORM_COMMISSION_RATE),
 						)
@@ -249,12 +251,12 @@ export async function POST(req: NextRequest) {
 							'stats.sales': admin.firestore.FieldValue.increment(1),
 						})
 						if (sellerId && sellerId !== userId) {
-							const sellerRef = adminDb.collection('users').doc(sellerId)
+							const sellerRef = adminDb!.collection('users').doc(sellerId)
 							transaction.update(sellerRef, {
 								credits: admin.firestore.FieldValue.increment(sellerEarning),
 								earnings: admin.firestore.FieldValue.increment(sellerEarning),
 							})
-							const notificationRef = adminDb
+							const notificationRef = adminDb!
 								.collection('users')
 								.doc(sellerId)
 								.collection('notifications')
@@ -280,13 +282,13 @@ export async function POST(req: NextRequest) {
 		}
 
 		// Write to user's personal history
-		await writePurchaseHistory(adminDb, userId, sessionId, session, type as 'prompt' | 'cart', {
+		await writePurchaseHistory(adminDb!, userId, sessionId, session, type as 'prompt' | 'cart', {
 			promptIds,
 			promptTitles,
 		})
 
 		// Remove purchased prompts from the user's active cart
-		const cartRef = adminDb
+		const cartRef = adminDb!
 			.collection('users')
 			.doc(userId)
 			.collection('carts')
