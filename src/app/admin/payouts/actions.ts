@@ -54,15 +54,15 @@ export async function updatePayoutStatus(
 				payoutStatus: newStatus,
 			}
 
-			// If rejected, refund the earnings to the user's total credits and earnings balance
 			if (newStatus === 'rejected') {
+				// Refund the credits that were deducted on request.
 				userUpdate = {
-					payoutStatus: 'none', // Reset status so they can request again
-					credits: FieldValue.increment(payoutData.amountCredits), // Refund to total balance
-					earnings: FieldValue.increment(payoutData.amountCredits), // Refund to earnings balance
+					payoutStatus: 'none',
+					credits: FieldValue.increment(payoutData.amountCredits),
+					earnings: FieldValue.increment(payoutData.amountCredits),
 				}
 			} else if (newStatus === 'paid') {
-				// Payout is complete, reset user status. The balance was already deducted on request.
+				// The payout is successful. The balances were already deducted. Just reset the status.
 				userUpdate = {
 					payoutStatus: 'none',
 				}

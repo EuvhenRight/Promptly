@@ -135,6 +135,7 @@ export default function WalletPage() {
 		useDoc<UserProfile>(userProfileRef)
 
 	const credits = userProfile?.credits ?? 0
+	const earnings = userProfile?.earnings ?? 0
 	const payoutStatus = userProfile?.payoutStatus ?? 'none'
 
 	const payoutSchema = createPayoutSchema(credits)
@@ -210,17 +211,29 @@ export default function WalletPage() {
 								<CardHeader>
 									<CardTitle className='flex items-center gap-2'>
 										<Coins className='h-5 w-5 text-amber-500' />
-										Credit Balance
+										Total Credit Balance
 									</CardTitle>
 								</CardHeader>
 								<CardContent>
 									<p className='text-4xl font-bold'>{credits.toLocaleString()}</p>
-								</CardContent>
-								<CardFooter>
-									<p className='text-xs text-muted-foreground'>
+									<p className='text-xs text-muted-foreground mt-1'>
 										Includes purchased and earned credits.
 									</p>
-								</CardFooter>
+								</CardContent>
+							</Card>
+							<Card>
+								<CardHeader>
+									<CardTitle className='flex items-center gap-2'>
+										<Banknote className='h-5 w-5 text-green-600' />
+										Available for Payout
+									</CardTitle>
+								</CardHeader>
+								<CardContent>
+									<p className='text-4xl font-bold'>{earnings.toLocaleString()}</p>
+									<p className='text-xs text-muted-foreground mt-1'>
+										Credits earned from your sales.
+									</p>
+								</CardContent>
 							</Card>
 						</div>
 

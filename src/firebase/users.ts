@@ -419,13 +419,13 @@ export async function requestPayout(
 		}
 
 		const userData = userDoc.data() as UserProfile
-		const userEarnings = userData.earnings ?? 0
+		const userCredits = userData.credits ?? 0
 		const payoutStatus = userData.payoutStatus ?? 'none'
 		const MIN_PAYOUT_CREDITS = 5000 // 50 EUR in credits
 
-		if (payoutAmount > userEarnings) {
+		if (payoutAmount > userCredits) {
 			throw new Error(
-				`Requested amount (${payoutAmount.toLocaleString()}) exceeds your available earnings (${userEarnings.toLocaleString()}).`,
+				`Requested amount (${payoutAmount.toLocaleString()}) exceeds your available balance (${userCredits.toLocaleString()}).`,
 			)
 		}
 
