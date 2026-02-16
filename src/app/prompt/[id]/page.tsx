@@ -621,13 +621,13 @@ export default function PromptDetailPage() {
 											<span className='sr-only'>View fullscreen</span>
 										</Button>
 									</DialogTrigger>
-									<DialogContent className='max-w-5xl p-2'>
+									<DialogContent className='max-w-7xl w-full p-0 bg-transparent border-none shadow-none'>
 										<Image
 											src={promptImage}
 											alt={prompt.title}
 											width={1920}
 											height={1080}
-											className='h-auto w-full rounded-md object-contain'
+											className='w-full h-auto object-contain max-h-[90vh] rounded-lg'
 										/>
 									</DialogContent>
 								</Dialog>
