@@ -208,6 +208,8 @@ export async function updateUserProfile(
 
 /**
  * Adds or removes a prompt from the user's favorites and updates the prompt's like count.
+ * Notification creation for the author has been removed for security reasons and
+ * should be reimplemented using a trusted server environment (e.g., Cloud Functions).
  */
 export async function toggleFavoritePrompt(
 	firestore: Firestore,
@@ -216,7 +218,6 @@ export async function toggleFavoritePrompt(
 	isFavorite: boolean,
 ): Promise<void> {
 	if (!userId) throw new Error('User ID is required.')
-	console.log("uid from toggleFavoritePrompt", userId)
 
 	const userRef = doc(firestore, 'users', userId)
 	const promptRef = doc(firestore, 'prompts', promptId)
@@ -230,38 +231,10 @@ export async function toggleFavoritePrompt(
 	batch.update(promptRef, {
 		'stats.likes': increment(isFavorite ? -1 : 1),
 	})
-
-	// Send notification on like (not on unlike)
-	if (!isFavorite) {
-		try {
-			const promptSnap = await getDoc(promptRef)
-			const userSnap = await getDoc(doc(firestore, 'users', userId)) // The user who liked
-
-			if (promptSnap.exists() && userSnap.exists()) {
-				const promptData = promptSnap.data() as Prompt
-				const likingUser = userSnap.data() as UserProfile
-				const authorId = promptData.authorId
-
-				if (authorId && authorId !== userId) {
-					const notificationRef = doc(
-						collection(firestore, 'users', authorId, 'notifications'),
-					)
-					await setDoc(notificationRef, {
-						userId: authorId,
-						type: 'like',
-						title: 'New Like!',
-						body: `${likingUser.displayName} liked your prompt "${promptData.title}".`,
-						link: `/prompt/${promptId}`,
-						isRead: false,
-						createdAt: serverTimestamp(),
-					})
-				}
-			}
-		} catch (notificationError) {
-			console.error("Failed to create 'like' notification:", notificationError)
-			// Non-critical error, don't throw to the user
-		}
-	}
+	
+	// TODO: Re-implement "like" notifications via a secure server-side function.
+	// The previous client-side implementation was a security risk, as it allowed
+	// any user to create a notification for any other user.
 
 	await batch.commit()
 }
@@ -283,6 +256,8 @@ export function incrementProfileView(firestore: Firestore, userId: string) {
 
 /**
  * Makes the current user follow a target user.
+ * Notification creation for the author has been removed for security reasons and
+ * should be reimplemented using a trusted server environment (e.g., Cloud Functions).
  */
 export async function followUser(
 	firestore: Firestore,
@@ -292,7 +267,6 @@ export async function followUser(
 	if (!currentUserId || !targetUserId || currentUserId === targetUserId) {
 		throw new Error('Invalid user IDs provided.')
 	}
-	console.log("uid from followUser", currentUserId)
 
 	await runTransaction(firestore, async transaction => {
 		const currentUserPublicRef = doc(firestore, 'public-profiles', currentUserId)
@@ -311,34 +285,14 @@ export async function followUser(
 			'followers',
 			currentUserId,
 		)
-		const notificationRef = doc(
-			collection(firestore, 'users', targetUserId, 'notifications'),
-		)
-
-		const [currentUserPublicDoc] = await Promise.all([
-			transaction.get(currentUserPublicRef),
-			transaction.get(targetUserPublicRef),
-		])
-
-		if (!currentUserPublicDoc.exists()) {
-			throw new Error('Could not find your public profile.')
-		}
-		const currentUserPublicProfile = currentUserPublicDoc.data() as PublicProfile
 
 		transaction.set(followingRef, { followedAt: serverTimestamp() })
 		transaction.set(followerRef, { followedAt: serverTimestamp() })
 		transaction.update(currentUserPublicRef, { following: increment(1) })
 		transaction.update(targetUserPublicRef, { followers: increment(1) })
 
-		transaction.set(notificationRef, {
-			userId: targetUserId,
-			type: 'follow',
-			title: 'New Follower',
-			body: `${currentUserPublicProfile.displayName} started following you.`,
-			link: `/user/${currentUserPublicProfile.username}`,
-			isRead: false,
-			createdAt: serverTimestamp(),
-		})
+		// TODO: Re-implement "follow" notifications via a secure server-side function.
+		// The previous client-side implementation was a security risk.
 	})
 }
 

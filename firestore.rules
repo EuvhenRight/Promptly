@@ -38,7 +38,10 @@ service cloud.firestore {
     
     match /users/{userId}/notifications/{notificationId} {
       allow read: if isOwner(userId);
-      allow create: if isSignedIn() && request.resource.data.userId == userId;
+      // Allow creation only if the user is the owner of the notifications list.
+      // Server-side actions (like sale notifications) bypass this rule via Admin SDK.
+      // This prevents users from creating notifications for other users from the client.
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
       allow update, delete: if false; 
     }
 
@@ -49,6 +52,8 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
+      // Allow creation if the authenticated user's ID matches the document ID being created.
+      // This is crucial for new user sign-ups.
       allow create: if request.auth.uid == userId && request.resource.data.uid == userId;
       allow update: if
         isAdmin() ||
@@ -75,6 +80,7 @@ service cloud.firestore {
 
     match /public-profiles/{userId} {
       allow get, list: if true;
+      // Allow creation if the authenticated user's ID matches the document ID being created.
       allow create: if request.auth.uid == userId && request.resource.data.uid == userId;
       allow update: if 
         isAdmin() ||
