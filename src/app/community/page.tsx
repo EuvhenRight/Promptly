@@ -2,14 +2,8 @@
 
 import CommunityFeed from '@/components/community/community-feed'
 import CommunityHero from '@/components/community/community-hero'
-import MemberOfTheDay from '@/components/community/member-of-the-day'
-import NewMembers from '@/components/community/new-members'
-import VerifiedProfiles from '@/components/community/verified-profiles'
 import Footer from '@/components/layout/footer'
 import Header from '@/components/layout/header'
-import { Card, CardContent } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
-import TopCreators from '@/components/community/top-creators'
 import SubmitPromptCta from '@/components/community/SubmitPromptCta'
 
 export default function CommunityPage() {
@@ -21,29 +15,12 @@ export default function CommunityPage() {
 				<div className='container mx-auto px-4 py-8 sm:px-6 lg:px-8'>
 					<div className='grid grid-cols-1 lg:grid-cols-12 gap-8'>
 						<aside className='lg:col-span-3 space-y-6'>
-							<Card>
-								<CardContent className='pt-6'>
-									<TopCreators />
-								</CardContent>
-							</Card>
 							<SubmitPromptCta />
 						</aside>
 
-						<div className='lg:col-span-6'>
+						<div className='lg:col-span-9'>
 							<CommunityFeed />
 						</div>
-
-						<aside className='lg:col-span-3 space-y-6'>
-							<Card>
-								<CardContent className='space-y-6 pt-6'>
-									<MemberOfTheDay />
-									<Separator />
-									<NewMembers />
-									<Separator />
-									<VerifiedProfiles />
-								</CardContent>
-							</Card>
-						</aside>
 					</div>
 				</div>
 			</main>
