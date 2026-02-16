@@ -11,6 +11,7 @@ export const DOC_SLUG_TO_FILE: Record<string, string> = {
 	deployment: '08-deployment.md',
 	env: '09-env.md',
 	'todo-refactor': '10-todo-refactor.md',
+	'features-summary': '11-features-summary.md',
 }
 
 export function getDocFilename(slug: string): string | null {
@@ -33,4 +34,5 @@ export const DOC_ORDERED_SLUGS: string[] = [
 	'deployment',
 	'env',
 	'todo-refactor',
+	'features-summary',
 ]
