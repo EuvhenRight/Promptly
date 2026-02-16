@@ -13,6 +13,7 @@ import {
 	Tags,
 	Users,
 	CircleDollarSign,
+	Banknote,
 } from 'lucide-react'
 import type { PanelNavConfig } from './types'
 
@@ -35,7 +36,7 @@ export const ADMIN_NAV_CONFIG: PanelNavConfig = {
 			icon: Image,
 		},
 		{ href: '/admin/users', label: 'Users', icon: Users },
-		{ href: '/admin/payouts', label: 'Payouts', icon: CircleDollarSign },
+		{ href: '/admin/payouts', label: 'Payouts', icon: Banknote },
 		{ href: '/docs', label: 'Docs', icon: BookOpen },
 	],
 }
