@@ -1,5 +1,61 @@
 {
   "entities": {
+    "Sale": {
+      "title": "Sale Record",
+      "type": "object",
+      "description": "A record of a single completed transaction on the platform.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "The type of purchase.",
+          "enum": ["prompt", "cart", "credits", "subscription"]
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the sale.",
+          "enum": ["completed", "refunded"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the sale occurred."
+        },
+        "buyerId": {
+          "type": "string",
+          "description": "The UID of the user who made the purchase."
+        },
+        "sellerId": {
+          "type": "string",
+          "description": "The UID of the user who sold the prompt (if applicable)."
+        },
+        "promptIds": {
+          "type": "array",
+          "description": "An array of prompt IDs included in the sale.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "revenueDetails": {
+          "type": "object",
+          "properties": {
+            "gross": {
+              "type": "number",
+              "description": "The total transaction amount in the smallest currency unit (e.g., cents)."
+            },
+            "platformFee": {
+              "type": "number",
+              "description": "The portion of the gross amount taken by the platform, in cents."
+            },
+            "sellerEarning": {
+              "type": "number",
+              "description": "The net amount earned by the seller, in cents."
+            }
+          },
+          "required": ["gross", "platformFee", "sellerEarning"]
+        }
+      },
+      "required": ["type", "status", "createdAt", "buyerId", "revenueDetails"]
+    },
     "UserProfile": {
       "title": "User Profile",
       "type": "object",
@@ -491,6 +547,22 @@
             "$ref": "#/backend/entities/PayoutRequest"
           },
           "description": "Stores all user requests for payouts. Accessible only by admins."
+        }
+      },
+      {
+        "path": "/sales/{saleId}",
+        "definition": {
+          "entityName": "Sale",
+          "schema": {
+            "$ref": "#/backend/entities/Sale"
+          },
+          "description": "Centralized collection for all sale transactions for analytics and admin purposes.",
+          "params": [
+            {
+              "name": "saleId",
+              "description": "The ID of the sale transaction."
+            }
+          ]
         }
       }
     ],
