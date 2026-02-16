@@ -70,6 +70,7 @@ export default function AdminTypesPage() {
 	const [deleting, setDeleting] = useState(false)
 	const [itemsPerPage, setItemsPerPage] = useState(10)
 	const [currentPage, setCurrentPage] = useState(1)
+	const [seeding, setSeeding] = useState(false)
 
 	const fetchTypes = async () => {
 		setLoading(true)
@@ -118,6 +119,29 @@ export default function AdminTypesPage() {
 			})
 		} finally {
 			setAdding(false)
+		}
+	}
+
+	const handleSeed = async () => {
+		setSeeding(true)
+		try {
+			const res = await fetch('/api/types', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({}), // Empty body triggers seeding
+			})
+			const data = await res.json()
+			if (!res.ok) throw new Error(data.error || 'Failed to seed')
+			toast({ title: 'Seeding complete', description: data.message })
+			fetchTypes() // Refresh the list
+		} catch (e) {
+			toast({
+				variant: 'destructive',
+				title: 'Error',
+				description: e instanceof Error ? e.message : 'Failed to seed types.',
+			})
+		} finally {
+			setSeeding(false)
 		}
 	}
 
@@ -209,6 +233,14 @@ export default function AdminTypesPage() {
 						{adding && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
 						<PlusCircle className='mr-2 h-4 w-4' />
 						Add
+					</Button>
+					<Button
+						onClick={handleSeed}
+						disabled={seeding || types.length > 0}
+						variant='outline'
+					>
+						{seeding && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+						Seed Defaults
 					</Button>
 				</CardContent>
 			</Card>

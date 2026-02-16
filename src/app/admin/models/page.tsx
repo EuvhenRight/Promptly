@@ -70,6 +70,7 @@ export default function AdminModelsPage() {
 	const [deleting, setDeleting] = useState(false)
 	const [itemsPerPage, setItemsPerPage] = useState(10)
 	const [currentPage, setCurrentPage] = useState(1)
+	const [seeding, setSeeding] = useState(false)
 
 	const fetchModels = async () => {
 		setLoading(true)
@@ -118,6 +119,29 @@ export default function AdminModelsPage() {
 			})
 		} finally {
 			setAdding(false)
+		}
+	}
+
+	const handleSeed = async () => {
+		setSeeding(true)
+		try {
+			const res = await fetch('/api/models', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({}), // Empty body triggers seeding
+			})
+			const data = await res.json()
+			if (!res.ok) throw new Error(data.error || 'Failed to seed')
+			toast({ title: 'Seeding complete', description: data.message })
+			fetchModels() // Refresh the list
+		} catch (e) {
+			toast({
+				variant: 'destructive',
+				title: 'Error',
+				description: e instanceof Error ? e.message : 'Failed to seed models.',
+			})
+		} finally {
+			setSeeding(false)
 		}
 	}
 
@@ -209,6 +233,14 @@ export default function AdminModelsPage() {
 						{adding && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
 						<PlusCircle className='mr-2 h-4 w-4' />
 						Add
+					</Button>
+					<Button
+						onClick={handleSeed}
+						disabled={seeding || models.length > 0}
+						variant='outline'
+					>
+						{seeding && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+						Seed Defaults
 					</Button>
 				</CardContent>
 			</Card>
