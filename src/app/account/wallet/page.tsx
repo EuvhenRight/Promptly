@@ -47,7 +47,7 @@ const createPayoutSchema = (maxAmount: number) =>
 				message: `Minimum payout is ${MIN_PAYOUT_CREDITS.toLocaleString()} credits.`,
 			})
 			.max(maxAmount, {
-				message: `Cannot exceed your available earnings of ${maxAmount.toLocaleString()}.`,
+				message: `Cannot exceed your available balance of ${maxAmount.toLocaleString()}.`,
 			}),
 	})
 
@@ -135,15 +135,14 @@ export default function WalletPage() {
 		useDoc<UserProfile>(userProfileRef)
 
 	const credits = userProfile?.credits ?? 0
-	const earnings = userProfile?.earnings ?? 0
 	const payoutStatus = userProfile?.payoutStatus ?? 'none'
 
-	const payoutSchema = createPayoutSchema(earnings)
+	const payoutSchema = createPayoutSchema(credits)
 
 	const form = useForm<PayoutFormValues>({
 		resolver: zodResolver(payoutSchema),
 		defaultValues: {
-			amount: Math.min(earnings, MIN_PAYOUT_CREDITS),
+			amount: Math.min(credits, MIN_PAYOUT_CREDITS),
 		},
 		mode: 'onChange',
 	})
@@ -211,7 +210,7 @@ export default function WalletPage() {
 								<CardHeader>
 									<CardTitle className='flex items-center gap-2'>
 										<Coins className='h-5 w-5 text-amber-500' />
-										Total Credit Balance
+										Credit Balance
 									</CardTitle>
 								</CardHeader>
 								<CardContent>
@@ -223,33 +222,14 @@ export default function WalletPage() {
 									</p>
 								</CardFooter>
 							</Card>
-
-							<Card>
-								<CardHeader>
-									<CardTitle className='flex items-center gap-2'>
-										<Banknote className='h-5 w-5 text-green-600' />
-										Available for Payout
-									</CardTitle>
-								</CardHeader>
-								<CardContent>
-									<p className='text-4xl font-bold'>
-										{earnings.toLocaleString()}
-									</p>
-								</CardContent>
-								<CardFooter>
-									<p className='text-xs text-muted-foreground'>
-										Credits earned from your prompt sales.
-									</p>
-								</CardFooter>
-							</Card>
 						</div>
 
 						<Card>
 							<CardHeader>
 								<CardTitle>Request a Payout</CardTitle>
 								<CardDescription>
-									Withdraw your earnings. 100 credits = €1.00. Minimum payout
-									is {MIN_PAYOUT_CREDITS.toLocaleString()} credits (€
+									Withdraw your credits. 100 credits = €1.00. Minimum payout is{' '}
+									{MIN_PAYOUT_CREDITS.toLocaleString()} credits (€
 									{(MIN_PAYOUT_CREDITS / 100).toFixed(2)}).
 								</CardDescription>
 							</CardHeader>
@@ -286,11 +266,11 @@ export default function WalletPage() {
 																field.onChange(vals[0] ?? 0)
 															}
 															min={MIN_PAYOUT_CREDITS}
-															max={earnings}
+															max={credits}
 															step={100}
 															disabled={
 																form.formState.isSubmitting ||
-																earnings < MIN_PAYOUT_CREDITS
+																credits < MIN_PAYOUT_CREDITS
 															}
 															className='pt-2'
 														/>
