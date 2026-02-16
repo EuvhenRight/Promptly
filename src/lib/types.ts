@@ -72,6 +72,7 @@ export type UserProfile = {
 		weeklySales: number
 		reputation: number
 	}
+	createdAt?: Timestamp
 }
 
 export type PublicProfile = Pick<
@@ -89,6 +90,7 @@ export type PublicProfile = Pick<
 	| 'instagramProfile'
 	| 'facebookProfile'
 	| 'planId'
+	| 'createdAt'
 >
 
 export type Prompt = {

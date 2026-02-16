@@ -231,6 +231,13 @@
 			"fields": [
 				{ "fieldPath": "timestamp", "order": "DESCENDING" }
 			]
+		},
+		{
+			"collectionGroup": "public-profiles",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "createdAt", "order": "DESCENDING" }
+			]
 		}
 	],
 	"fieldOverrides": []
