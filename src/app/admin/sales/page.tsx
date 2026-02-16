@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/chart'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { format } from 'date-fns'
+import { TopSellersTable, type TopSeller } from './top-sellers-table'
 
 // Reusable StatCard component
 function StatCard({
@@ -90,6 +91,7 @@ export default function AdminSalesPage() {
 	const [sales, setSales] = useState<EnrichedSaleRecord[]>([])
 	const [stats, setStats] = useState<Stats | null>(null)
 	const [dailyRevenue, setDailyRevenue] = useState<DailyRevenue[]>([])
+	const [topSellers, setTopSellers] = useState<TopSeller[]>([])
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
@@ -111,6 +113,7 @@ export default function AdminSalesPage() {
 				}))
 				setSales(salesWithDates)
 				setDailyRevenue(data.dailyRevenue || [])
+				setTopSellers(data.topSellers || [])
 			})
 			.catch(err => {
 				setError(err.message)
@@ -153,51 +156,72 @@ export default function AdminSalesPage() {
 				/>
 			</div>
 
-			<Card>
-				<CardHeader>
-					<CardTitle>Revenue Last 30 Days</CardTitle>
-				</CardHeader>
-				<CardContent>
-					{loading ? (
-						<div className='flex justify-center items-center h-72'>
-							<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
-						</div>
-					) : dailyRevenue.length === 0 ? (
-						<p className='text-muted-foreground text-center py-8'>
-							No revenue data for the last 30 days.
-						</p>
-					) : (
-						<ChartContainer config={chartConfig} className='min-h-[280px] w-full'>
-							<BarChart accessibilityLayer data={dailyRevenue} margin={{ top: 20 }}>
-								<CartesianGrid vertical={false} />
-								<XAxis
-									dataKey='date'
-									tickLine={false}
-									tickMargin={10}
-									axisLine={false}
-									tickFormatter={value => format(new Date(value), 'MMM d')}
-								/>
-								<YAxis
-									tickFormatter={value => `€${value}`}
-									tickLine={false}
-									axisLine={false}
-									width={40}
-								/>
-								<ChartTooltip
-									cursor={false}
-									content={
-										<ChartTooltipContent
-											formatter={value => `€${(value as number).toFixed(2)}`}
-											indicator='dot'
-										/>
-									}
-								/>
-								<Bar dataKey='Revenue' fill='var(--color-Revenue)' radius={4} />
-							</BarChart>
-						</ChartContainer>
-					)}
-				</CardContent>
-			</Card>
+			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+				<Card className="lg:col-span-2">
+					<CardHeader>
+						<CardTitle>Revenue Last 30 Days</CardTitle>
+					</CardHeader>
+					<CardContent>
+						{loading ? (
+							<div className='flex justify-center items-center h-72'>
+								<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
+							</div>
+						) : dailyRevenue.length === 0 ? (
+							<p className='text-muted-foreground text-center py-8'>
+								No revenue data for the last 30 days.
+							</p>
+						) : (
+							<ChartContainer config={chartConfig} className='min-h-[280px] w-full'>
+								<BarChart accessibilityLayer data={dailyRevenue} margin={{ top: 20 }}>
+									<CartesianGrid vertical={false} />
+									<XAxis
+										dataKey='date'
+										tickLine={false}
+										tickMargin={10}
+										axisLine={false}
+										tickFormatter={value => format(new Date(value), 'MMM d')}
+									/>
+									<YAxis
+										tickFormatter={value => `€${value}`}
+										tickLine={false}
+										axisLine={false}
+										width={40}
+									/>
+									<ChartTooltip
+										cursor={false}
+										content={
+											<ChartTooltipContent
+												formatter={value => `€${(value as number).toFixed(2)}`}
+												indicator='dot'
+											/>
+										}
+									/>
+									<Bar dataKey='Revenue' fill='var(--color-Revenue)' radius={4} />
+								</BarChart>
+							</ChartContainer>
+						)}
+					</CardContent>
+				</Card>
+				<Card>
+					<CardHeader>
+						<CardTitle>Top Sellers</CardTitle>
+						<CardDescription>
+							Ranking by earnings from prompt sales.
+						</CardDescription>
+					</CardHeader>
+					<CardContent>
+						{loading ? (
+							<div className='flex justify-center py-8'>
+								<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
+							</div>
+						) : error ? (
+							<p className='text-destructive'>Error: {error}</p>
+						) : (
+							<TopSellersTable sellers={topSellers} />
+						)}
+					</CardContent>
+				</Card>
+			</div>
 
 			<Card>
 				<CardHeader>
