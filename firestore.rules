@@ -33,7 +33,7 @@ service cloud.firestore {
     // ----------------------------------------------------------------------
 
     match /{path=**}/comments/{commentId} {
-      allow list: if isAdmin();
+      allow get, list: if true;
     }
     
     match /users/{userId}/notifications/{notificationId} {
@@ -73,23 +73,16 @@ service cloud.firestore {
         allow create, delete: if isSignedIn() && (request.auth.uid == userId || request.auth.uid == followingId);
       }
     }
-
+    
     match /public-profiles {
       allow list: if true;
     }
 
     match /public-profiles/{userId} {
-      // Allow public read for get and list requests.
       allow get, list: if true;
-
-      // Allow profile creation only by the owner.
       allow create: if request.auth.uid == userId;
-
-      // Allow updates by the owner OR for counter fields by any signed-in user.
       allow update: if (request.auth.uid == userId) ||
                       (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasAny(['views', 'followers', 'following']));
-
-      // Do not allow client-side deletion.
       allow delete: if false;
     }
 
