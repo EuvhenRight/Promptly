@@ -258,6 +258,7 @@ export async function toggleFavoritePrompt(
 				}
 			}
 		} catch (notificationError) {
+			console.log("uid from toggleFavoritePrompt", getAuth().currentUser?.uid);
 			console.error("Failed to create 'like' notification:", notificationError)
 			// Non-critical error, don't throw to the user
 		}
@@ -402,6 +403,17 @@ export async function requestPayout(
 	userId: string,
 	payoutAmountCredits: number,
 ): Promise<void> {
+	const auth = getAuth();
+	console.log("DIAGNOSTIC: Auth UID", auth.currentUser?.uid);
+	console.log("DIAGNOSTIC: Target User Doc Path", `users/${userId}`);
+
+	const updateData = {
+			credits: `decrement by ${payoutAmountCredits}`,
+			earnings: `decrement by ${payoutAmountCredits}`,
+			payoutStatus: 'pending',
+	};
+	console.log("DIAGNOSTIC: Intended Update Data", updateData);
+
 	if (!userId) throw new Error('User ID is required.')
 
 	const payoutAmount = Math.floor(payoutAmountCredits)
