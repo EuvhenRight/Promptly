@@ -22,12 +22,11 @@ service cloud.firestore {
     
     function hasPurchased(promptId) {
       // Safely check if the purchasedPrompts field exists before accessing it.
-      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
       return isSignedIn() &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        'purchasedPrompts' in userDoc.data &&
-        userDoc.data.purchasedPrompts is list &&
-        userDoc.data.purchasedPrompts.hasAny([promptId]);
+        'purchasedPrompts' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.purchasedPrompts is list &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.purchasedPrompts.hasAny([promptId]);
     }
     
     // ----------------------------------------------------------------------
@@ -59,8 +58,7 @@ service cloud.firestore {
         // Payout request transaction
         (
           isOwner(userId) &&
-          request.resource.data.diff(resource.data).affectedKeys().hasAll(['credits', 'earnings', 'payoutStatus']) &&
-          request.resource.data.diff(resource.data).affectedKeys().size() == 3 &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['credits', 'earnings', 'payoutStatus']) &&
           request.resource.data.payoutStatus == 'pending' &&
           request.resource.data.credits < resource.data.credits &&
           request.resource.data.earnings < resource.data.earnings
