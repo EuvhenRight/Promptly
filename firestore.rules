@@ -75,10 +75,19 @@ service cloud.firestore {
     }
 
     match /public-profiles/{userId} {
-      allow read: if true;
-      // Temporarily disable write rules to isolate the read issue.
-      // This will break following/unfollowing functionality.
-      allow write: if false;
+      // Allow public read for get and list requests.
+      allow get, list: if true;
+
+      // Allow profile creation only by the owner.
+      allow create: if request.auth.uid == userId;
+
+      // Allow updates by the owner OR for counter fields by any signed-in user.
+      // This is permissive for counters but required for the client-side follow logic.
+      allow update: if (request.auth.uid == userId) ||
+                      (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasAny(['views', 'followers', 'following']));
+
+      // Do not allow client-side deletion.
+      allow delete: if false;
     }
 
     match /users/{userId}/carts/{cartId} {
@@ -144,7 +153,7 @@ service cloud.firestore {
           isSignedIn() &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats']) &&
           (request.resource.data.stats.likes == resource.data.stats.likes + 1 || request.resource.data.stats.likes == resource.data.stats.likes - 1) &&
-          request.resource.data.stats.views == resource.data.stats.views &&
+          request.resource.data.stats.views == resource.data.views &&
           request.resource.data.stats.sales == resource.data.stats.sales
         ) ||
         ( // Rule for rating: purchased users can update rating
