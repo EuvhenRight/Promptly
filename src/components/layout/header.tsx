@@ -20,7 +20,7 @@ import {
 	PlusCircle,
 	Settings,
 	ShieldCheck,
-	ShoppingBag,
+	ShoppingCart,
 	Star,
 	Upload,
 	User,
@@ -96,7 +96,7 @@ export default function Header() {
 								<nav className='mt-4 flex flex-col gap-2'>
 									<Button variant='ghost' asChild className='justify-start'>
 										<Link href='/cart'>
-											<ShoppingBag className='mr-2 h-4 w-4' />
+											<ShoppingCart className='mr-2 h-4 w-4' />
 											Cart {cartCount > 0 && `(${cartCount})`}
 										</Link>
 									</Button>
@@ -138,7 +138,7 @@ export default function Header() {
 							size='icon'
 							className='relative h-12 w-12 hover:bg-transparent dark:hover:bg-transparent hover:text-accent dark:hover:text-primary'
 						>
-							<ShoppingBag
+							<ShoppingCart
 								className='h-8 w-8 text-foreground transition-colors group-hover/cart:text-accent dark:group-hover/cart:text-primary'
 								strokeWidth={1.5}
 							/>

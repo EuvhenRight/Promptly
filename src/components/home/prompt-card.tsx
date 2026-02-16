@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge'
 import { useCategories } from '@/hooks/use-categories'
 import type { Prompt, UserProfile } from '@/lib/types'
-import { Check, Coins, Crown, Eye, Heart, PlusCircle, ShoppingBag } from 'lucide-react'
+import { Check, Coins, Crown, Eye, Heart, ShoppingCart } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Skeleton } from '../ui/skeleton'
@@ -142,7 +142,7 @@ export default function PromptCard({
 										{formatStat(prompt.stats.views)}
 									</span>
 									<span className='flex items-center gap-1'>
-										<ShoppingBag className='h-4 w-4' />
+										<ShoppingCart className='h-4 w-4' />
 										{formatStat(prompt.stats.sales)}
 									</span>
 								</div>
@@ -161,17 +161,20 @@ export default function PromptCard({
 					</div>
 				</div>
 
-				<div className='absolute top-3 left-3 z-10 flex flex-col items-start gap-2'>
+				<div className='absolute top-3 left-3 z-10'>
 					{prompt.isPrivate && (
 						<Badge className='bg-primary text-primary-foreground'>
 							<Crown className='mr-1 h-3 w-3' />
 							PRO
 						</Badge>
 					)}
+				</div>
+
+				<div className='absolute top-3 right-3 z-10 flex flex-col items-end gap-2'>
 					{user && (
 						<button
 							onClick={handleToggleFavorite}
-							className='flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-opacity hover:bg-black/70 opacity-0 group-hover:opacity-100'
+							className='flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-opacity hover:bg-black/80 opacity-0 group-hover:opacity-100'
 							aria-label='Like prompt'
 						>
 							<Heart
@@ -187,13 +190,13 @@ export default function PromptCard({
 							size='icon'
 							onClick={handleAddToCart}
 							disabled={isInCart}
-							className='flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-opacity hover:bg-black/70 opacity-0 group-hover:opacity-100'
+							className='flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-opacity hover:bg-black/80 opacity-0 group-hover:opacity-100'
 							aria-label={isInCart ? 'In Cart' : 'Add to Cart'}
 						>
 							{isInCart ? (
 								<Check className='h-5 w-5' />
 							) : (
-								<PlusCircle className='h-5 w-5' />
+								<ShoppingCart className='h-5 w-5' />
 							)}
 						</Button>
 					)}
