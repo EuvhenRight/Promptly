@@ -214,8 +214,6 @@ export async function toggleFavoritePrompt(
 	promptId: string,
 	isFavorite: boolean,
 ): Promise<void> {
-	const auth = getAuth()
-	console.log('uid from toggleFavoritePrompt', auth.currentUser?.uid)
 	if (!userId) throw new Error('User ID is required.')
 
 	const userRef = doc(firestore, 'users', userId)
@@ -288,8 +286,6 @@ export async function followUser(
 	currentUserId: string,
 	targetUserId: string,
 ) {
-	const auth = getAuth()
-	console.log('uid from followUser', auth.currentUser?.uid)
 	if (!currentUserId || !targetUserId || currentUserId === targetUserId) {
 		throw new Error('Invalid user IDs provided.')
 	}

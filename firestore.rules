@@ -15,13 +15,20 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // Use `exists` to prevent errors if the user document is not yet created.
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     function hasPurchased(promptId) {
+      // Safely check if the purchasedPrompts field exists before accessing it.
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
       return isSignedIn() &&
-        'purchasedPrompts' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.purchasedPrompts.hasAny([promptId]);
+        userDoc != null &&
+        'purchasedPrompts' in userDoc.data &&
+        userDoc.data.purchasedPrompts is list &&
+        userDoc.data.purchasedPrompts.hasAny([promptId]);
     }
 
     // ----------------------------------------------------------------------
@@ -115,7 +122,10 @@ service cloud.firestore {
 
     match /prompts/{promptId} {
       allow list: if true;
-      allow get: if resource.data.isPrivate != true || (isSignedIn() && (('planId' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.planId == 'pro') || isAdmin()));
+      // Allow read if prompt is not private OR user has a pro plan OR user is an admin
+      allow get: if resource.data.isPrivate != true || (isSignedIn() && (
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.planId == 'pro') || isAdmin()
+      ));
       allow create, delete: if isAdmin();
       allow update: if
         isAdmin() ||
@@ -133,7 +143,7 @@ service cloud.firestore {
           request.resource.data.stats.sales == resource.data.stats.sales
         ) ||
         ( // Rule for rating: purchased users can update rating
-          (hasPurchased(promptId) || resource.data.price == 0 || isAdmin()) &&
+          (hasPurchased(promptId) || get(/databases/$(database)/documents/prompts/$(promptId)).data.price == 0 || isAdmin()) &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating'])
         );
 
