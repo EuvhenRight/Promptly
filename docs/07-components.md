@@ -5,11 +5,12 @@
 ```
 src/components/
 ├── layout/          # Глобальний layout
-├── ui/               # shadcn/ui примітиви
-├── home/             # Головна сторінка
-├── prompt/           # Сторінка промпту
-├── community/        # Сторінка спільноти
-├── account/          # Кабінет користувача
+├── ui/              # shadcn/ui примітиви
+├── home/            # Головна сторінка
+├── prompt/          # Сторінка промпту
+├── community/       # Сторінка спільноти
+├── account/         # Кабінет користувача
+├── admin/           # Специфічні для адмінки компоненти
 └── інші (theme-provider, stripe-checkout, FirebaseErrorListener)
 ```
 
@@ -20,7 +21,7 @@ src/components/
 
 ## ui/ (shadcn/ui)
 
-Пресет компонентів на базі Radix: button, card, input, label, textarea, dialog, dropdown-menu, select, tabs, table, toast, toaster, avatar, badge, skeleton, accordion, alert, calendar, carousel, chart, checkbox, collapsible, form, menubar, pagination, popover, progress, radio-group, scroll-area, separator, sheet, slider, switch, tooltip тощо. Використовуються по всьому проєкту для форм, таблиць, модалок, нотифікацій.
+Пресет компонентів на базі Radix: button, card, input, label, textarea, dialog, dropdown-menu, select, tabs, table, toast, toaster, avatar, badge, skeleton, accordion, alert, calendar, carousel, chart, checkbox, collapsible, form, menubar, pagination, popover, progress, radio-group, scroll-area, separator, sheet, slider, switch, tooltip тощо.
 
 ## home/
 
@@ -30,7 +31,7 @@ src/components/
 - **mobile-filters.tsx** — мобільна версія фільтрів.
 - **prompt-feed.tsx** — стрічка/сітка промптів.
 - **prompt-card.tsx** — картка промпту в стрічці.
-- **sub-header.tsx** — підшапка головної.
+- **sub-header.tsx** — підшапка головної з фільтрами.
 - **top-creators-widget.tsx** — віджет топ-креаторів.
 
 ## prompt/
@@ -41,12 +42,16 @@ src/components/
 ## community/
 
 - **community-hero.tsx**, **community-feed.tsx** — герой та стрічка спільноти.
-- **new-members.tsx**, **member-of-the-day.tsx**, **streaks-section.tsx**, **verified-profiles.tsx** — віджети/секції сторінки community.
+- **SubmitPromptCta.tsx** — віджет із закликом створити промпт.
 
 ## account/
 
-- **account-sidebar.tsx** — сайдбар кабінету (меню: профіль, плани, сповіщення).
-- **theme-switcher.tsx** — перемикач світло/темна тема.
+- **account-sidebar.tsx** — сайдбар кабінету (меню: профіль, плани, гаманець, сповіщення).
+- **theme-switcher.tsx** — перемикач світлої/темної теми.
+
+## admin/
+
+- Специфічні компоненти для кожної сторінки адмінки знаходяться в `src/app/admin/`, наприклад, `prompts/prompts-table.tsx`, `payouts/payouts-table.tsx`. Вони використовують ті самі `ui/` компоненти.
 
 ## Інші
 
@@ -58,5 +63,3 @@ src/components/
 
 - **FirebaseClientProvider** — ініціалізація Firebase на клієнті, обгортка додатку.
 - **CategoriesProvider, TagsProvider, TypesProvider, ModelsProvider** — контексти з кешем довідникових даних з Firestore (з `src/hooks/use-categories` тощо).
-
-Компоненти сторінок адмінки знаходяться в `src/app/admin/` (таблиці, форми, діалоги) і використовують ті самі `ui/` компоненти.

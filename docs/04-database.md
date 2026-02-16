@@ -8,17 +8,17 @@
 
 ### users/{userId}
 
-- Профіль користувача (приватні та адмін-поля): email, displayName, photoURL, username, role (user | admin), credits, purchasedPrompts, favoritePrompts, followers, following, views, stats (totalSales, monthlySales, weeklySales, reputation), coverImageURL, description, headline, соцмережі тощо.
-- **Правила**: read/write лише власник або admin; окремі обмеження на оновлення (наприклад, не можна змінювати role, credits, purchasedPrompts з клієнта; favoritePrompts — можна).
+- Профіль користувача (приватні та адмін-поля): email, displayName, photoURL, username, role, credits, earnings, payoutStatus, purchasedPrompts, favoritePrompts, followers, following, views, coverImageURL, description, headline, соцмережі, план підписки (planId, planPurchasedAt тощо).
+- **Правила**: read/write лише власник або admin; окремі обмеження на оновлення (наприклад, не можна змінювати role, credits, earnings, purchasedPrompts з клієнта).
 - Субколекції:
   - **carts/{cartId}** — кошик (promptIds, createdAt, updatedAt). Доступ лише власнику.
-  - **orders/{orderId}** — замовлення після Stripe. Доступ лише власнику.
   - **purchaseHistory/{docId}** — історія покупок (credits, prompt, cart, plan). Тільки читання власником; запис лише з бекенду.
-  - **followers/{followerId}**, **following/{followingId}** — підписки.
+  - **followers/{followerId}**, **following/{followingId}** — списки підписників та підписок.
+  - **notifications/{notificationId}** — сповіщення для користувача.
 
 ### public-profiles/{userId}
 
-- Публічні поля профілю (uid, username, displayName, photoURL, coverImageURL, description, followers, following, views, соцмережі). Оновлення лічильників обмежені правилами (лише +1/-1 для views/followers/following).
+- Публічні поля профілю (uid, username, displayName, photoURL, coverImageURL, description, followers, following, views, соцмережі, planId). Оновлення лічильників обмежені правилами (лише +1/-1).
 
 ### prompts/{promptId}
 
@@ -26,6 +26,14 @@
 - Субколекції:
   - **private/{docId}** — документ з id `content` містить захищений текст промпту (PromptPrivateContent). Читання — admin або купивші; запис — admin.
   - **comments/{commentId}** — коментарі (userId, text, rating, timestamp). Створення — якщо купив або безкоштовний промпт; редагування/видалення — автор або admin.
+
+### sales/{saleId}
+
+- Записи про всі транзакції на платформі (покупки промптів, кредитів, підписок). Використовується для аналітики. Запис тільки з бекенду.
+
+### payouts/{payoutId}
+
+- Запити користувачів на виплату зароблених кредитів. Доступ на читання та зміну статусу — лише для адмінів.
 
 ### Довідникові колекції (публічне читання, запис — admin)
 
@@ -45,6 +53,6 @@
 
 ## Типи (TypeScript)
 
-- Основні типи: `UserProfile`, `PublicProfile`, `Prompt`, `PromptPrivateContent`, `PromptComment`, `Cart`, `PurchaseHistoryRecord` тощо — у `src/lib/types.ts`.
+- Основні типи: `UserProfile`, `PublicProfile`, `Prompt`, `PromptPrivateContent`, `PromptComment`, `Cart`, `PurchaseHistoryRecord`, `SaleRecord`, `PayoutRequest`, `Notification` — у `src/lib/types.ts`.
 
 Правила безпеки та обмеження оновлень: [05-auth-security.md](05-auth-security.md). API для читання/запису: [06-api.md](06-api.md).
