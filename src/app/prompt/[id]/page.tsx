@@ -551,37 +551,16 @@ export default function PromptDetailPage() {
 			return <p>Prompt not found.</p>
 		}
 
-		const handleDownload = async () => {
-			if (!prompt || !promptImage) return;
-
-			try {
-				toast({ title: 'Preparing download...', description: 'Please wait.' });
-				const response = await fetch(promptImage);
-				if (!response.ok) {
-						throw new Error(`Failed to fetch image. Status: ${response.status}`);
-				}
-				const blob = await response.blob();
-				const url = window.URL.createObjectURL(blob);
-				const link = document.createElement('a');
-				link.href = url;
-				
-				const fileExtension = promptImage.split('.').pop()?.split('?')[0] || 'jpg';
-
-				link.setAttribute('download', `promptly_${prompt.id}.${fileExtension}`);
-				document.body.appendChild(link);
-				link.click();
-				
-				document.body.removeChild(link);
-				window.URL.revokeObjectURL(url);
-			} catch (error) {
-					console.error("Download error:", error);
-					toast({
-							variant: "destructive",
-							title: "Download Failed",
-							description: "Could not download image. You can try right-clicking the image to save it."
-					});
-			}
-		};
+		const handleDownload = () => {
+			if (!prompt || !promptImage) return
+			const link = document.createElement('a')
+			link.href = promptImage
+			const fileExtension = promptImage.split('.').pop()?.split('?')[0] || 'jpg'
+			link.setAttribute('download', `promptly_${prompt.id}.${fileExtension}`)
+			document.body.appendChild(link)
+			link.click()
+			document.body.removeChild(link)
+		}
 
 		const authorUsername = prompt.authorUsername
 		const authorDisplayName = prompt.authorDisplayName ?? 'Anonymous'
@@ -652,8 +631,13 @@ export default function PromptDetailPage() {
 									</DialogTrigger>
 									<DialogContent className='max-w-7xl w-full p-0 bg-transparent border-none shadow-none'>
 										<DialogHeader>
-											<DialogTitle className='sr-only'>Fullscreen image for: {prompt.title}</DialogTitle>
-											<DialogDescription className='sr-only'>A larger, fullscreen view of the example image for this prompt.</DialogDescription>
+											<DialogTitle className='sr-only'>
+												Fullscreen image for: {prompt.title}
+											</DialogTitle>
+											<DialogDescription className='sr-only'>
+												A larger, fullscreen view of the example image for this
+												prompt.
+											</DialogDescription>
 										</DialogHeader>
 										<Image
 											src={promptImage}
