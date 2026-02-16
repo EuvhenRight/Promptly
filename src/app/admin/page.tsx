@@ -14,9 +14,15 @@ import {
 	ChartTooltipContent,
 } from '@/components/ui/chart'
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase'
-import { Prompt, PromptComment, UserProfile } from '@/lib/types'
-import { collection, collectionGroup, query } from 'firebase/firestore'
-import { DollarSign, FileText, Loader2, Users } from 'lucide-react'
+import { PromptComment } from '@/lib/types'
+import { collectionGroup, query } from 'firebase/firestore'
+import {
+	CreditCard,
+	DollarSign,
+	FileText,
+	Loader2,
+	Package,
+} from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 
@@ -25,12 +31,25 @@ function StatCard({
 	value,
 	icon: Icon,
 	isLoading,
+	format = 'number',
 }: {
 	title: string
 	value: string | number
 	icon: React.ElementType
 	isLoading: boolean
+	format?: 'number' | 'currency'
 }) {
+	const formattedValue = useMemo(() => {
+		if (typeof value !== 'number') return value
+		if (format === 'currency') {
+			return new Intl.NumberFormat('de-DE', {
+				style: 'currency',
+				currency: 'EUR',
+			}).format(value)
+		}
+		return value.toLocaleString()
+	}, [value, format])
+
 	return (
 		<Card>
 			<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
@@ -41,7 +60,7 @@ function StatCard({
 				{isLoading ? (
 					<Loader2 className='h-6 w-6 animate-spin text-muted-foreground' />
 				) : (
-					<div className='text-2xl font-bold'>{value}</div>
+					<div className='text-2xl font-bold'>{formattedValue}</div>
 				)}
 			</CardContent>
 		</Card>
@@ -57,20 +76,24 @@ const chartConfig = {
 
 export default function AdminDashboardPage() {
 	const firestore = useFirestore()
+	const [stats, setStats] = useState<{
+		totalRevenue: number
+		platformEarnings: number
+		totalSalesCount: number
+		promptSalesCount: number
+	} | null>(null)
+	const [salesLoading, setSalesLoading] = useState(true)
 
-	const usersQuery = useMemoFirebase(
-		() => query(collection(firestore, 'users')),
-		[firestore],
-	)
-	const { data: users, isLoading: usersLoading } =
-		useCollection<UserProfile>(usersQuery)
-
-	const promptsQuery = useMemoFirebase(
-		() => query(collection(firestore, 'prompts')),
-		[firestore],
-	)
-	const { data: prompts, isLoading: promptsLoading } =
-		useCollection<Prompt>(promptsQuery)
+	useEffect(() => {
+		setSalesLoading(true)
+		fetch('/api/admin/sales?period=all')
+			.then(res => res.json())
+			.then(data => {
+				setStats(data.stats)
+			})
+			.catch(console.error)
+			.finally(() => setSalesLoading(false))
+	}, [])
 
 	const commentsQuery = useMemoFirebase(
 		() => query(collectionGroup(firestore, 'comments')),
@@ -113,14 +136,12 @@ export default function AdminDashboardPage() {
 		]
 	}, [ratingCounts])
 
-	// Note: Total Sales calculation would require querying 'orders' collection which is not implemented yet.
-	// Using a placeholder for now.
-	const totalSales = 'Not Implemented'
-
 	return (
 		<div className='min-w-0 space-y-4'>
 			<div className='flex items-center'>
-				<h1 className='font-headline text-2xl font-bold tracking-tight sm:text-3xl'>Dashboard</h1>
+				<h1 className='font-headline text-2xl font-bold tracking-tight sm:text-3xl'>
+					Dashboard
+				</h1>
 			</div>
 			<div className='grid min-w-0 gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-7'>
 				<Card className='min-w-0 lg:col-span-4'>
@@ -175,22 +196,30 @@ export default function AdminDashboardPage() {
 				</Card>
 				<div className='min-w-0 space-y-4 lg:col-span-3'>
 					<StatCard
-						title='Total Users'
-						value={users?.length ?? 0}
-						icon={Users}
-						isLoading={usersLoading}
+						title='Total Revenue'
+						value={stats?.totalRevenue ?? 0}
+						icon={DollarSign}
+						isLoading={salesLoading}
+						format='currency'
 					/>
 					<StatCard
-						title='Total Prompts'
-						value={prompts?.length ?? 0}
-						icon={FileText}
-						isLoading={promptsLoading}
+						title='Platform Earnings'
+						value={stats?.platformEarnings ?? 0}
+						icon={CreditCard}
+						isLoading={salesLoading}
+						format='currency'
 					/>
 					<StatCard
 						title='Total Sales'
-						value={totalSales}
-						icon={DollarSign}
-						isLoading={false}
+						value={stats?.totalSalesCount ?? 0}
+						icon={Package}
+						isLoading={salesLoading}
+					/>
+					<StatCard
+						title='Prompts Sold'
+						value={stats?.promptSalesCount ?? 0}
+						icon={FileText}
+						isLoading={salesLoading}
 					/>
 				</div>
 			</div>
