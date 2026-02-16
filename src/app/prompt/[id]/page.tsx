@@ -554,11 +554,6 @@ export default function PromptDetailPage() {
 			return <p>Prompt not found.</p>
 		}
 
-		const handleDownload = () => {
-			if (!promptImage) return;
-			window.open(promptImage, '_blank', 'noopener,noreferrer');
-		}
-
 		const authorUsername = prompt.authorUsername
 		const authorDisplayName = prompt.authorDisplayName ?? 'Anonymous'
 		const authorPhotoURL = prompt.authorPhotoURL ?? ''
@@ -632,7 +627,7 @@ export default function PromptDetailPage() {
 											<span className='sr-only'>View fullscreen</span>
 										</Button>
 									</DialogTrigger>
-									<DialogContent className='max-w-7xl w-full p-0 bg-transparent border-none shadow-none'>
+									<DialogContent className='max-w-7xl w-full p-0 bg-transparent border-none shadow-none' hideCloseButton>
 										<DialogHeader>
 											<DialogTitle className='sr-only'>
 												Fullscreen image for: {prompt.title}

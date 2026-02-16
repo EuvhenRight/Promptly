@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge'
 import { useCategories } from '@/hooks/use-categories'
 import type { Prompt, UserProfile } from '@/lib/types'
-import { Check, Coins, Crown, Eye, Heart, PlusCircle } from 'lucide-react'
+import { Check, Coins, Crown, Eye, Heart, PlusCircle, ShoppingCart } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Skeleton } from '../ui/skeleton'
@@ -16,7 +16,6 @@ import React from 'react'
 import { PlaceHolderImages } from '@/lib/placeholder-images'
 import { addPromptToCart } from '@/firebase/cart'
 import { Button } from '../ui/button'
-import { ShoppingCart } from 'lucide-react'
 
 type PromptCardProps = {
 	prompt: Prompt
