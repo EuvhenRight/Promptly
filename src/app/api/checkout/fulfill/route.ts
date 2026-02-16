@@ -161,6 +161,7 @@ export async function POST(req: NextRequest) {
 				promptIds: [],
 				plan: plan,
 				billing: billing,
+				creditsAmount: creditsAmount,
 				revenueDetails: {
 					gross: amountTotal,
 					platformFee: amountTotal,
