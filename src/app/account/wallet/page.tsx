@@ -18,7 +18,7 @@ import { requestPayout } from '@/firebase/users'
 import { useToast } from '@/hooks/use-toast'
 import type { UserProfile } from '@/lib/types'
 import { doc } from 'firebase/firestore'
-import { Banknote, Coins, Info, Loader2 } from 'lucide-react'
+import { Banknote, CheckCircle, Coins, Info, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -41,6 +41,13 @@ function PayoutStatusInfo({ status }: { status: UserProfile['payoutStatus'] }) {
 			title: 'Payout Pending',
 			description:
 				'Your request is awaiting review. This usually takes 3-5 business days.',
+			variant: 'default',
+		},
+		approved: {
+			icon: <CheckCircle className='h-4 w-4 text-blue-500' />,
+			title: 'Payout Approved',
+			description:
+				'Your request has been approved and will be processed soon.',
 			variant: 'default',
 		},
 		processing: {
@@ -70,6 +77,10 @@ function PayoutStatusInfo({ status }: { status: UserProfile['payoutStatus'] }) {
 	}
 
 	const currentStatus = statusMap[status]
+
+	if (!currentStatus) {
+		return null
+	}
 
 	return (
 		<Card className='bg-muted/50'>

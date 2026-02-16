@@ -53,7 +53,13 @@ export type UserProfile = {
 	/** Credit balance earned from prompt sales, available for payout. */
 	earnings?: number
 	/** Current status of a pending payout request. */
-	payoutStatus?: 'none' | 'pending' | 'processing' | 'paid' | 'rejected'
+	payoutStatus?:
+		| 'none'
+		| 'pending'
+		| 'approved'
+		| 'processing'
+		| 'paid'
+		| 'rejected'
 	purchasedPrompts?: string[]
 	favoritePrompts?: string[]
 	isSeller?: boolean
