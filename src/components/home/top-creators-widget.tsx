@@ -1,78 +1,104 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DUMMY_CREATORS } from '@/lib/dummy-data';
-import { cn } from '@/lib/utils';
-import { Crown, TrendingUp } from 'lucide-react';
+'use client'
 
-type TopCreatorsWidgetProps = {
-  className?: string;
-};
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Crown, TrendingUp } from 'lucide-react'
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase'
+import { collection, orderBy, query, limit } from 'firebase/firestore'
+import Link from 'next/link'
+import type { PublicProfile } from '@/lib/types'
+import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
 
-const creatorsByWeek = [...DUMMY_CREATORS].sort(
-  (a, b) => (b.stats?.weeklySales ?? 0) - (a.stats?.weeklySales ?? 0)
-);
-const creatorsByMonth = [...DUMMY_CREATORS].sort(
-  (a, b) => (b.stats?.monthlySales ?? 0) - (a.stats?.monthlySales ?? 0)
-);
-const creatorsByAllTime = [...DUMMY_CREATORS].sort(
-  (a, b) => (b.stats?.totalSales ?? 0) - (a.stats?.totalSales ?? 0)
-);
+const TopCreatorsSkeleton = () => (
+	<div className='space-y-4'>
+		{Array.from({ length: 5 }).map((_, i) => (
+			<div key={i} className='flex items-center gap-3'>
+				<Skeleton className='h-10 w-10 rounded-full' />
+				<div className='flex-1 space-y-1'>
+					<Skeleton className='h-4 w-24' />
+					<Skeleton className='h-3 w-16' />
+				</div>
+			</div>
+		))}
+	</div>
+)
 
+const CreatorList = ({ creators }: { creators: PublicProfile[] }) => (
+	<div className='space-y-4'>
+		{creators.map((creator, index) => (
+			<Link
+				href={`/user/${creator.username}`}
+				key={creator.uid}
+				className='flex items-center gap-4 group'
+			>
+				<span className='text-lg font-bold text-muted-foreground w-6 text-center'>
+					{index + 1}
+				</span>
+				<Avatar className='h-10 w-10'>
+					<AvatarImage src={creator.photoURL} alt={creator.displayName} />
+					<AvatarFallback>
+						{creator.displayName.charAt(0).toUpperCase()}
+					</AvatarFallback>
+				</Avatar>
+				<div className='flex-grow min-w-0'>
+					<p className='font-semibold group-hover:text-primary truncate'>
+						{creator.displayName}
+					</p>
+					<p className='text-sm text-muted-foreground'>
+						{creator.followers?.toLocaleString() ?? 0} followers
+					</p>
+				</div>
+				{index === 0 && <Crown className='h-6 w-6 text-yellow-500' />}
+			</Link>
+		))}
+	</div>
+)
 
-const CreatorList = ({ creators, metric }: { creators: typeof DUMMY_CREATORS, metric: 'weekly' | 'monthly' | 'total' }) => (
-    <div className="space-y-4">
-    {creators.slice(0, 5).map((creator, index) => (
-      <div key={creator.uid} className="flex items-center gap-4">
-        <span className="text-lg font-bold text-muted-foreground w-6 text-center">{index + 1}</span>
-        <Avatar>
-          <AvatarImage src={creator.photoURL} alt={creator.displayName} />
-          <AvatarFallback>{creator.displayName.charAt(0)}</AvatarFallback>
-        </Avatar>
-        <div className="flex-grow">
-          <p className="font-semibold truncate">{creator.displayName}</p>
-          <p className="text-sm text-muted-foreground">
-            {metric === 'total' && `$${((creator.stats?.totalSales ?? 0) / 1000).toFixed(1)}k sales`}
-            {metric === 'monthly' && `$${((creator.stats?.monthlySales ?? 0) / 1000).toFixed(1)}k this month`}
-            {metric === 'weekly' && `$${creator.stats?.weeklySales ?? 0} this week`}
-          </p>
-        </div>
-        {index === 0 && <Crown className="h-6 w-6 text-yellow-500" />}
-      </div>
-    ))}
-  </div>
-);
+export default function TopCreatorsWidget({
+	className,
+}: {
+	className?: string
+}) {
+	const firestore = useFirestore()
 
-export default function TopCreatorsWidget({ className }: TopCreatorsWidgetProps) {
-  return (
-    <aside className={cn('space-y-6', className)}>
-      <div className="sticky top-24">
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-headline text-2xl flex items-center gap-2">
-              <TrendingUp className="h-6 w-6" /> Top Creators
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="week" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="week">Week</TabsTrigger>
-                <TabsTrigger value="month">Month</TabsTrigger>
-                <TabsTrigger value="all-time">All Time</TabsTrigger>
-              </TabsList>
-              <TabsContent value="week" className="mt-4">
-                <CreatorList creators={creatorsByWeek} metric="weekly" />
-              </TabsContent>
-              <TabsContent value="month" className="mt-4">
-                 <CreatorList creators={creatorsByMonth} metric="monthly" />
-              </TabsContent>
-              <TabsContent value="all-time" className="mt-4">
-                 <CreatorList creators={creatorsByAllTime} metric="total" />
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-      </div>
-    </aside>
-  );
+	const topCreatorsQuery = useMemoFirebase(
+		() =>
+			firestore
+				? query(
+						collection(firestore, 'public-profiles'),
+						orderBy('followers', 'desc'),
+						limit(5),
+					)
+				: null,
+		[firestore],
+	)
+
+	const { data: topCreators, isLoading } =
+		useCollection<PublicProfile>(topCreatorsQuery)
+
+	return (
+		<aside className={cn('space-y-6', className)}>
+			<div className='sticky top-24'>
+				<Card>
+					<CardHeader>
+						<CardTitle className='font-headline text-2xl flex items-center gap-2'>
+							<TrendingUp className='h-6 w-6' /> Top Creators
+						</CardTitle>
+					</CardHeader>
+					<CardContent>
+						{isLoading ? (
+							<TopCreatorsSkeleton />
+						) : !topCreators || topCreators.length === 0 ? (
+							<p className='text-sm text-muted-foreground text-center py-4'>
+								No creators found yet.
+							</p>
+						) : (
+							<CreatorList creators={topCreators} />
+						)}
+					</CardContent>
+				</Card>
+			</div>
+		</aside>
+	)
 }

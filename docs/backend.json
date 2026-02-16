@@ -1,5 +1,61 @@
 {
   "entities": {
+    "Sale": {
+      "title": "Sale Record",
+      "type": "object",
+      "description": "A record of a single completed transaction on the platform.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "The type of purchase.",
+          "enum": ["prompt", "cart", "credits", "subscription"]
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the sale.",
+          "enum": ["completed", "refunded"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the sale occurred."
+        },
+        "buyerId": {
+          "type": "string",
+          "description": "The UID of the user who made the purchase."
+        },
+        "sellerId": {
+          "type": "string",
+          "description": "The UID of the user who sold the prompt (if applicable)."
+        },
+        "promptIds": {
+          "type": "array",
+          "description": "An array of prompt IDs included in the sale.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "revenueDetails": {
+          "type": "object",
+          "properties": {
+            "gross": {
+              "type": "number",
+              "description": "The total transaction amount in the smallest currency unit (e.g., cents)."
+            },
+            "platformFee": {
+              "type": "number",
+              "description": "The portion of the gross amount taken by the platform, in cents."
+            },
+            "sellerEarning": {
+              "type": "number",
+              "description": "The net amount earned by the seller, in cents."
+            }
+          },
+          "required": ["gross", "platformFee", "sellerEarning"]
+        }
+      },
+      "required": ["type", "status", "createdAt", "buyerId", "revenueDetails"]
+    },
     "UserProfile": {
       "title": "User Profile",
       "type": "object",
@@ -35,12 +91,51 @@
             "admin"
           ]
         },
+        "planId": {
+          "type": "string",
+          "description": "The identifier of the user's current subscription plan.",
+          "enum": ["free", "starter", "pro"]
+        },
+        "planPurchasedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the current plan was purchased or renewed."
+        },
+        "planBillingPeriod": {
+          "type": "string",
+          "description": "The billing cycle for the subscription.",
+          "enum": ["monthly", "yearly"]
+        },
+        "planWillCancelAtPeriodEnd": {
+          "type": "boolean",
+          "description": "If true, the subscription will not auto-renew at the end of the current period."
+        },
         "purchasedPrompts": {
           "type": "array",
           "description": "An array of prompt IDs that the user has purchased.",
           "items": {
             "type": "string"
           }
+        },
+        "credits": {
+          "type": "number",
+          "description": "Credit balance purchased by the user."
+        },
+        "earnings": {
+          "type": "number",
+          "description": "Credit balance earned from prompt sales, available for payout."
+        },
+        "payoutStatus": {
+          "type": "string",
+          "description": "Current status of a pending payout request.",
+          "enum": [
+            "none",
+            "pending",
+            "approved",
+            "processing",
+            "paid",
+            "rejected"
+          ]
         }
       },
       "required": [
@@ -75,6 +170,13 @@
         "coverImageURL": {
           "type": "string",
           "format": "uri"
+        },
+        "planId": {
+          "type": "string",
+          "enum": ["free", "starter", "pro"]
+        },
+        "isVerified": {
+          "type": "boolean"
         }
       },
       "required": [
@@ -119,13 +221,13 @@
             "type": "string"
           }
         },
-        "categories": {
-          "type": "array",
-          "items": {
+        "categoryId": {
             "type": "string"
-          }
         },
         "modelId": {
+          "type": "string"
+        },
+        "typeId": {
           "type": "string"
         },
         "rating": {
@@ -216,65 +318,91 @@
         "updatedAt"
       ]
     },
-    "Order": {
+    "PurchaseHistoryRecord": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Order",
+      "title": "Purchase History Record",
       "type": "object",
-      "description": "Represents a completed order placed by a user.",
+      "description": "Represents a single entry in a user's purchase history.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the order."
-        },
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["prompt", "cart", "credits", "plan"] },
+        "amountCents": { "type": "number" },
+        "currency": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "promptIds": { "type": "array", "items": { "type": "string" } },
+        "promptTitles": { "type": "array", "items": { "type": "string" } },
+        "creditsAmount": { "type": "number" },
+        "plan": { "type": "string", "enum": ["starter", "pro"] },
+        "billing": { "type": "string", "enum": ["monthly", "yearly"] },
+        "description": { "type": "string" }
+      },
+      "required": ["id", "type", "amountCents", "currency", "createdAt"]
+    },
+    "PayoutRequest": {
+      "title": "Payout Request",
+      "type": "object",
+      "description": "Represents a user's request to withdraw their earnings.",
+      "properties": {
+        "id": { "type": "string" },
         "userId": {
-          "type": "string",
-          "description": "Reference to the User who placed the order. (Relationship: User 1:N Order)"
+          "type": "string"
         },
-        "promptIds": {
-          "type": "array",
-          "description": "References to Prompts included in the order. (Relationship: Order 1:N Prompt)",
-          "items": {
-            "type": "string"
-          }
+        "amountCredits": {
+          "type": "number"
         },
-        "orderDate": {
-          "type": "string",
-          "description": "Date and time when the order was placed.",
-          "format": "date-time"
+        "amountCurrency": {
+          "type": "number"
         },
-        "totalAmount": {
-          "type": "number",
-          "description": "Total amount paid for the order."
-        },
-        "paymentMethod": {
-          "type": "string",
-          "description": "Payment method used for the order (e.g., credit card, PayPal)."
-        },
-        "shippingAddress": {
-          "type": "string",
-          "description": "Shipping address for the order."
+        "currency": {
+          "type": "string"
         },
         "status": {
           "type": "string",
-          "description": "Status of the order (e.g., pending, processing, shipped, delivered)."
+          "enum": [
+            "pending",
+            "approved",
+            "rejected",
+            "paid"
+          ]
+        },
+        "requestedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "processedAt": {
+          "type": "string",
+          "format": "date-time"
         }
       },
       "required": [
         "id",
         "userId",
-        "promptIds",
-        "orderDate",
-        "totalAmount",
-        "paymentMethod",
-        "shippingAddress",
-        "status"
+        "amountCredits",
+        "status",
+        "requestedAt"
       ]
+    },
+    "Notification": {
+      "title": "Notification",
+      "type": "object",
+      "description": "Represents a notification for a user (e.g., a sale, a payout status change).",
+      "properties": {
+        "id": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": ["sale", "payout", "follow", "comment", "like"]
+        },
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "link": { "type": "string", "format": "uri" },
+        "isRead": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "type", "title", "createdAt", "isRead"]
     }
   },
   "auth": {
     "providers": [
-      "password",
-      "anonymous",
       "google.com"
     ]
   },
@@ -285,15 +413,9 @@
         "definition": {
           "entityName": "UserProfile",
           "schema": {
-            "$ref": "#/backend/entities/UserProfile"
+            "$ref": "#/entities/UserProfile"
           },
-          "description": "Stores user profile information, including roles and purchases.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user."
-            }
-          ]
+          "description": "Stores user profile information, including roles and purchases."
         }
       },
       {
@@ -301,15 +423,9 @@
         "definition": {
           "entityName": "PublicProfile",
           "schema": {
-            "$ref": "#/backend/entities/PublicProfile"
+            "$ref": "#/entities/PublicProfile"
           },
-          "description": "Stores public-facing user profile information.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user."
-            }
-          ]
+          "description": "Stores public-facing user profile information."
         }
       },
       {
@@ -317,39 +433,29 @@
         "definition": {
           "entityName": "Cart",
           "schema": {
-            "$ref": "#/backend/entities/Cart"
+            "$ref": "#/entities/Cart"
           },
-          "description": "Stores shopping carts for each user. Path-based ownership ensures clear access control.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user who owns the cart."
-            },
-            {
-              "name": "cartId",
-              "description": "The ID of the cart."
-            }
-          ]
+          "description": "Stores shopping carts for each user."
         }
       },
       {
-        "path": "/users/{userId}/orders/{orderId}",
+        "path": "/users/{userId}/purchaseHistory/{historyId}",
         "definition": {
-          "entityName": "Order",
+          "entityName": "PurchaseHistoryRecord",
           "schema": {
-            "$ref": "#/backend/entities/Order"
+            "$ref": "#/entities/PurchaseHistoryRecord"
           },
-          "description": "Stores order data for each user. Path-based ownership ensures that users can only access their own order history.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user who placed the order."
-            },
-            {
-              "name": "orderId",
-              "description": "The ID of the order."
-            }
-          ]
+          "description": "Stores purchase history for each user."
+        }
+      },
+       {
+        "path": "/users/{userId}/notifications/{notificationId}",
+        "definition": {
+          "entityName": "Notification",
+          "schema": {
+            "$ref": "#/entities/Notification"
+          },
+          "description": "Stores notifications for a user."
         }
       },
       {
@@ -357,7 +463,7 @@
         "definition": {
           "entityName": "Prompt",
           "schema": {
-            "$ref": "#/backend/entities/Prompt"
+            "$ref": "#/entities/Prompt"
           },
           "description": "Publicly accessible data for a prompt listing."
         }
@@ -367,7 +473,7 @@
         "definition": {
           "entityName": "Model",
           "schema": {
-            "$ref": "#/backend/entities/Model"
+            "$ref": "#/entities/Model"
           },
           "description": "Publicly accessible list of AI models."
         }
@@ -377,12 +483,32 @@
         "definition": {
           "entityName": "PromptPrivateContent",
           "schema": {
-            "$ref": "#/backend/entities/PromptPrivateContent"
+            "$ref": "#/entities/PromptPrivateContent"
           },
           "description": "Private content of a prompt, accessible only after purchase or by admins."
         }
+      },
+      {
+        "path": "/payouts/{payoutId}",
+        "definition": {
+          "entityName": "PayoutRequest",
+          "schema": {
+            "$ref": "#/entities/PayoutRequest"
+          },
+          "description": "Stores all user requests for payouts. Accessible only by admins."
+        }
+      },
+      {
+        "path": "/sales/{saleId}",
+        "definition": {
+          "entityName": "Sale",
+          "schema": {
+            "$ref": "#/entities/Sale"
+          },
+          "description": "Centralized collection for all sale transactions for analytics and admin purposes."
+        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to support a shopping cart and order management system for the PromptVerse application. It focuses on user-centric data organization and authorization independence.  The `/users/{userId}/carts` collection stores individual user carts, linking each cart directly to a user. This path-based ownership ensures clear ownership and straightforward security rules. The `/users/{userId}/orders` collection similarly stores user-specific order data. Both cart and order data are segregated into user-specific subcollections to maintain a homogeneous security posture. This design avoids complex queries and simplifies security rules, as access control is primarily based on the authenticated user's ID. The absence of a global 'carts' or 'orders' collection enforces that users can only access their own carts and orders. This structure facilitates secure `list` operations because each user's data is isolated within their own subcollection. No denormalization is explicitly required in this basic cart/order structure as ownership is directly implied by the path."
+    "reasoning": "The Firestore structure is designed for a full-featured marketplace. It separates private user data (users) from public data (public-profiles) for security and query performance. Subcollections under users (carts, purchaseHistory, notifications) ensure data is scoped to the user, simplifying security rules. Centralized collections like sales and payouts are designed for admin access and analytics. Reference data (categories, tags, models) is kept separate for easy management."
   }
 }

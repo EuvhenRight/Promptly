@@ -36,6 +36,7 @@ export function usePromptsFeed({
 	sortBy,
 	searchTerm,
 	privateOnly,
+	excludeAuthorId,
 }: {
 	categoryId: string | null
 	typeId: string | null
@@ -44,6 +45,7 @@ export function usePromptsFeed({
 	sortBy: SortByOption
 	searchTerm: string | null
 	privateOnly?: boolean
+	excludeAuthorId?: string | null
 }) {
 	const firestore = useFirestore()
 	const [prompts, setPrompts] = useState<Prompt[]>([])
@@ -172,6 +174,10 @@ export function usePromptsFeed({
 					setHasMore(false)
 				}
 
+				if (excludeAuthorId) {
+					newPrompts = newPrompts.filter(p => p.authorId !== excludeAuthorId)
+				}
+
 				const lastDoc =
 					documentSnapshots.docs[documentSnapshots.docs.length - 1]
 				setLastVisible(lastDoc || null)
@@ -202,6 +208,7 @@ export function usePromptsFeed({
 			sortBy,
 			searchTerm,
 			privateOnly,
+			excludeAuthorId,
 		],
 	)
 
@@ -221,13 +228,12 @@ export function usePromptsFeed({
 		sortBy,
 		searchTerm,
 		privateOnly,
+		excludeAuthorId,
 	])
 
 	const loadMore = useCallback(() => {
-		if (hasMore && !loading) {
-			fetchPrompts(false)
-		}
-	}, [hasMore, loading, fetchPrompts])
+		fetchPrompts(false)
+	}, [fetchPrompts])
 
 	return { prompts, loading, error, hasMore, loadMore, totalCount }
 }

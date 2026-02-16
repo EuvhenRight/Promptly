@@ -91,6 +91,7 @@ export default function AccountPage() {
 	const [showFeaturedImage, setShowFeaturedImage] = useState<boolean | null>(
 		null,
 	)
+	const [hideMyPrompts, setHideMyPrompts] = useState<boolean | null>(null)
 
 	const userProfileRef = useMemoFirebase(
 		() => (user ? doc(firestore, 'users', user.uid) : null),
@@ -100,26 +101,35 @@ export default function AccountPage() {
 	const isPro = userProfile?.planId === 'pro'
 	const credits = userProfile?.credits ?? 0
 
-	// Load and save the featured image toggle preference from/to localStorage
+	// Load and save preferences from/to localStorage
 	useEffect(() => {
 		if (!isPro) {
 			setShowFeaturedImage(false)
+			setHideMyPrompts(false)
 			return
 		}
 		const storedPreference = localStorage.getItem('showFeaturedImage')
-		// Set state based on stored value, defaulting to true if not found
 		setShowFeaturedImage(
 			storedPreference !== null ? JSON.parse(storedPreference) : true,
+		)
+		const storedHideMyPrompts = localStorage.getItem('hideMyPrompts')
+		setHideMyPrompts(
+			storedHideMyPrompts !== null ? JSON.parse(storedHideMyPrompts) : false,
 		)
 	}, [isPro])
 
 	useEffect(() => {
 		if (!isPro) return
-		// Only save to localStorage if the state has been initialized
 		if (showFeaturedImage !== null) {
-			localStorage.setItem('showFeaturedImage', JSON.stringify(showFeaturedImage))
+			localStorage.setItem(
+				'showFeaturedImage',
+				JSON.stringify(showFeaturedImage),
+			)
 		}
-	}, [showFeaturedImage, isPro])
+		if (hideMyPrompts !== null) {
+			localStorage.setItem('hideMyPrompts', JSON.stringify(hideMyPrompts))
+		}
+	}, [showFeaturedImage, hideMyPrompts, isPro])
 
 	// Warn user about unsaved changes before leaving the page
 	useEffect(() => {
@@ -626,6 +636,43 @@ export default function AccountPage() {
 											id='featured-image-switch'
 											checked={isPro ? showFeaturedImage : false}
 											onCheckedChange={setShowFeaturedImage}
+											disabled={!isPro}
+										/>
+									</div>
+								)}
+								{hideMyPrompts !== null && (
+									<div
+										className={cn(
+											'mt-4 flex items-center justify-between rounded-lg border p-4',
+											!isPro && 'bg-muted/50',
+										)}
+									>
+										<Label
+											htmlFor={isPro ? 'hide-my-prompts-switch' : undefined}
+											className={cn(
+												'flex flex-col space-y-1',
+												isPro && 'cursor-pointer',
+											)}
+										>
+											<div className='flex items-center gap-2'>
+												<span>Hide My Prompts in Feed</span>
+												<Badge
+													variant='outline'
+													className='border-primary text-primary font-bold'
+												>
+													PRO
+												</Badge>
+											</div>
+											<span className='font-normal leading-snug text-muted-foreground'>
+												{isPro
+													? 'Do not show your own creations in the main feed.'
+													: 'Available for PRO users.'}
+											</span>
+										</Label>
+										<Switch
+											id='hide-my-prompts-switch'
+											checked={isPro ? !!hideMyPrompts : false}
+											onCheckedChange={setHideMyPrompts}
 											disabled={!isPro}
 										/>
 									</div>

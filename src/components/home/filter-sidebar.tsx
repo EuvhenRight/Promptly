@@ -6,23 +6,28 @@ import {
 	AccordionItem,
 	AccordionTrigger,
 } from '@/components/ui/accordion'
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Label } from '@/components/ui/label'
-import { Slider } from '@/components/ui/slider'
 import { useCategories } from '@/hooks/use-categories'
 import { useTags } from '@/hooks/use-tags'
 import { cn } from '@/lib/utils'
 
 type FilterSidebarProps = {
 	className?: string
+	selectedCategoryId: string | null
+	onCategoryChange: (id: string | null) => void
+	selectedTagId: string | null
+	onTagChange: (id: string | null) => void
 }
 
-export default function FilterSidebar({ className }: FilterSidebarProps) {
+export default function FilterSidebar({
+	className,
+	selectedCategoryId,
+	onCategoryChange,
+	selectedTagId,
+	onTagChange,
+}: FilterSidebarProps) {
 	const { categories, isLoading: categoriesLoading } = useCategories()
 	const { tags, isLoading: tagsLoading } = useTags()
-	// Hydrate the categories and tags
 
 	return (
 		<aside className={cn('space-y-6', className)}>
@@ -34,7 +39,7 @@ export default function FilterSidebar({ className }: FilterSidebarProps) {
 					<CardContent>
 						<Accordion
 							type='multiple'
-							defaultValue={['categories', 'models', 'price']}
+							defaultValue={['categories', 'tags']}
 							className='w-full'
 						>
 							<AccordionItem value='categories'>
@@ -42,7 +47,7 @@ export default function FilterSidebar({ className }: FilterSidebarProps) {
 									Categories
 								</AccordionTrigger>
 								<AccordionContent>
-									<div className='space-y-3'>
+									<div className='space-y-2 pt-2'>
 										{categoriesLoading ? (
 											<p className='text-sm text-muted-foreground'>
 												Loading categories…
@@ -53,29 +58,33 @@ export default function FilterSidebar({ className }: FilterSidebarProps) {
 											</p>
 										) : (
 											categories.map(category => (
-												<div
+												<button
 													key={category.id}
-													className='flex items-center space-x-2'
+													onClick={() =>
+														onCategoryChange(
+															selectedCategoryId === category.id
+																? null
+																: category.id,
+														)
+													}
+													className={cn(
+														'block w-full text-left text-sm rounded-md p-2 transition-colors',
+														selectedCategoryId === category.id
+															? 'bg-muted font-semibold text-primary'
+															: 'hover:bg-muted/50',
+													)}
 												>
-													<Checkbox id={`cat-${category.id}`} />
-													<Label
-														htmlFor={`cat-${category.id}`}
-														className='font-normal'
-													>
-														{category.name}
-													</Label>
-												</div>
+													{category.name}
+												</button>
 											))
 										)}
 									</div>
 								</AccordionContent>
 							</AccordionItem>
-							<AccordionItem value='models'>
-								<AccordionTrigger className='font-semibold'>
-									Tags
-								</AccordionTrigger>
+							<AccordionItem value='tags'>
+								<AccordionTrigger className='font-semibold'>Tags</AccordionTrigger>
 								<AccordionContent>
-									<div className='space-y-3'>
+									<div className='space-y-2 pt-2'>
 										{tagsLoading ? (
 											<p className='text-sm text-muted-foreground'>
 												Loading tags…
@@ -86,34 +95,22 @@ export default function FilterSidebar({ className }: FilterSidebarProps) {
 											</p>
 										) : (
 											tags.map(tag => (
-												<div
+												<button
 													key={tag.id}
-													className='flex items-center space-x-2'
+													onClick={() =>
+														onTagChange(selectedTagId === tag.id ? null : tag.id)
+													}
+													className={cn(
+														'block w-full text-left text-sm rounded-md p-2 transition-colors',
+														selectedTagId === tag.id
+															? 'bg-muted font-semibold text-primary'
+															: 'hover:bg-muted/50',
+													)}
 												>
-													<Checkbox id={`tag-${tag.id}`} />
-													<Label
-														htmlFor={`tag-${tag.id}`}
-														className='font-normal'
-													>
-														{tag.name}
-													</Label>
-												</div>
+													{tag.name}
+												</button>
 											))
 										)}
-									</div>
-								</AccordionContent>
-							</AccordionItem>
-							<AccordionItem value='price'>
-								<AccordionTrigger className='font-semibold'>
-									Price Range
-								</AccordionTrigger>
-								<AccordionContent>
-									<div className='px-1 pt-2'>
-										<Slider defaultValue={[0, 50]} max={100} step={1} />
-										<div className='mt-2 flex justify-between text-sm text-muted-foreground'>
-											<span>$0</span>
-											<span>$100+</span>
-										</div>
 									</div>
 								</AccordionContent>
 							</AccordionItem>

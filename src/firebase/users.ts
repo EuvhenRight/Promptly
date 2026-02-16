@@ -1,6 +1,6 @@
 'use client'
 
-import type { PublicProfile, UserProfile } from '@/lib/types'
+import type { PayoutRequest, PublicProfile, UserProfile, Prompt } from '@/lib/types'
 import { getAuth, updateProfile } from 'firebase/auth'
 import {
 	Firestore,
@@ -19,6 +19,7 @@ import {
 	increment,
 	writeBatch,
 	serverTimestamp,
+	type Timestamp,
 } from 'firebase/firestore'
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
 
@@ -36,6 +37,7 @@ export type UpdateUserData = Partial<
 		| 'xProfile'
 		| 'instagramProfile'
 		| 'facebookProfile'
+		| 'isVerified'
 	>
 >
 
@@ -154,6 +156,8 @@ export async function updateUserProfile(
 				firestoreData.instagramProfile = data.instagramProfile
 			if (data.facebookProfile !== undefined)
 				firestoreData.facebookProfile = data.facebookProfile
+			if (data.isVerified !== undefined)
+				firestoreData.isVerified = data.isVerified
 
 			// Update the main user profile document
 			if (Object.keys(firestoreData).length > 0) {
@@ -180,6 +184,7 @@ export async function updateUserProfile(
 					data.instagramProfile ?? userProfileData.instagramProfile ?? '',
 				facebookProfile:
 					data.facebookProfile ?? userProfileData.facebookProfile ?? '',
+				isVerified: data.isVerified ?? userProfileData.isVerified ?? false,
 			}
 			transaction.set(publicProfileRef, publicProfileData, { merge: true })
 		})
@@ -191,7 +196,8 @@ export async function updateUserProfile(
 			const authUpdates: { displayName?: string; photoURL?: string } = {}
 			if (data.displayName !== undefined)
 				authUpdates.displayName = data.displayName
-			if (data.photoURL !== undefined) authUpdates.photoURL = data.photoURL
+			if (data.photoURL !== undefined)
+				authUpdates.photoURL = data.photoURL
 			if (Object.keys(authUpdates).length > 0) {
 				await updateProfile(currentUser, authUpdates)
 			}
@@ -206,6 +212,8 @@ export async function updateUserProfile(
 
 /**
  * Adds or removes a prompt from the user's favorites and updates the prompt's like count.
+ * Notification creation for the author has been removed for security reasons and
+ * should be reimplemented using a trusted server environment (e.g., Cloud Functions).
  */
 export async function toggleFavoritePrompt(
 	firestore: Firestore,
@@ -218,21 +226,22 @@ export async function toggleFavoritePrompt(
 	const userRef = doc(firestore, 'users', userId)
 	const promptRef = doc(firestore, 'prompts', promptId)
 
-	// Two separate non-atomic writes. This is necessary because a client-side
-	// transaction cannot update two separate documents with granular field-level
-	// security rules like ours.
-	const userUpdate = updateDoc(userRef, {
+	const batch = writeBatch(firestore)
+
+	batch.update(userRef, {
 		favoritePrompts: isFavorite ? arrayRemove(promptId) : arrayUnion(promptId),
 	})
 
-	const promptUpdate = updateDoc(promptRef, {
+	batch.update(promptRef, {
 		'stats.likes': increment(isFavorite ? -1 : 1),
 	})
+	
+	// TODO: Re-implement "like" notifications via a secure server-side function.
+	// The previous client-side implementation was a security risk, as it allowed
+	// any user to create a notification for any other user.
 
-	// Run them in parallel for better performance.
-	await Promise.all([userUpdate, promptUpdate])
+	await batch.commit()
 }
-
 
 /**
  * Increments the view count of a user's profile.
@@ -242,19 +251,17 @@ export function incrementProfileView(firestore: Firestore, userId: string) {
 	if (!userId) return
 	const publicProfileRef = doc(firestore, 'public-profiles', userId)
 
-	// Increment public profile views. This is a non-blocking "fire and forget" operation.
 	updateDoc(publicProfileRef, {
 		views: increment(1),
 	}).catch(err => {
-		// We don't want to bother the user if this fails. Log it for monitoring.
 		console.warn(`Failed to increment profile view count for ${userId}:`, err)
 	})
 }
 
 /**
  * Makes the current user follow a target user.
- * Creates documents in subcollections to represent the relationship.
- * Also updates the follower/following counts on the main profile documents.
+ * Notification creation for the author has been removed for security reasons and
+ * should be reimplemented using a trusted server environment (e.g., Cloud Functions).
  */
 export async function followUser(
 	firestore: Firestore,
@@ -265,42 +272,36 @@ export async function followUser(
 		throw new Error('Invalid user IDs provided.')
 	}
 
-	const batch = writeBatch(firestore)
+	await runTransaction(firestore, async transaction => {
+		const currentUserPublicRef = doc(firestore, 'public-profiles', currentUserId)
+		const targetUserPublicRef = doc(firestore, 'public-profiles', targetUserId)
+		const followingRef = doc(
+			firestore,
+			'users',
+			currentUserId,
+			'following',
+			targetUserId,
+		)
+		const followerRef = doc(
+			firestore,
+			'users',
+			targetUserId,
+			'followers',
+			currentUserId,
+		)
 
-	// Add target to current user's 'following' list (subcollection)
-	const followingRef = doc(
-		firestore,
-		'users',
-		currentUserId,
-		'following',
-		targetUserId,
-	)
-	batch.set(followingRef, { followedAt: serverTimestamp() })
+		transaction.set(followingRef, { followedAt: serverTimestamp() })
+		transaction.set(followerRef, { followedAt: serverTimestamp() })
+		transaction.update(currentUserPublicRef, { following: increment(1) })
+		transaction.update(targetUserPublicRef, { followers: increment(1) })
 
-	// Add current user to target's 'followers' list (subcollection)
-	const followerRef = doc(
-		firestore,
-		'users',
-		targetUserId,
-		'followers',
-		currentUserId,
-	)
-	batch.set(followerRef, { followedAt: serverTimestamp() })
-
-	// Increment counts on public profiles
-	const currentUserPublicRef = doc(firestore, 'public-profiles', currentUserId)
-	const targetUserPublicRef = doc(firestore, 'public-profiles', targetUserId)
-
-	batch.update(currentUserPublicRef, { following: increment(1) })
-	batch.update(targetUserPublicRef, { followers: increment(1) })
-
-	await batch.commit()
+		// TODO: Re-implement "follow" notifications via a secure server-side function.
+		// The previous client-side implementation was a security risk.
+	})
 }
 
 /**
  * Makes the current user unfollow a target user.
- * Removes documents from subcollections.
- * Also updates the follower/following counts on the main profile documents.
  */
 export async function unfollowUser(
 	firestore: Firestore,
@@ -312,8 +313,8 @@ export async function unfollowUser(
 	}
 
 	const batch = writeBatch(firestore)
-
-	// Remove target from current user's 'following' list
+	const currentUserPublicRef = doc(firestore, 'public-profiles', currentUserId)
+	const targetUserPublicRef = doc(firestore, 'public-profiles', targetUserId)
 	const followingRef = doc(
 		firestore,
 		'users',
@@ -321,9 +322,6 @@ export async function unfollowUser(
 		'following',
 		targetUserId,
 	)
-	batch.delete(followingRef)
-
-	// Remove current user from target's 'followers' list
 	const followerRef = doc(
 		firestore,
 		'users',
@@ -331,12 +329,9 @@ export async function unfollowUser(
 		'followers',
 		currentUserId,
 	)
+
+	batch.delete(followingRef)
 	batch.delete(followerRef)
-
-	// Decrement counts on public profiles
-	const currentUserPublicRef = doc(firestore, 'public-profiles', currentUserId)
-	const targetUserPublicRef = doc(firestore, 'public-profiles', targetUserId)
-
 	batch.update(currentUserPublicRef, { following: increment(-1) })
 	batch.update(targetUserPublicRef, { followers: increment(-1) })
 
@@ -355,5 +350,75 @@ export async function manageSubscriptionCancellation(
 	const userRef = doc(firestore, 'users', userId)
 	await updateDoc(userRef, {
 		planWillCancelAtPeriodEnd: cancel,
+	})
+}
+
+/**
+ * Creates a payout request for a user for a specific amount of credits.
+ */
+export async function requestPayout(
+	firestore: Firestore,
+	userId: string,
+	payoutAmountCredits: number,
+): Promise<void> {
+	if (!userId) throw new Error('User ID is required.')
+
+	const payoutAmount = Math.floor(payoutAmountCredits)
+	if (payoutAmount <= 0) {
+		throw new Error('Payout amount must be positive.')
+	}
+
+	const userRef = doc(firestore, 'users', userId)
+	const payoutRequestRef = doc(collection(firestore, 'payouts'))
+
+	await runTransaction(firestore, async transaction => {
+		const userDoc = await transaction.get(userRef)
+		if (!userDoc.exists()) {
+			throw new Error('User profile does not exist.')
+		}
+
+		const userData = userDoc.data() as UserProfile
+		const userCredits = userData.credits ?? 0
+		const payoutStatus = userData.payoutStatus ?? 'none'
+		const MIN_PAYOUT_CREDITS = 5000
+
+		if (payoutAmount > userCredits) {
+			throw new Error(
+				`Requested amount (${payoutAmount.toLocaleString()}) exceeds your available balance (${userCredits.toLocaleString()}).`,
+			)
+		}
+
+		if (payoutAmount < MIN_PAYOUT_CREDITS) {
+			throw new Error(
+				`Minimum payout is ${MIN_PAYOUT_CREDITS.toLocaleString()} credits.`,
+			)
+		}
+
+		if (
+			payoutStatus !== 'none' &&
+			payoutStatus !== 'paid' &&
+			payoutStatus !== 'rejected'
+		) {
+			throw new Error('You already have a pending or processing payout request.')
+		}
+
+		const payoutAmountEuros = payoutAmount / 100 // 100 credits = 1 EUR
+
+		const newPayout: PayoutRequest = {
+			id: payoutRequestRef.id,
+			userId,
+			amountCredits: payoutAmount,
+			amountCurrency: payoutAmountEuros,
+			currency: 'eur',
+			status: 'pending',
+			requestedAt: serverTimestamp() as Timestamp,
+		}
+		transaction.set(payoutRequestRef, newPayout)
+
+		const updateData = {
+			credits: increment(-payoutAmount),
+			payoutStatus: 'pending' as const,
+		}
+		transaction.update(userRef, updateData)
 	})
 }

@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge'
 import { useCategories } from '@/hooks/use-categories'
 import type { Prompt, UserProfile } from '@/lib/types'
-import { Check, Coins, Crown, Eye, Heart, ShoppingBag } from 'lucide-react'
+import { Check, Coins, Crown, Eye, Heart, PlusCircle, ShoppingCart } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Skeleton } from '../ui/skeleton'
@@ -14,6 +14,8 @@ import { cn } from '@/lib/utils'
 import { doc } from 'firebase/firestore'
 import React from 'react'
 import { PlaceHolderImages } from '@/lib/placeholder-images'
+import { addPromptToCart } from '@/firebase/cart'
+import { Button } from '../ui/button'
 
 type PromptCardProps = {
 	prompt: Prompt
@@ -68,6 +70,26 @@ export default function PromptCard({
 		})
 	}
 
+	const handleAddToCart = (e: React.MouseEvent) => {
+		e.preventDefault()
+		e.stopPropagation()
+
+		if (!user) {
+			toast({
+				title: 'Please sign in',
+				description: 'You need to be signed in to add items to your cart.',
+			})
+			return
+		}
+		if (!firestore) return
+
+		addPromptToCart(firestore, user.uid, prompt.id)
+		toast({
+			title: 'Added to cart',
+			description: `"${prompt.title}" has been added to your cart.`,
+		})
+	}
+
 	const imageIdentifier = prompt.images?.[0]
 	let imageUrl: string | undefined
 	let imageWidth: number = 400
@@ -98,6 +120,8 @@ export default function PromptCard({
 							alt={prompt.title}
 							width={imageWidth}
 							height={imageHeight}
+							sizes='(max-width: 767px) 100vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw'
+							quality={70}
 							className='w-full h-auto object-cover transition-transform duration-300 ease-in-out group-hover:scale-105'
 						/>
 					) : (
@@ -118,7 +142,7 @@ export default function PromptCard({
 										{formatStat(prompt.stats.views)}
 									</span>
 									<span className='flex items-center gap-1'>
-										<ShoppingBag className='h-4 w-4' />
+										<ShoppingCart className='h-4 w-4' />
 										{formatStat(prompt.stats.sales)}
 									</span>
 								</div>
@@ -137,35 +161,46 @@ export default function PromptCard({
 					</div>
 				</div>
 
-				<div className='absolute top-3 left-3 z-10 flex flex-col items-start gap-2'>
+				<div className='absolute top-3 left-3 z-10'>
 					{prompt.isPrivate && (
 						<Badge className='bg-primary text-primary-foreground'>
 							<Crown className='mr-1 h-3 w-3' />
 							PRO
 						</Badge>
 					)}
-					{isInCart && (
-						<span className='flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-xs font-medium text-secondary-foreground backdrop-blur-sm'>
-							<ShoppingBag className='h-3.5 w-3.5' />
-							In cart
-						</span>
-					)}
 				</div>
 
-				{user && (
-					<button
-						onClick={handleToggleFavorite}
-						className='absolute top-3 right-3 z-10 rounded-full bg-black/30 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/50 opacity-0 group-hover:opacity-100'
-						aria-label='Like prompt'
-					>
-						<Heart
-							className={cn(
-								'h-5 w-5',
-								isFavorite && 'fill-red-500 text-red-500',
+				<div className='absolute top-3 right-3 z-10 flex flex-col items-end gap-2 opacity-0 transition-opacity group-hover:opacity-100'>
+					{user && (
+						<button
+							onClick={handleToggleFavorite}
+							className='flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-opacity hover:bg-black/80'
+							aria-label='Like prompt'
+						>
+							<Heart
+								className={cn(
+									'h-5 w-5',
+									isFavorite && 'fill-red-500 text-red-500',
+								)}
+							/>
+						</button>
+					)}
+					{prompt.price > 0 && !isPurchased && (
+						<Button
+							size='icon'
+							onClick={handleAddToCart}
+							disabled={isInCart}
+							className='flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-opacity hover:bg-black/80'
+							aria-label={isInCart ? 'In Cart' : 'Add to Cart'}
+						>
+							{isInCart ? (
+								<Check className='h-5 w-5' />
+							) : (
+								<ShoppingCart className='h-5 w-5' />
 							)}
-						/>
-					</button>
-				)}
+						</Button>
+					)}
+				</div>
 
 				<div className='absolute bottom-4 right-4 z-10'>
 					{isPurchased ? (

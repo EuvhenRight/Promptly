@@ -28,7 +28,7 @@ export function PanelLayout({
 	mainClassName,
 	sidebarVisibleFrom = 'md',
 }: PanelLayoutProps) {
-	const [isCollapsed, setIsCollapsed] = useState(false)
+	const [isCollapsed, setIsCollapsed] = useState(true)
 	const rightColumnRef = useRef<HTMLDivElement>(null)
 	const pathname = usePathname()
 

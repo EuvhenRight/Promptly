@@ -24,7 +24,7 @@ import { doc } from 'firebase/firestore'
 import { Check, Crown, Loader2, Star, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { add, format } from 'date-fns'
@@ -71,11 +71,19 @@ const FAQ_ITEMS = [
 	},
 ]
 
-function SubscriptionStatusCard({ profile }: { profile: UserProfile }) {
+const SubscriptionStatusCard = React.forwardRef<
+	HTMLDivElement,
+	{ profile: UserProfile }
+>(({ profile }, ref) => {
 	const firestore = useFirestore()
 	const { toast } = useToast()
 	const [isCancelling, setIsCancelling] = useState(false)
-	const { planId, planPurchasedAt, planBillingPeriod, planWillCancelAtPeriodEnd } = profile
+	const {
+		planId,
+		planPurchasedAt,
+		planBillingPeriod,
+		planWillCancelAtPeriodEnd,
+	} = profile
 
 	if (!planId || planId === 'free') {
 		return null
@@ -111,7 +119,7 @@ function SubscriptionStatusCard({ profile }: { profile: UserProfile }) {
 			: add(purchaseDate, { months: 1 }))
 
 	return (
-		<Card className='mb-8'>
+		<Card className='mb-8' ref={ref}>
 			<CardHeader>
 				<CardTitle>Current Subscription</CardTitle>
 				<CardDescription>
@@ -154,13 +162,16 @@ function SubscriptionStatusCard({ profile }: { profile: UserProfile }) {
 			</CardFooter>
 		</Card>
 	)
-}
+})
+SubscriptionStatusCard.displayName = 'SubscriptionStatusCard'
 
 export default function PlansPage() {
 	const { user, isUserLoading } = useUser()
 	const firestore = useFirestore()
 	const router = useRouter()
+	const { toast } = useToast()
 	const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('yearly')
+	const subscriptionCardRef = useRef<HTMLDivElement>(null)
 
 	const userProfileRef = useMemoFirebase(
 		() => (user ? doc(firestore, 'users', user.uid) : null),
@@ -202,7 +213,10 @@ export default function PlansPage() {
 					<AccountSidebar credits={credits} />
 
 					<div className='flex-1 min-w-0'>
-						<SubscriptionStatusCard profile={userProfile} />
+						<SubscriptionStatusCard
+							profile={userProfile}
+							ref={subscriptionCardRef}
+						/>
 
 						<h1 className='font-headline text-3xl font-bold'>
 							Choose Your Plan
@@ -238,7 +252,12 @@ export default function PlansPage() {
 						{/* Plan Cards */}
 						<div className='mt-8 grid grid-cols-1 md:grid-cols-3 gap-6'>
 							{/* Free */}
-							<Card className={cn('flex flex-col', currentPlan === 'free' && 'border-primary ring-2 ring-primary')}>
+							<Card
+								className={cn(
+									'flex flex-col',
+									currentPlan === 'free' && 'border-primary ring-2 ring-primary',
+								)}
+							>
 								<CardHeader className='items-center text-center'>
 									<div className='flex h-10 w-10 items-center justify-center rounded-full bg-muted'>
 										<Star className='h-6 w-6 text-muted-foreground' />
@@ -258,14 +277,39 @@ export default function PlansPage() {
 									))}
 								</CardContent>
 								<CardFooter>
-									<Button variant='outline' className='w-full' disabled={currentPlan === 'free'}>
-										Current Plan
-									</Button>
+									{currentPlan === 'free' ? (
+										<Button variant='outline' className='w-full' disabled>
+											Current Plan
+										</Button>
+									) : (
+										<Button
+											variant='outline'
+											className='w-full'
+											onClick={() => {
+												subscriptionCardRef.current?.scrollIntoView({
+													behavior: 'smooth',
+												})
+												toast({
+													title: 'How to Downgrade',
+													description:
+														'Please cancel your current plan to switch to the Free plan at the end of your billing cycle.',
+												})
+											}}
+										>
+											Downgrade
+										</Button>
+									)}
 								</CardFooter>
 							</Card>
 
 							{/* Starter */}
-							<Card className={cn('flex flex-col', currentPlan === 'starter' && 'border-primary ring-2 ring-primary')}>
+							<Card
+								className={cn(
+									'flex flex-col',
+									currentPlan === 'starter' &&
+										'border-primary ring-2 ring-primary',
+								)}
+							>
 								<CardHeader className='items-center text-center'>
 									<div className='flex h-10 w-10 items-center justify-center rounded-full bg-muted'>
 										<Zap className='h-6 w-6 text-primary' />
@@ -284,7 +328,10 @@ export default function PlansPage() {
 									</div>
 									<p className='text-xs text-muted-foreground'>
 										{billingPeriod === 'yearly' && (
-											<span className='text-green-600'> (Billed yearly at €108)</span>
+											<span className='text-green-600'>
+												{' '}
+												(Billed yearly at €108)
+											</span>
 										)}
 									</p>
 								</CardHeader>
@@ -297,21 +344,36 @@ export default function PlansPage() {
 									))}
 								</CardContent>
 								<CardFooter>
-									<Button className='w-full' asChild disabled={currentPlan === 'starter'}>
-										<Link
-											href={currentPlan !== 'starter' ? `/checkout?type=plan&plan=starter&billing=${billingPeriod}` : '#'}
-										>
-											{currentPlan === 'starter' ? 'Current Plan' : 'Get Started with Starter'}
-										</Link>
-									</Button>
+									{currentPlan === 'starter' ? (
+										<Button className='w-full' disabled>
+											Current Plan
+										</Button>
+									) : (
+										<Button className='w-full' asChild>
+											<Link
+												href={`/checkout?type=plan&plan=starter&billing=${billingPeriod}`}
+											>
+												{currentPlan === 'pro'
+													? 'Downgrade to Starter'
+													: 'Get Started with Starter'}
+											</Link>
+										</Button>
+									)}
 								</CardFooter>
 							</Card>
 
 							{/* Pro */}
-							<Card className={cn('relative flex flex-col', currentPlan === 'pro' && 'border-primary ring-2 ring-primary')}>
-								<div className='absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-medium'>
-									Most Popular
-								</div>
+							<Card
+								className={cn(
+									'relative flex flex-col',
+									currentPlan === 'pro' && 'border-primary ring-2 ring-primary',
+								)}
+							>
+								{currentPlan !== 'pro' && (
+									<div className='absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-medium'>
+										Most Popular
+									</div>
+								)}
 								<CardHeader className='items-center text-center'>
 									<div className='flex h-10 w-10 items-center justify-center rounded-full bg-muted'>
 										<Crown className='h-6 w-6 text-amber-500' />
@@ -330,7 +392,9 @@ export default function PlansPage() {
 									</div>
 									<p className='text-xs text-muted-foreground'>
 										{billingPeriod === 'yearly' && (
-											<span className='text-green-600'>(Billed yearly at €228)</span>
+											<span className='text-green-600'>
+												(Billed yearly at €228)
+											</span>
 										)}
 									</p>
 								</CardHeader>
@@ -343,13 +407,21 @@ export default function PlansPage() {
 									))}
 								</CardContent>
 								<CardFooter>
-									<Button className='w-full' asChild disabled={currentPlan === 'pro'}>
-										<Link
-											href={currentPlan !== 'pro' ? `/checkout?type=plan&plan=pro&billing=${billingPeriod}` : '#'}
-										>
-											{currentPlan === 'pro' ? 'Current Plan' : 'Get Started with Pro'}
-										</Link>
-									</Button>
+									{currentPlan === 'pro' ? (
+										<Button className='w-full' disabled>
+											Current Plan
+										</Button>
+									) : (
+										<Button className='w-full' asChild>
+											<Link
+												href={`/checkout?type=plan&plan=pro&billing=${billingPeriod}`}
+											>
+												{currentPlan === 'starter'
+													? 'Upgrade to Pro'
+													: 'Get Started with Pro'}
+											</Link>
+										</Button>
+									)}
 								</CardFooter>
 							</Card>
 						</div>

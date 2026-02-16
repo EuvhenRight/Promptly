@@ -1,3 +1,4 @@
+'use server';
 import { adminDb } from '@/firebase/admin'
 import admin from 'firebase-admin'
 import { NextResponse } from 'next/server'
@@ -13,7 +14,7 @@ export type SearchBarBackgroundItem = {
 export async function GET(request: Request) {
 	if (!adminDb) {
 		return NextResponse.json(
-			{ error: 'Firebase Admin not initialized' },
+			{ error: 'Firebase Admin (adminDb) is not initialized. Check server logs for `admin.ts` initialization errors.' },
 			{ status: 503 },
 		)
 	}
@@ -49,8 +50,7 @@ export async function GET(request: Request) {
 		console.error('Search bar backgrounds GET error:', err)
 		return NextResponse.json(
 			{
-				error:
-					err instanceof Error ? err.message : 'Failed to fetch backgrounds',
+				error: 'Failed to fetch backgrounds from Firestore',
 			},
 			{ status: 500 },
 		)

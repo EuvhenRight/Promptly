@@ -16,6 +16,7 @@ import {
 	updateDoc,
 	writeBatch,
 	arrayUnion,
+	setDoc,
 } from 'firebase/firestore'
 import {
 	deleteObject,
@@ -378,6 +379,23 @@ export async function addPromptCommentAndRating({
 			'rating.count': newRatingCount,
 			'rating.average': newRatingAverage,
 		})
+
+		// 4. Create a notification for the prompt author
+		const authorId = promptData.authorId
+		if (authorId && authorId !== userId) {
+			const notificationRef = doc(
+				collection(firestore, 'users', authorId, 'notifications'),
+			)
+			transaction.set(notificationRef, {
+				userId: authorId,
+				type: 'comment',
+				title: 'New Review',
+				body: `${userData.displayName} left a ${rating}-star review on your prompt "${promptData.title}".`,
+				link: `/prompt/${promptId}`,
+				isRead: false,
+				createdAt: serverTimestamp(),
+			})
+		}
 	})
 }
 

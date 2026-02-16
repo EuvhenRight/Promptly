@@ -29,7 +29,7 @@ import {
 	purchasePromptWithCredits,
 	updatePromptComment,
 } from '@/firebase/prompts'
-import { toggleFavoritePrompt } from '@/firebase/users'
+import { followUser, toggleFavoritePrompt, unfollowUser } from '@/firebase/users'
 import { useCategories } from '@/hooks/use-categories'
 import { useToast } from '@/hooks/use-toast'
 import type {
@@ -57,10 +57,15 @@ import {
 	Heart,
 	Loader2,
 	MoreHorizontal,
-	ShoppingBag,
+	PlusCircle,
+	ShoppingCart,
 	Star,
 	Trash2,
 	Coins,
+	Download,
+	Expand,
+	Share2,
+	X,
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -83,6 +88,15 @@ import { Separator } from '@/components/ui/separator'
 import { useTags } from '@/hooks/use-tags'
 import { useModels } from '@/hooks/use-models'
 import { PlaceHolderImages } from '@/lib/placeholder-images'
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+	DialogClose,
+} from '@/components/ui/dialog'
 
 const PromptDetailSkeleton = () => (
 	<div className='grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12'>
@@ -169,8 +183,17 @@ export default function PromptDetailPage() {
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 	const [showPurchaseConfirm, setShowPurchaseConfirm] = useState(false)
 	const [isPurchasing, setIsPurchasing] = useState(false)
+	const [isFollowLoading, setIsFollowLoading] = useState(false)
 
 	// --- Memoized Derived State ---
+	const amIFollowingRef = useMemoFirebase(() => {
+    if (!firestore || !prompt?.authorId || !user?.uid || user.uid === prompt.authorId) return null;
+    return doc(firestore, 'users', prompt.authorId, 'followers', user.uid);
+	}, [firestore, prompt?.authorId, user?.uid]);
+
+	const { data: amIFollowingDoc } = useDoc(amIFollowingRef);
+	const isFollowing = !!amIFollowingDoc;
+
 	const isFavorite = useMemo(
 		() => userProfile?.favoritePrompts?.includes(params.id as string) ?? false,
 		[userProfile, params.id],
@@ -192,7 +215,8 @@ export default function PromptDetailPage() {
 		userProfile?.purchasedPrompts?.includes(params.id as string) ?? false
 	const isFree = prompt?.price === 0
 	const isAdmin = userProfile?.role === 'admin'
-	const canViewContent = prompt && (isPurchased || isFree || isAdmin)
+	const isAuthor = user?.uid === prompt?.authorId
+	const canViewContent = prompt && (isPurchased || isFree || isAdmin || isAuthor)
 	const canComment = canViewContent && user
 
 	// --- Effects ---
@@ -269,6 +293,35 @@ export default function PromptDetailPage() {
 			setIsPurchasing(false)
 		}
 	}
+
+	const handleFollowToggle = async () => {
+		if (!user || !firestore || !prompt) {
+			toast({
+				variant: 'destructive',
+				title: 'Please sign in',
+				description: 'You need to be logged in to follow users.',
+			});
+			return;
+		}
+		setIsFollowLoading(true);
+		try {
+			if (isFollowing) {
+				await unfollowUser(firestore, user.uid, prompt.authorId);
+				toast({ title: `You unfollowed ${prompt.authorDisplayName}` });
+			} else {
+				await followUser(firestore, user.uid, prompt.authorId);
+				toast({ title: `You are now following ${prompt.authorDisplayName}` });
+			}
+		} catch (error: any) {
+			toast({
+				variant: 'destructive',
+				title: 'Error',
+				description: error.message || 'Could not update follow status.',
+			});
+		} finally {
+			setIsFollowLoading(false);
+		}
+	};
 
 	const handleToggleFavorite = () => {
 		if (!user || !firestore || !prompt) {
@@ -366,6 +419,11 @@ export default function PromptDetailPage() {
 			setIsDeletingComment(false)
 			setShowDeleteConfirm(false)
 		}
+	}
+
+	const handleShare = () => {
+		navigator.clipboard.writeText(window.location.href)
+		toast({ title: 'Link copied to clipboard!' })
 	}
 
 	const { getNames } = useCategories()
@@ -529,16 +587,79 @@ export default function PromptDetailPage() {
 		return (
 			<div className='grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12'>
 				<div className='space-y-4'>
-					<div className='w-full overflow-hidden rounded-lg border bg-muted'>
+					<div className='group relative w-full overflow-hidden rounded-lg border bg-muted'>
 						{promptImage && (
 							<Image
 								src={promptImage}
 								alt={prompt.title}
 								width={imageWidth}
 								height={imageHeight}
+								sizes='(max-width: 1023px) 90vw, 50vw'
 								className='w-full h-auto object-contain'
 								priority
 							/>
+						)}
+						{promptImage && (
+							<div className='absolute right-4 top-4 z-10 flex flex-col items-center gap-2'>
+								<a
+									href={promptImage}
+									download
+									target='_blank'
+									rel='noopener noreferrer'
+								>
+									<Button
+										variant='secondary'
+										size='icon'
+										className='h-10 w-10 rounded-full bg-black/50 text-white backdrop-blur-sm hover:bg-black/70'
+									>
+										<Download className='h-5 w-5' />
+										<span className='sr-only'>Download image</span>
+									</Button>
+								</a>
+								<Dialog>
+									<DialogTrigger asChild>
+										<Button
+											variant='secondary'
+											size='icon'
+											className='h-10 w-10 rounded-full bg-black/50 text-white backdrop-blur-sm hover:bg-black/70'
+										>
+											<Expand className='h-5 w-5' />
+											<span className='sr-only'>View fullscreen</span>
+										</Button>
+									</DialogTrigger>
+									<DialogContent className='max-w-7xl w-full p-0 bg-transparent border-none shadow-none' hideCloseButton>
+										<DialogHeader>
+											<DialogTitle className='sr-only'>
+												Fullscreen image for: {prompt.title}
+											</DialogTitle>
+											<DialogDescription className='sr-only'>
+												A larger, fullscreen view of the example image for this
+												prompt.
+											</DialogDescription>
+										</DialogHeader>
+										<Image
+											src={promptImage}
+											alt={prompt.title}
+											width={1920}
+											height={1080}
+											className='w-full h-auto object-contain max-h-[90vh] rounded-lg'
+										/>
+										<DialogClose className='absolute right-4 top-4 rounded-full p-2 bg-black/50 text-white opacity-80 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary data-[state=open]:text-muted-foreground'>
+											<X className='h-8 w-8' />
+											<span className='sr-only'>Close</span>
+										</DialogClose>
+									</DialogContent>
+								</Dialog>
+								<Button
+									variant='secondary'
+									size='icon'
+									onClick={handleShare}
+									className='h-10 w-10 rounded-full bg-black/50 text-white backdrop-blur-sm hover:bg-black/70'
+								>
+									<Share2 className='h-5 w-5' />
+									<span className='sr-only'>Share prompt</span>
+								</Button>
+							</div>
 						)}
 					</div>
 				</div>
@@ -581,7 +702,10 @@ export default function PromptDetailPage() {
 							</div>
 						</div>
 						{user && user.uid !== prompt.authorId && (
-							<Button variant='outline'>Follow</Button>
+							<Button variant='outline' onClick={handleFollowToggle} disabled={isFollowLoading}>
+								{isFollowLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+								{isFollowing ? 'Unfollow' : 'Follow'}
+        					</Button>
 						)}
 					</div>
 
@@ -674,7 +798,7 @@ export default function PromptDetailPage() {
 											className='flex-1 sm:flex-initial'
 											disabled={!user || isInCart}
 										>
-											<ShoppingBag className='mr-2 h-4 w-4' />
+											<ShoppingCart className='mr-2 h-4 w-4' />
 											{isInCart ? 'In cart' : 'Add to Cart'}
 										</Button>
 										<AlertDialog
@@ -773,7 +897,7 @@ export default function PromptDetailPage() {
 							<>
 								<div className='flex flex-wrap items-center justify-between gap-4'>
 									<h2 className='text-2xl font-bold'>
-										{prompt.price === 0 ? 'Free' : 'Purchased'}
+										{prompt.price === 0 ? 'Free' : isAuthor ? 'Your Prompt' : 'Purchased'}
 									</h2>
 									<Button
 										size='lg'

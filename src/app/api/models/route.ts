@@ -1,3 +1,4 @@
+'use server';
 import { adminDb } from '@/firebase/admin'
 import { NextResponse } from 'next/server'
 
@@ -8,40 +9,23 @@ export type ModelItem = { id: string; name: string }
 export async function GET() {
 	if (!adminDb) {
 		return NextResponse.json(
-			{ error: 'Firebase Admin not initialized' },
+			{ error: 'Firebase Admin (adminDb) is not initialized. Check server logs for `admin.ts` initialization errors.' },
 			{ status: 503 },
 		)
 	}
 	try {
-		const promptsSnap = await adminDb.collection('prompts').select('modelId').get()
-		const activeModelIds = new Set<string>()
-		promptsSnap.docs.forEach(doc => {
-			const modelId = doc.data().modelId
-			if (modelId) {
-				activeModelIds.add(modelId)
-			}
-		})
-
-		if (activeModelIds.size === 0) {
-			return NextResponse.json([])
-		}
-
 		const modelsSnap = await adminDb.collection('models').get()
 		const allModels: ModelItem[] = modelsSnap.docs.map(doc => ({
 			id: doc.id,
 			name: (doc.data().name as string) || doc.id,
 		}))
 
-		const activeModels = allModels.filter(model =>
-			activeModelIds.has(model.id),
-		)
-
-		return NextResponse.json(activeModels)
+		return NextResponse.json(allModels)
 	} catch (err) {
 		console.error('Fetch models error:', err)
 		return NextResponse.json(
 			{
-				error: err instanceof Error ? err.message : 'Failed to fetch models',
+				error: 'Failed to fetch models from Firestore.',
 			},
 			{ status: 500 },
 		)

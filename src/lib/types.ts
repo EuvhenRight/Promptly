@@ -50,9 +50,20 @@ export type UserProfile = {
 	planWillCancelAtPeriodEnd?: boolean
 	/** Wallet balance for image/generation credits (incremented when user buys credits). */
 	credits?: number
+	/** Credit balance earned from prompt sales, available for payout. */
+	earnings?: number
+	/** Current status of a pending payout request. */
+	payoutStatus?:
+		| 'none'
+		| 'pending'
+		| 'approved'
+		| 'processing'
+		| 'paid'
+		| 'rejected'
 	purchasedPrompts?: string[]
 	favoritePrompts?: string[]
 	isSeller?: boolean
+	isVerified?: boolean
 	followers?: number
 	following?: number
 	views?: number
@@ -62,6 +73,7 @@ export type UserProfile = {
 		weeklySales: number
 		reputation: number
 	}
+	createdAt?: Timestamp
 }
 
 export type PublicProfile = Pick<
@@ -79,6 +91,8 @@ export type PublicProfile = Pick<
 	| 'instagramProfile'
 	| 'facebookProfile'
 	| 'planId'
+	| 'createdAt'
+	| 'isVerified'
 >
 
 export type Prompt = {
@@ -143,4 +157,52 @@ export type ScrapeResult = {
 	imageUrl: string
 	sourceId: string
 	tags: string
+}
+
+export type SaleRecord = {
+	id: string
+	type: 'prompt' | 'credits' | 'subscription' | 'cart'
+	status: 'completed' | 'refunded'
+	createdAt: Timestamp
+	buyerId: string
+	sellerId?: string
+	promptIds?: string[]
+	promptTitles?: string[]
+	creditsAmount?: number
+	plan?: 'starter' | 'pro'
+	billing?: 'monthly' | 'yearly'
+	revenueDetails: {
+		gross: number
+		platformFee: number
+		sellerEarning: number
+	}
+	currency: string
+	paymentMethod: 'stripe' | 'credits'
+	// Optional enriched data from server
+	buyerDisplayName?: string
+	buyerPhotoURL?: string
+	sellerDisplayName?: string
+	sellerPhotoURL?: string
+}
+
+export type PayoutRequest = {
+	id: string
+	userId: string
+	amountCredits: number
+	amountCurrency: number
+	currency: string
+	status: 'pending' | 'approved' | 'rejected' | 'paid'
+	requestedAt: Timestamp
+	processedAt?: Timestamp
+}
+
+export type Notification = {
+    id: string;
+    userId: string;
+    type: 'sale' | 'payout' | 'follow' | 'comment' | 'like';
+    title: string;
+    body: string;
+    link?: string;
+    isRead: boolean;
+    createdAt: Timestamp;
 }

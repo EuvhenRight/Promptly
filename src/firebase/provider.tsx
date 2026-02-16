@@ -14,6 +14,7 @@ import {
 	Firestore,
 	doc,
 	runTransaction,
+	serverTimestamp,
 } from 'firebase/firestore'
 import React, {
 	DependencyList,
@@ -145,6 +146,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 									xProfile: '',
 									instagramProfile: '',
 									facebookProfile: '',
+									createdAt: serverTimestamp(),
 								}
 
 								const publicProfileData: PublicProfile = {
@@ -161,6 +163,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 									xProfile: '',
 									instagramProfile: '',
 									facebookProfile: '',
+									createdAt: serverTimestamp(),
 								}
 
 								transaction.set(userDocRef, newUserProfile)
@@ -186,6 +189,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 									xProfile: userProfile.xProfile ?? '',
 									instagramProfile: userProfile.instagramProfile ?? '',
 									facebookProfile: userProfile.facebookProfile ?? '',
+									createdAt: userProfile.createdAt ?? serverTimestamp(),
 								}
 								transaction.set(publicProfileRef, publicProfileData)
 								// Also update the main user document with the generated username if it's missing

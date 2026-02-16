@@ -23,7 +23,7 @@
 | promptId | string | Для type=prompt. |
 | promptIds | string[] | Для type=cart. |
 | title, price, description, image | — | Для prompt, якщо немає Firebase Admin (fallback). |
-| credits | number | 1000 або 2000 для type=credits. |
+| credits | number | 300 або 500 для type=credits. |
 | plan | `'starter' \| 'pro'` | Для type=plan. |
 | billing | `'monthly' \| 'yearly'` | Для type=plan. |
 
@@ -41,7 +41,7 @@
 
 ### POST /api/checkout/fulfill
 
-Викликається після успішної оплати (з клієнта або внутрішнього виклику). Body зазвичай містить `session_id`. Читає Stripe Session, оновлює Firestore (credits, purchasedPrompts, orders, purchaseHistory).
+Викликається після успішної оплати (з клієнта або внутрішнього виклику). Body зазвичай містить `session_id`. Читає Stripe Session, оновлює Firestore (credits, purchasedPrompts, orders, purchaseHistory, sales).
 
 ---
 
@@ -67,12 +67,12 @@
 Структура однакова для всіх чотирьох ресурсів.
 
 - **GET /api/categories** (аналогічно tags, types, models) — список документів.
-- **POST /api/categories** — створення (body: поля документу). Захист — перевірка admin на бекенді (як реалізовано).
+- **POST /api/categories** — створення (body: `{ name: string }`) або seed (body: `{}`). Захист — перевірка admin на бекенді.
 - **GET /api/categories/[id]** — один документ.
 - **PATCH /api/categories/[id]** — оновлення.
 - **DELETE /api/categories/[id]** — видалення.
 
-Адмін-доступ має бути обмежений роллю на сервері (реалізація в відповідних route handlers).
+Адмін-доступ має бути обмежений роллю на сервері.
 
 ---
 
@@ -81,7 +81,21 @@
 - **GET /api/search-bar-backgrounds** — список.
 - **POST /api/search-bar-backgrounds** — створення.
 - **GET/PATCH/DELETE /api/search-bar-backgrounds/[id]** — один ресурс.
-- **POST /api/search-bar-backgrounds/upload** — завантаження файлу (multipart/form-data або як реалізовано).
+- **POST /api/search-bar-backgrounds/upload** — завантаження файлу (multipart/form-data).
+
+---
+
+## Admin Sales API
+
+### GET /api/admin/sales
+
+Отримує статистику продажів для адмін-панелі.
+
+**Query Params:**
+
+- `period`: '1d' | '7d' | '30d' | 'all' (default: '30d')
+
+**Відповідь:** `{ stats, sales, revenueChartData, topSellers, topProducts }`.
 
 ---
 

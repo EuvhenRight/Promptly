@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useState } from 'react'
 import { PromptForm, type PromptFormValues } from './prompt-form'
+import { rehostImage } from '../actions'
 
 function NewPromptContent() {
 	const router = useRouter()
@@ -45,12 +46,32 @@ function NewPromptContent() {
 		setIsSubmitting(true)
 
 		try {
-			let imageUrl = initialData.imageUrl // Use scraped image URL by default
+			let finalImageUrl = initialData.imageUrl
 
-			// If user uploaded a new image, it takes precedence
+			// If user uploaded a new image from their computer, it takes precedence.
 			if (data.image) {
-				toast({ title: 'Uploading image...', description: 'Please wait.' })
-				imageUrl = await uploadPromptImage(data.image)
+				toast({ title: 'Uploading new image...', description: 'Please wait.' })
+				finalImageUrl = await uploadPromptImage(data.image)
+			}
+			// If there's a scraped URL and no new file was uploaded, re-host it now.
+			else if (finalImageUrl && finalImageUrl.startsWith('http') && sourceId) {
+				toast({
+					title: 'Processing scraped image...',
+					description:
+						'Downloading from source and uploading to your storage. Please wait.',
+				})
+				finalImageUrl = await rehostImage(finalImageUrl, sourceId)
+			}
+
+			if (!finalImageUrl) {
+				toast({
+					variant: 'destructive',
+					title: 'Image Required',
+					description:
+						'An image is required. Please upload one or scrape a prompt that has an image.',
+				})
+				setIsSubmitting(false)
+				return
 			}
 
 			const promptData: CreatePromptData = {
@@ -63,7 +84,7 @@ function NewPromptContent() {
 				modelId: data.modelId,
 				tags: data.tags,
 				privateContent: data.privateContent,
-				imageUrl: imageUrl,
+				imageUrl: finalImageUrl,
 				sourceId: sourceId,
 			}
 

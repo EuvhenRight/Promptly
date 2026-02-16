@@ -1,3 +1,4 @@
+'use server';
 import { adminDb } from '@/firebase/admin'
 import { NextResponse } from 'next/server'
 
@@ -15,48 +16,23 @@ export type CategoryItem = { id: string; name: string }
 export async function GET() {
 	if (!adminDb) {
 		return NextResponse.json(
-			{ error: 'Firebase Admin not initialized' },
+			{ error: 'Firebase Admin (adminDb) is not initialized. Check server logs for `admin.ts` initialization errors.' },
 			{ status: 503 },
 		)
 	}
 	try {
-		const promptsSnap = await adminDb
-			.collection('prompts')
-			.select('categoryId', 'categories')
-			.get()
-		const activeCategoryIds = new Set<string>()
-		promptsSnap.docs.forEach(doc => {
-			const data = doc.data()
-			if (data.categoryId) {
-				activeCategoryIds.add(data.categoryId)
-			}
-			// Legacy support for 'categories' array
-			if (Array.isArray(data.categories)) {
-				data.categories.forEach(catId => activeCategoryIds.add(catId))
-			}
-		})
-
-		if (activeCategoryIds.size === 0) {
-			return NextResponse.json([])
-		}
-
 		const categoriesSnap = await adminDb.collection('categories').get()
 		const allCategories: CategoryItem[] = categoriesSnap.docs.map(doc => ({
 			id: doc.id,
 			name: (doc.data().name as string) || doc.id,
 		}))
 
-		const activeCategories = allCategories.filter(cat =>
-			activeCategoryIds.has(cat.id),
-		)
-
-		return NextResponse.json(activeCategories)
+		return NextResponse.json(allCategories)
 	} catch (err) {
 		console.error('Fetch categories error:', err)
 		return NextResponse.json(
 			{
-				error:
-					err instanceof Error ? err.message : 'Failed to fetch categories',
+				error: 'Failed to fetch categories from Firestore.',
 			},
 			{ status: 500 },
 		)
