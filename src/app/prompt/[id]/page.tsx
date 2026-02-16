@@ -423,8 +423,8 @@ export default function PromptDetailPage() {
 											</Badge>
 										)}
 										<span className='text-xs text-muted-foreground'>
-											{comment.timestamp instanceof Timestamp
-												? formatDistanceToNow(comment.timestamp.toDate(), {
+											{userComment.timestamp instanceof Timestamp
+												? formatDistanceToNow(userComment.timestamp.toDate(), {
 														addSuffix: true,
 													})
 												: ''}
