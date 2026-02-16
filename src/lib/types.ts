@@ -63,6 +63,7 @@ export type UserProfile = {
 	purchasedPrompts?: string[]
 	favoritePrompts?: string[]
 	isSeller?: boolean
+	isVerified?: boolean
 	followers?: number
 	following?: number
 	views?: number
@@ -91,6 +92,7 @@ export type PublicProfile = Pick<
 	| 'facebookProfile'
 	| 'planId'
 	| 'createdAt'
+	| 'isVerified'
 >
 
 export type Prompt = {

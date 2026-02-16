@@ -37,6 +37,7 @@ export type UpdateUserData = Partial<
 		| 'xProfile'
 		| 'instagramProfile'
 		| 'facebookProfile'
+		| 'isVerified'
 	>
 >
 
@@ -155,6 +156,8 @@ export async function updateUserProfile(
 				firestoreData.instagramProfile = data.instagramProfile
 			if (data.facebookProfile !== undefined)
 				firestoreData.facebookProfile = data.facebookProfile
+			if (data.isVerified !== undefined)
+				firestoreData.isVerified = data.isVerified
 
 			// Update the main user profile document
 			if (Object.keys(firestoreData).length > 0) {
@@ -181,6 +184,7 @@ export async function updateUserProfile(
 					data.instagramProfile ?? userProfileData.instagramProfile ?? '',
 				facebookProfile:
 					data.facebookProfile ?? userProfileData.facebookProfile ?? '',
+				isVerified: data.isVerified ?? userProfileData.isVerified ?? false,
 			}
 			transaction.set(publicProfileRef, publicProfileData, { merge: true })
 		})
