@@ -2,8 +2,9 @@
 
 import { Button } from '@/components/ui/button'
 import { ADMIN_NAV_CONFIG, PanelLayout } from '@/components/panel'
-import { useUser } from '@/firebase'
+import { useFirestore, useUser } from '@/firebase'
 import { signOutUser } from '@/firebase/auth'
+import { doc, getDoc } from 'firebase/firestore'
 import { Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -14,6 +15,7 @@ export default function AdminLayout({
 	children: React.ReactNode
 }) {
 	const { user, isUserLoading } = useUser()
+	const firestore = useFirestore()
 	const [authStatus, setAuthStatus] = useState<
 		'loading' | 'admin' | 'guest' | 'no_claim'
 	>('loading')
@@ -31,19 +33,25 @@ export default function AdminLayout({
 			return
 		}
 
-		user
-			.getIdTokenResult(true)
-			.then(idTokenResult => {
-				if (idTokenResult.claims.admin === true) {
+		// Check the user's role from their Firestore document
+		const checkAdminRole = async () => {
+			if (!firestore) return
+			const userDocRef = doc(firestore, 'users', user.uid)
+			try {
+				const userDoc = await getDoc(userDocRef)
+				if (userDoc.exists() && userDoc.data().role === 'admin') {
 					setAuthStatus('admin')
 				} else {
 					setAuthStatus('no_claim')
 				}
-			})
-			.catch(() => {
+			} catch (error) {
+				console.error('Error checking admin role:', error)
 				setAuthStatus('no_claim')
-			})
-	}, [user, isUserLoading, router])
+			}
+		}
+
+		checkAdminRole()
+	}, [user, isUserLoading, router, firestore])
 
 	if (authStatus === 'loading') {
 		return (
@@ -62,18 +70,17 @@ export default function AdminLayout({
 					</h1>
 					<p className='mt-4 text-muted-foreground'>
 						Your account does not have administrator privileges. The admin panel
-						requires a special permission flag ('admin: true') which is not
-						present in your current session.
+						requires the 'admin' role in your user profile.
 					</p>
 					<p className='mt-2 font-semibold text-foreground'>How to fix this:</p>
 					<ul className='text-sm text-muted-foreground list-decimal list-inside text-left mt-2 space-y-1'>
 						<li>
-							Ensure an existing admin has run the 'set-admin.js' script for
-							your User ID.
+							Ensure an existing admin has set your account's 'role' to 'admin'
+							in the Firestore 'users' collection.
 						</li>
 						<li>
-							Log out and log back in to refresh your authentication token with
-							the new admin permission.
+							If the role was just updated, the change should take effect
+							shortly. Try refreshing the page.
 						</li>
 					</ul>
 					<Button
