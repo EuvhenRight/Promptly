@@ -8,17 +8,17 @@ import VerifiedProfiles from '@/components/community/verified-profiles'
 import Footer from '@/components/layout/footer'
 import Header from '@/components/layout/header'
 import { Card, CardContent } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
 import TopCreators from '@/components/community/top-creators'
 
 export default function CommunityPage() {
 	return (
-		<div className='flex min-h-screen flex-col bg-background'>
+		<div className='flex min-h-screen flex-col bg-muted/20'>
 			<Header />
 			<main>
 				<CommunityHero />
 				<div className='container mx-auto px-4 py-8 sm:px-6 lg:px-8'>
 					<div className='grid grid-cols-1 lg:grid-cols-12 gap-8'>
-						
 						<aside className='lg:col-span-3 space-y-6'>
 							<Card>
 								<CardContent className='pt-6'>
@@ -27,29 +27,17 @@ export default function CommunityPage() {
 							</Card>
 						</aside>
 
-						
 						<div className='lg:col-span-6'>
-							<Card>
-								<CardContent className='pt-6'>
-									<CommunityFeed />
-								</CardContent>
-							</Card>
+							<CommunityFeed />
 						</div>
 
-						
 						<aside className='lg:col-span-3 space-y-6'>
 							<Card>
-								<CardContent className='pt-6'>
+								<CardContent className='space-y-6 pt-6'>
 									<MemberOfTheDay />
-								</CardContent>
-							</Card>
-							<Card>
-								<CardContent className='pt-6'>
+									<Separator />
 									<NewMembers />
-								</CardContent>
-							</Card>
-							<Card>
-								<CardContent className='pt-6'>
+									<Separator />
 									<VerifiedProfiles />
 								</CardContent>
 							</Card>
