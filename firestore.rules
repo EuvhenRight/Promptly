@@ -74,6 +74,10 @@ service cloud.firestore {
       }
     }
 
+    match /public-profiles {
+      allow list: if true;
+    }
+
     match /public-profiles/{userId} {
       // Allow public read for get and list requests.
       allow get, list: if true;
