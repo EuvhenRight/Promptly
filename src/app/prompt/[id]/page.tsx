@@ -64,6 +64,7 @@ import {
 	Download,
 	Expand,
 	Share2,
+	X,
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -93,6 +94,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
+	DialogClose,
 } from '@/components/ui/dialog'
 
 const PromptDetailSkeleton = () => (
@@ -552,14 +554,8 @@ export default function PromptDetailPage() {
 		}
 
 		const handleDownload = () => {
-			if (!prompt || !promptImage) return
-			const link = document.createElement('a')
-			link.href = promptImage
-			const fileExtension = promptImage.split('.').pop()?.split('?')[0] || 'jpg'
-			link.setAttribute('download', `promptly_${prompt.id}.${fileExtension}`)
-			document.body.appendChild(link)
-			link.click()
-			document.body.removeChild(link)
+			if (!promptImage) return;
+			window.open(promptImage, '_blank', 'noopener,noreferrer');
 		}
 
 		const authorUsername = prompt.authorUsername
@@ -646,6 +642,10 @@ export default function PromptDetailPage() {
 											height={1080}
 											className='w-full h-auto object-contain max-h-[90vh] rounded-lg'
 										/>
+										<DialogClose className='absolute right-4 top-4 rounded-full p-2 bg-black/50 text-white opacity-80 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary data-[state=open]:text-muted-foreground'>
+											<X className='h-8 w-8' />
+											<span className='sr-only'>Close</span>
+										</DialogClose>
 									</DialogContent>
 								</Dialog>
 								<Button
