@@ -391,6 +391,7 @@ export default function PublicProfilePage() {
 															alt={prompt.title}
 															width={imgWidth}
 															height={imgHeight}
+															sizes='(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 33vw'
 															className='object-cover w-full h-full'
 														/>
 													) : (

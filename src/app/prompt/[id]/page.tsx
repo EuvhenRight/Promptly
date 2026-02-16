@@ -536,6 +536,7 @@ export default function PromptDetailPage() {
 								alt={prompt.title}
 								width={imageWidth}
 								height={imageHeight}
+								sizes='(max-width: 1023px) 90vw, 50vw'
 								className='w-full h-auto object-contain'
 								priority
 							/>

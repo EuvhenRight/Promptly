@@ -98,6 +98,8 @@ export default function PromptCard({
 							alt={prompt.title}
 							width={imageWidth}
 							height={imageHeight}
+							sizes='(max-width: 767px) 100vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw'
+							quality={70}
 							className='w-full h-auto object-cover transition-transform duration-300 ease-in-out group-hover:scale-105'
 						/>
 					) : (
