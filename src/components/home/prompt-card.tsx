@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge'
 import { useCategories } from '@/hooks/use-categories'
 import type { Prompt, UserProfile } from '@/lib/types'
-import { Check, Coins, Crown, Eye, Heart, ShoppingBag } from 'lucide-react'
+import { Check, Coins, Crown, Eye, Heart, PlusCircle } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Skeleton } from '../ui/skeleton'
@@ -168,38 +168,36 @@ export default function PromptCard({
 							PRO
 						</Badge>
 					)}
-				</div>
-
-				{user && (
-					<button
-						onClick={handleToggleFavorite}
-						className='absolute top-3 right-14 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70 opacity-0 group-hover:opacity-100'
-						aria-label='Like prompt'
-					>
-						<Heart
-							className={cn(
-								'h-5 w-5',
-								isFavorite && 'fill-red-500 text-red-500',
+					{user && (
+						<button
+							onClick={handleToggleFavorite}
+							className='flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-opacity hover:bg-black/70 opacity-0 group-hover:opacity-100'
+							aria-label='Like prompt'
+						>
+							<Heart
+								className={cn(
+									'h-5 w-5',
+									isFavorite && 'fill-red-500 text-red-500',
+								)}
+							/>
+						</button>
+					)}
+					{prompt.price > 0 && !isPurchased && (
+						<Button
+							size='icon'
+							onClick={handleAddToCart}
+							disabled={isInCart}
+							className='h-10 w-10 rounded-full bg-black/50 text-white backdrop-blur-sm transition-opacity hover:bg-black/70 opacity-0 group-hover:opacity-100'
+							aria-label={isInCart ? 'In Cart' : 'Add to Cart'}
+						>
+							{isInCart ? (
+								<Check className='h-5 w-5' />
+							) : (
+								<PlusCircle className='h-5 w-5' />
 							)}
-						/>
-					</button>
-				)}
-
-				{prompt.price > 0 && !isPurchased && (
-					<Button
-						size='icon'
-						onClick={handleAddToCart}
-						disabled={isInCart}
-						className='absolute top-3 right-3 z-10 h-10 w-10 rounded-full bg-black/50 text-white backdrop-blur-sm transition-all hover:bg-black/70 opacity-0 group-hover:opacity-100'
-						aria-label={isInCart ? 'In Cart' : 'Add to Cart'}
-					>
-						{isInCart ? (
-							<Check className='h-5 w-5' />
-						) : (
-							<ShoppingBag className='h-5 w-5' />
-						)}
-					</Button>
-				)}
+						</Button>
+					)}
+				</div>
 
 				<div className='absolute bottom-4 right-4 z-10'>
 					{isPurchased ? (
