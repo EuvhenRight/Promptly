@@ -71,7 +71,7 @@ export async function updatePayoutStatus(
 
 			// Create a notification for the user
 			if (newStatus === 'paid' || newStatus === 'rejected') {
-				const notificationRef = adminDb
+				const notificationRef = adminDb!
 					.collection('users')
 					.doc(payoutData.userId)
 					.collection('notifications')
