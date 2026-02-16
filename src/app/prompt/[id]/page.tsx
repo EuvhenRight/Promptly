@@ -605,16 +605,22 @@ export default function PromptDetailPage() {
 							/>
 						)}
 						{promptImage && (
-							<div className='absolute right-4 top-4 z-10 flex flex-col items-center gap-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100'>
-								<Button
-									variant='secondary'
-									size='icon'
-									onClick={handleDownload}
-									className='h-10 w-10 rounded-full bg-black/50 text-white backdrop-blur-sm hover:bg-black/70'
+							<div className='absolute right-4 top-4 z-10 flex flex-col items-center gap-2'>
+								<a
+									href={promptImage}
+									download
+									target='_blank'
+									rel='noopener noreferrer'
 								>
-									<Download className='h-5 w-5' />
-									<span className='sr-only'>Download image</span>
-								</Button>
+									<Button
+										variant='secondary'
+										size='icon'
+										className='h-10 w-10 rounded-full bg-black/50 text-white backdrop-blur-sm hover:bg-black/70'
+									>
+										<Download className='h-5 w-5' />
+										<span className='sr-only'>Download image</span>
+									</Button>
+								</a>
 								<Dialog>
 									<DialogTrigger asChild>
 										<Button
@@ -626,7 +632,7 @@ export default function PromptDetailPage() {
 											<span className='sr-only'>View fullscreen</span>
 										</Button>
 									</DialogTrigger>
-									<DialogContent hideCloseButton className='max-w-7xl w-full p-0 bg-transparent border-none shadow-none'>
+									<DialogContent className='max-w-7xl w-full p-0 bg-transparent border-none shadow-none'>
 										<DialogHeader>
 											<DialogTitle className='sr-only'>
 												Fullscreen image for: {prompt.title}
