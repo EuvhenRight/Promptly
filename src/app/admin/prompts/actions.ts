@@ -28,6 +28,32 @@ async function uploadImageToAdminStorage(buffer: Buffer, fileName: string): Prom
   return file.publicUrl();
 }
 
+export async function rehostImage(
+  imageUrl: string,
+  sourceId: string
+): Promise<string> {
+  if (!adminStorage) {
+    throw new Error('Firebase Admin Storage is not initialized.');
+  }
+  if (!imageUrl || !imageUrl.startsWith('http')) {
+    throw new Error('Invalid image URL provided for re-hosting.');
+  }
+  try {
+    const imageResponse = await fetch(imageUrl);
+    if (!imageResponse.ok) {
+      throw new Error(`Failed to download image from ${imageUrl}`);
+    }
+    const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+    const fileExtension = imageUrl.split('.').pop()?.split('?')[0] || 'jpg';
+    const newFileName = `${sourceId}.${fileExtension}`;
+
+    return await uploadImageToAdminStorage(imageBuffer, newFileName);
+  } catch (error: any) {
+    console.error('Image re-hosting failed:', error);
+    throw new Error('Could not re-host the scraped image.');
+  }
+}
+
 export async function scrapePromptHero(
   url: string
 ): Promise<ScrapeResult | { error: string; duplicate?: boolean }> {
@@ -143,23 +169,15 @@ export async function scrapePromptHero(
         };
     }
     
-    // --- 5. Process image and return result ---
-    const imageResponse = await fetch(imageUrl);
-    if (!imageResponse.ok) {
-      return { error: 'Failed to download the prompt image.' };
-    }
-    const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
-    const fileExtension = imageUrl.split('.').pop()?.split('?')[0] || 'jpg';
-    const newFileName = `${sourceId}.${fileExtension}`;
-
-    const finalImageUrl = await uploadImageToAdminStorage(imageBuffer, newFileName);
-
+    // --- 5. Return the original image URL ---
+    // The image will be downloaded and re-hosted when the admin saves the prompt.
+    // This makes the initial scraping step much faster.
     const result: ScrapeResult = {
       title,
       privateContent,
       categories: 'images',
       tags: title.split(' ')[0] || '',
-      imageUrl: finalImageUrl,
+      imageUrl: imageUrl, // Pass the original URL
       sourceId: sourceId,
     };
 
