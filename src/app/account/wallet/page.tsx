@@ -12,23 +12,54 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@/components/ui/card'
+import {
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
+import { Slider } from '@/components/ui/slider'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
 import { requestPayout } from '@/firebase/users'
 import { useToast } from '@/hooks/use-toast'
 import type { UserProfile } from '@/lib/types'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { doc } from 'firebase/firestore'
 import { Banknote, CheckCircle, Coins, Info, Loader2 } from 'lucide-react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { useForm } from 'react-hook-form'
+import * as z from 'zod'
 
 const MIN_PAYOUT_CREDITS = 5000 // 50 EUR
+
+const createPayoutSchema = (maxAmount: number) =>
+	z.object({
+		amount: z.coerce
+			.number({ invalid_type_error: 'Please enter a valid number.' })
+			.int()
+			.positive({ message: 'Amount must be positive.' })
+			.min(MIN_PAYOUT_CREDITS, {
+				message: `Minimum payout is ${MIN_PAYOUT_CREDITS.toLocaleString()} credits.`,
+			})
+			.max(maxAmount, {
+				message: `Cannot exceed your available earnings of ${maxAmount.toLocaleString()}.`,
+			}),
+	})
+
+type PayoutFormValues = z.infer<ReturnType<typeof createPayoutSchema>>
 
 function WalletSkeleton() {
 	return (
 		<div className='space-y-8'>
-			<Skeleton className='h-36' />
+			<div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
+				<Skeleton className='h-36' />
+				<Skeleton className='h-36' />
+			</div>
 			<Skeleton className='h-64' />
 		</div>
 	)
@@ -41,34 +72,29 @@ function PayoutStatusInfo({ status }: { status: UserProfile['payoutStatus'] }) {
 			title: 'Payout Pending',
 			description:
 				'Your request is awaiting review. This usually takes 3-5 business days.',
-			variant: 'default',
 		},
 		approved: {
 			icon: <CheckCircle className='h-4 w-4 text-blue-500' />,
 			title: 'Payout Approved',
 			description:
 				'Your request has been approved and will be processed soon.',
-			variant: 'default',
 		},
 		processing: {
 			icon: <Loader2 className='h-4 w-4 animate-spin text-blue-500' />,
 			title: 'Payout Processing',
 			description:
 				'Your payout has been approved and is being processed. Funds should arrive shortly.',
-			variant: 'default',
 		},
 		paid: {
 			icon: <Banknote className='h-4 w-4 text-green-500' />,
 			title: 'Payout Sent',
 			description: 'Your earnings have been sent to your connected account.',
-			variant: 'default',
 		},
 		rejected: {
 			icon: <Info className='h-4 w-4 text-destructive' />,
 			title: 'Payout Rejected',
 			description:
 				'There was an issue with your payout request. Please contact support.',
-			variant: 'destructive',
 		},
 	}
 
@@ -100,7 +126,6 @@ export default function WalletPage() {
 	const firestore = useFirestore()
 	const router = useRouter()
 	const { toast } = useToast()
-	const [isRequestingPayout, setIsRequestingPayout] = useState(false)
 
 	const userProfileRef = useMemoFirebase(
 		() => (user ? doc(firestore, 'users', user.uid) : null),
@@ -113,8 +138,17 @@ export default function WalletPage() {
 	const earnings = userProfile?.earnings ?? 0
 	const payoutStatus = userProfile?.payoutStatus ?? 'none'
 
-	const canRequestPayout =
-		earnings >= MIN_PAYOUT_CREDITS && payoutStatus === 'none'
+	const payoutSchema = createPayoutSchema(earnings)
+
+	const form = useForm<PayoutFormValues>({
+		resolver: zodResolver(payoutSchema),
+		defaultValues: {
+			amount: Math.min(earnings, MIN_PAYOUT_CREDITS),
+		},
+		mode: 'onChange',
+	})
+
+	const amount = form.watch('amount')
 
 	useEffect(() => {
 		if (!isUserLoading && !user) {
@@ -122,25 +156,22 @@ export default function WalletPage() {
 		}
 	}, [user, isUserLoading, router])
 
-	const handleRequestPayout = async () => {
-		if (!user || !firestore || !canRequestPayout) return
+	async function onSubmit(data: PayoutFormValues) {
+		if (!user || !firestore) return
 
-		setIsRequestingPayout(true)
 		try {
-			await requestPayout(firestore, user.uid)
+			await requestPayout(firestore, user.uid, data.amount)
 			toast({
 				title: 'Payout Requested',
-				description:
-					'Your request has been submitted for review. This can take up to 5 business days.',
+				description: `Your request for ${data.amount.toLocaleString()} credits has been submitted.`,
 			})
+			form.reset({ amount: 0 })
 		} catch (error: any) {
 			toast({
 				variant: 'destructive',
 				title: 'Error Requesting Payout',
 				description: error.message,
 			})
-		} finally {
-			setIsRequestingPayout(false)
 		}
 	}
 
@@ -175,69 +206,120 @@ export default function WalletPage() {
 							</p>
 						</div>
 
-						<Card>
-							<CardHeader>
-								<CardTitle className='flex items-center gap-2'>
-									<Coins className='h-5 w-5 text-amber-500' />
-									Total Credit Balance
-								</CardTitle>
-								<CardDescription>
-									Your total balance for purchasing prompts, including both
-									purchased and earned credits.
-								</CardDescription>
-							</CardHeader>
-							<CardContent>
-								<p className='text-4xl font-bold'>{credits.toLocaleString()}</p>
-							</CardContent>
-							<CardFooter>
-								<Button asChild>
-									<Link href='/account/plans#credits'>Buy More Credits</Link>
-								</Button>
-							</CardFooter>
-						</Card>
+						<div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
+							<Card>
+								<CardHeader>
+									<CardTitle className='flex items-center gap-2'>
+										<Coins className='h-5 w-5 text-amber-500' />
+										Total Credit Balance
+									</CardTitle>
+								</CardHeader>
+								<CardContent>
+									<p className='text-4xl font-bold'>{credits.toLocaleString()}</p>
+								</CardContent>
+								<CardFooter>
+									<p className='text-xs text-muted-foreground'>
+										Includes purchased and earned credits.
+									</p>
+								</CardFooter>
+							</Card>
+
+							<Card>
+								<CardHeader>
+									<CardTitle className='flex items-center gap-2'>
+										<Banknote className='h-5 w-5 text-green-600' />
+										Available for Payout
+									</CardTitle>
+								</CardHeader>
+								<CardContent>
+									<p className='text-4xl font-bold'>
+										{earnings.toLocaleString()}
+									</p>
+								</CardContent>
+								<CardFooter>
+									<p className='text-xs text-muted-foreground'>
+										Credits earned from your prompt sales.
+									</p>
+								</CardFooter>
+							</Card>
+						</div>
 
 						<Card>
 							<CardHeader>
-								<CardTitle>Payouts</CardTitle>
+								<CardTitle>Request a Payout</CardTitle>
 								<CardDescription>
-									Request a payout of your earnings. Minimum payout is{' '}
-									{MIN_PAYOUT_CREDITS.toLocaleString()} credits (€
-									{MIN_PAYOUT_CREDITS / 100}).
+									Withdraw your earnings. 100 credits = €1.00. Minimum payout
+									is {MIN_PAYOUT_CREDITS.toLocaleString()} credits (€
+									{(MIN_PAYOUT_CREDITS / 100).toFixed(2)}).
 								</CardDescription>
 							</CardHeader>
-							<CardContent className='space-y-4'>
-								<div className='rounded-lg border p-4'>
-									<div className='flex items-center justify-between'>
-										<span className='text-muted-foreground'>
-											Available for Payout
-										</span>
-										<span className='font-bold text-lg'>
-											{earnings.toLocaleString()}
-										</span>
-									</div>
-								</div>
-								<PayoutStatusInfo status={payoutStatus} />
-							</CardContent>
-							<CardFooter className='flex-col items-start gap-4'>
-								<Button
-									onClick={handleRequestPayout}
-									disabled={!canRequestPayout || isRequestingPayout}
-								>
-									{isRequestingPayout && (
-										<Loader2 className='mr-2 h-4 w-4 animate-spin' />
-									)}
-									Request Payout
-								</Button>
-								{!canRequestPayout &&
-									payoutStatus === 'none' &&
-									earnings < MIN_PAYOUT_CREDITS && (
-										<p className='text-sm text-muted-foreground'>
-											You have {earnings.toLocaleString()} credits in earnings. You
-											need at least {MIN_PAYOUT_CREDITS.toLocaleString()} to
-											request a payout.
-										</p>
-									)}
-							</CardFooter>
+							<Form {...form}>
+								<form onSubmit={form.handleSubmit(onSubmit)}>
+									<CardContent className='space-y-6'>
+										<PayoutStatusInfo status={payoutStatus} />
+										{payoutStatus === 'none' ||
+										payoutStatus === 'paid' ||
+										payoutStatus === 'rejected' ? (
+											<FormField
+												control={form.control}
+												name='amount'
+												render={({ field }) => (
+													<FormItem>
+														<FormLabel>Amount to Withdraw (credits)</FormLabel>
+														<div className='flex items-center gap-4'>
+															<FormControl>
+																<Input
+																	type='number'
+																	placeholder='e.g., 5000'
+																	className='max-w-xs'
+																	{...field}
+																/>
+															</FormControl>
+															<div className='font-semibold text-lg'>
+																= €{(amount / 100).toFixed(2)}
+															</div>
+														</div>
+
+														<Slider
+															value={[field.value]}
+															onValueChange={vals =>
+																field.onChange(vals[0] ?? 0)
+															}
+															min={MIN_PAYOUT_CREDITS}
+															max={earnings}
+															step={100}
+															disabled={
+																form.formState.isSubmitting ||
+																earnings < MIN_PAYOUT_CREDITS
+															}
+															className='pt-2'
+														/>
+														<FormMessage />
+													</FormItem>
+												)}
+											/>
+										) : null}
+									</CardContent>
+									{payoutStatus === 'none' ||
+									payoutStatus === 'paid' ||
+									payoutStatus === 'rejected' ? (
+										<CardFooter>
+											<Button
+												type='submit'
+												disabled={
+													form.formState.isSubmitting ||
+													!form.formState.isValid
+												}
+											>
+												{form.formState.isSubmitting && (
+													<Loader2 className='mr-2 h-4 w-4 animate-spin' />
+												)}
+												Request Payout
+											</Button>
+										</CardFooter>
+									) : null}
+								</form>
+							</Form>
 						</Card>
 					</div>
 				</div>

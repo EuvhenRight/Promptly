@@ -391,14 +391,19 @@ export async function manageSubscriptionCancellation(
 }
 
 /**
- * Creates a payout request for a user if they meet the requirements.
- * This now works with a single unified credit balance.
+ * Creates a payout request for a user for a specific amount of credits.
  */
 export async function requestPayout(
 	firestore: Firestore,
 	userId: string,
+	payoutAmountCredits: number,
 ): Promise<void> {
 	if (!userId) throw new Error('User ID is required.')
+
+	const payoutAmount = Math.floor(payoutAmountCredits)
+	if (payoutAmount <= 0) {
+		throw new Error('Payout amount must be positive.')
+	}
 
 	const userRef = doc(firestore, 'users', userId)
 	const payoutRequestRef = doc(collection(firestore, 'payouts')) // New request with a new ID
@@ -414,9 +419,15 @@ export async function requestPayout(
 		const payoutStatus = userData.payoutStatus ?? 'none'
 		const MIN_PAYOUT_CREDITS = 5000 // 50 EUR in credits
 
-		if (userEarnings < MIN_PAYOUT_CREDITS) {
+		if (payoutAmount > userEarnings) {
 			throw new Error(
-				`You need at least ${MIN_PAYOUT_CREDITS} credits in earnings to request a payout.`,
+				`Requested amount (${payoutAmount.toLocaleString()}) exceeds your available earnings (${userEarnings.toLocaleString()}).`,
+			)
+		}
+
+		if (payoutAmount < MIN_PAYOUT_CREDITS) {
+			throw new Error(
+				`Minimum payout is ${MIN_PAYOUT_CREDITS.toLocaleString()} credits.`,
 			)
 		}
 
@@ -428,15 +439,13 @@ export async function requestPayout(
 			throw new Error('You already have a pending or processing payout request.')
 		}
 
-		// The payout amount is the user's entire EARNINGS balance
-		const payoutAmountCredits = userEarnings
-		const payoutAmountEuros = payoutAmountCredits / 100 // 100 credits = 1 EUR
+		const payoutAmountEuros = payoutAmount / 100 // 100 credits = 1 EUR
 
 		// 1. Create the PayoutRequest document
 		const newPayout: PayoutRequest = {
 			id: payoutRequestRef.id,
 			userId,
-			amountCredits: payoutAmountCredits,
+			amountCredits: payoutAmount,
 			amountCurrency: payoutAmountEuros,
 			currency: 'eur',
 			status: 'pending',
@@ -446,8 +455,8 @@ export async function requestPayout(
 
 		// 2. Update the user's profile: deduct from BOTH balances and update status
 		transaction.update(userRef, {
-			credits: increment(-payoutAmountCredits),
-			earnings: increment(-payoutAmountCredits),
+			credits: increment(-payoutAmount),
+			earnings: increment(-payoutAmount),
 			payoutStatus: 'pending',
 		})
 	})
