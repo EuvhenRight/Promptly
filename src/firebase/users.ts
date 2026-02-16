@@ -216,8 +216,6 @@ export async function toggleFavoritePrompt(
 	isFavorite: boolean,
 ): Promise<void> {
 	if (!userId) throw new Error('User ID is required.')
-    console.log("uid from toggleFavoritePrompt", userId);
-
 
 	const userRef = doc(firestore, 'users', userId)
 	const promptRef = doc(firestore, 'prompts', promptId)
@@ -294,7 +292,6 @@ export async function followUser(
 	if (!currentUserId || !targetUserId || currentUserId === targetUserId) {
 		throw new Error('Invalid user IDs provided.')
 	}
-    console.log("uid from followUser", currentUserId);
 
 	await runTransaction(firestore, async transaction => {
 		const currentUserPublicRef = doc(firestore, 'public-profiles', currentUserId)
@@ -422,13 +419,13 @@ export async function requestPayout(
 		}
 
 		const userData = userDoc.data() as UserProfile
-		const userCredits = userData.credits ?? 0
+		const userEarnings = userData.earnings ?? 0
 		const payoutStatus = userData.payoutStatus ?? 'none'
 		const MIN_PAYOUT_CREDITS = 5000 // 50 EUR in credits
 
-		if (payoutAmount > userCredits) {
+		if (payoutAmount > userEarnings) {
 			throw new Error(
-				`Requested amount (${payoutAmount.toLocaleString()}) exceeds your available balance (${userCredits.toLocaleString()}).`,
+				`Requested amount (${payoutAmount.toLocaleString()}) exceeds your available earnings (${userEarnings.toLocaleString()}).`,
 			)
 		}
 
@@ -460,13 +457,10 @@ export async function requestPayout(
 		}
 		transaction.set(payoutRequestRef, newPayout)
 
-        // 2. Update the user's profile: deduct from BOTH balances and update status
-        const currentEarnings = userData.earnings ?? 0;
-        const newEarnings = Math.max(0, currentEarnings - payoutAmount);
-
+		// 2. Update the user's profile: deduct from BOTH balances and update status
 		transaction.update(userRef, {
 			credits: increment(-payoutAmount),
-			earnings: newEarnings,
+			earnings: increment(-payoutAmount),
 			payoutStatus: 'pending',
 		})
 	})

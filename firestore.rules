@@ -22,12 +22,12 @@ service cloud.firestore {
     
     function hasPurchased(promptId) {
       // Safely check if the purchasedPrompts field exists before accessing it.
-      let userDocExists = exists(/databases/$(database)/documents/users/$(request.auth.uid));
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
       return isSignedIn() &&
-        userDocExists &&
-        'purchasedPrompts' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.purchasedPrompts is list &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.purchasedPrompts.hasAny([promptId]);
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        'purchasedPrompts' in userDoc.data &&
+        userDoc.data.purchasedPrompts is list &&
+        userDoc.data.purchasedPrompts.hasAny([promptId]);
     }
     
     // ----------------------------------------------------------------------
@@ -54,7 +54,17 @@ service cloud.firestore {
       allow create: if isOwner(userId);
       allow update: if
         isAdmin() ||
-        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'credits', 'earnings', 'payoutStatus', 'purchasedPrompts', 'followers', 'following', 'views', 'planId', 'planPurchasedAt', 'planBillingPeriod', 'planWillCancelAtPeriodEnd']));
+        // Regular profile updates (no critical fields)
+        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'credits', 'earnings', 'payoutStatus', 'purchasedPrompts', 'followers', 'following', 'views', 'planId', 'planPurchasedAt', 'planBillingPeriod', 'planWillCancelAtPeriodEnd'])) ||
+        // Payout request transaction
+        (
+          isOwner(userId) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasAll(['credits', 'earnings', 'payoutStatus']) &&
+          request.resource.data.diff(resource.data).affectedKeys().size() == 3 &&
+          request.resource.data.payoutStatus == 'pending' &&
+          request.resource.data.credits < resource.data.credits &&
+          request.resource.data.earnings < resource.data.earnings
+        );
       allow delete: if isAdmin();
 
       match /followers/{followerId} {
