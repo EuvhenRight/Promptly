@@ -26,8 +26,11 @@ import { collection, doc, documentId, query, where } from 'firebase/firestore'
 import { Coins, Loader2, Trash2 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { PlaceHolderImages } from '@/lib/placeholder-images'
+import { signInWithGoogle } from '@/firebase/auth'
+
+const LOCAL_CART_KEY = 'promptly_local_cart';
 
 function CartSkeleton() {
 	return (
@@ -69,11 +72,40 @@ function CartSkeleton() {
 }
 
 export default function CartPage() {
-	const { user } = useUser()
+	const { user, isUserLoading } = useUser()
 	const firestore = useFirestore()
 	const { toast } = useToast()
 	const [removingId, setRemovingId] = useState<string | null>(null)
 	const [isPurchasing, setIsPurchasing] = useState(false)
+	const [localCartIds, setLocalCartIds] = useState<string[]>([]);
+
+	// Effect to handle local storage for guests
+	useEffect(() => {
+		if (user) {
+			setLocalCartIds([]);
+			return;
+		}
+
+		const updateLocalCart = () => {
+			try {
+				const localCartRaw = localStorage.getItem(LOCAL_CART_KEY);
+				if (localCartRaw) {
+					const localCart = JSON.parse(localCartRaw);
+					setLocalCartIds(localCart.promptIds ?? []);
+				} else {
+					setLocalCartIds([]);
+				}
+			} catch {
+				setLocalCartIds([]);
+			}
+		};
+
+		updateLocalCart();
+		window.addEventListener('storage', updateLocalCart);
+		return () => {
+			window.removeEventListener('storage', updateLocalCart);
+		};
+	}, [user]);
 
 	const userProfileRef = useMemoFirebase(
 		() => (user ? doc(firestore, 'users', user.uid) : null),
@@ -87,22 +119,24 @@ export default function CartPage() {
 	)
 	const { data: cart, isLoading: isCartLoading } = useDoc<Cart>(cartRef)
 
+	const cartPromptIds = useMemo(() => (user ? cart?.promptIds : localCartIds), [user, cart, localCartIds]);
+
 	const promptsQuery = useMemoFirebase(() => {
-		if (!firestore || !cart?.promptIds || cart.promptIds.length === 0) {
-			return null
+		if (!firestore || !cartPromptIds || cartPromptIds.length === 0) {
+			return null;
 		}
 		return query(
 			collection(firestore, 'prompts'),
-			where(documentId(), 'in', cart.promptIds),
+			where(documentId(), 'in', cartPromptIds),
 		)
-	}, [firestore, cart?.promptIds])
+	}, [firestore, cartPromptIds]);
 
 	const { data: cartItems, isLoading: areItemsLoading } =
 		useCollection<Prompt>(promptsQuery)
 
 	const isLoading =
-		isCartLoading ||
-		(cart?.promptIds && cart.promptIds.length > 0 && areItemsLoading)
+		isUserLoading || isCartLoading ||
+		(cartPromptIds && cartPromptIds.length > 0 && areItemsLoading)
 
 	const totalCreditCost = useMemo(() => {
 		if (!cartItems) return 0
@@ -110,9 +144,9 @@ export default function CartPage() {
 	}, [cartItems])
 
 	const handleRemove = (promptId: string, title: string) => {
-		if (!user || !firestore) return
+		if (removingId) return;
 		setRemovingId(promptId)
-		removePromptFromCart(firestore, user.uid, promptId)
+		removePromptFromCart(user ? firestore : null, user?.uid ?? null, promptId)
 		toast({
 			title: 'Removed from cart',
 			description: `"${title}" has been removed from your cart.`,
@@ -143,25 +177,11 @@ export default function CartPage() {
 	}
 
 	const renderContent = () => {
-		if (!user) {
-			return (
-				<div className='text-center py-16 bg-muted/50 rounded-lg'>
-					<h2 className='text-2xl font-semibold'>Sign in to view your cart</h2>
-					<p className='text-muted-foreground mt-2'>
-						You need to be signed in to add and view cart items.
-					</p>
-					<Button asChild className='mt-6'>
-						<Link href='/'>Go to Home</Link>
-					</Button>
-				</div>
-			)
-		}
-
-		if (isLoading) {
+		if (isLoading && !cartItems) {
 			return <CartSkeleton />
 		}
 
-		if (!cart || !cartItems || cartItems.length === 0) {
+		if (!cartItems || cartItems.length === 0) {
 			return (
 				<div className='text-center py-16 bg-muted/50 rounded-lg'>
 					<h2 className='text-2xl font-semibold'>Your cart is empty.</h2>
@@ -264,7 +284,15 @@ export default function CartPage() {
 							</div>
 						</CardContent>
 						<CardFooter>
-							{hasEnoughCredits ? (
+						{!user ? (
+								<Button
+									size='lg'
+									className='w-full'
+									onClick={() => signInWithGoogle()}
+								>
+									Sign In to Purchase
+								</Button>
+							) : hasEnoughCredits ? (
 								<Button
 									size='lg'
 									className='w-full'

@@ -39,11 +39,44 @@ import {
 	DropdownMenuTrigger,
 } from '../ui/dropdown-menu'
 import { Badge } from '../ui/badge'
+import { useEffect, useState } from 'react'
+
+const LOCAL_CART_KEY = 'promptly_local_cart';
 
 export default function Header() {
 	const { user, isUserLoading } = useUser()
 	const firestore = useFirestore()
 	const router = useRouter()
+	const [localCartCount, setLocalCartCount] = useState(0);
+
+	useEffect(() => {
+		if (user) {
+			setLocalCartCount(0);
+			return;
+		}
+
+		const updateLocalCartCount = () => {
+			try {
+				const localCartRaw = localStorage.getItem(LOCAL_CART_KEY);
+				if (localCartRaw) {
+					const localCart = JSON.parse(localCartRaw);
+					setLocalCartCount(localCart.promptIds?.length ?? 0);
+				} else {
+					setLocalCartCount(0);
+				}
+			} catch {
+				setLocalCartCount(0);
+			}
+		};
+
+		updateLocalCartCount();
+
+		window.addEventListener('storage', updateLocalCartCount);
+
+		return () => {
+			window.removeEventListener('storage', updateLocalCartCount);
+		};
+	}, [user]);
 
 	const userProfileRef = useMemoFirebase(
 		() => (user ? doc(firestore, 'users', user.uid) : null),
@@ -56,7 +89,7 @@ export default function Header() {
 		[firestore, user],
 	)
 	const { data: cart } = useDoc<Cart>(cartRef)
-	const cartCount = cart?.promptIds?.length ?? 0
+	const cartCount = user ? (cart?.promptIds?.length ?? 0) : localCartCount;
 	const credits = userProfile?.credits ?? 0
 
 	const unreadQuery = useMemoFirebase(

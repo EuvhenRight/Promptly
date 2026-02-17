@@ -15,6 +15,8 @@ import {
 	doc,
 	runTransaction,
 	serverTimestamp,
+    setDoc,
+    arrayUnion,
 } from 'firebase/firestore'
 import React, {
 	DependencyList,
@@ -25,6 +27,8 @@ import React, {
 	useMemo,
 	useState,
 } from 'react'
+
+const LOCAL_CART_KEY = 'promptly_local_cart';
 
 interface FirebaseProviderProps {
 	children: ReactNode
@@ -109,6 +113,33 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 			async firebaseUser => {
 				// Auth state determined
 				if (firebaseUser) {
+
+					// --- Start of Cart Merge Logic ---
+					try {
+						const localCartRaw = localStorage.getItem(LOCAL_CART_KEY);
+						if (localCartRaw) {
+							const localCart = JSON.parse(localCartRaw);
+							if (localCart.promptIds && localCart.promptIds.length > 0) {
+								const userCartRef = doc(firestore, 'users', firebaseUser.uid, 'carts', 'active');
+								
+								// Use setDoc with merge:true and arrayUnion to safely merge
+								await setDoc(userCartRef, {
+									promptIds: arrayUnion(...localCart.promptIds),
+									updatedAt: serverTimestamp(),
+								}, { merge: true });
+				
+								// Clear the local cart after successful merge
+								localStorage.removeItem(LOCAL_CART_KEY);
+								// Dispatch storage event to update any listening components (like header)
+								window.dispatchEvent(new Event('storage'));
+							}
+						}
+					} catch (error) {
+						console.error('Error merging local cart:', error);
+						// Don't block login process for this, just log it.
+					}
+					// --- End of Cart Merge Logic ---
+
 					// User is signed in. Ensure their Firestore document exists.
 					const userDocRef = doc(firestore, 'users', firebaseUser.uid)
 					const publicProfileRef = doc(
