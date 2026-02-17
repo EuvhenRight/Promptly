@@ -36,7 +36,7 @@ import type { UserProfile } from '@/lib/types';
 
 
 const GoogleIcon = () => (
-  <svg viewBox="0 0 48 48" className="h-5 w-5">
+  <svg viewBox="0 0 48" className="h-5 w-5">
     <path
       fill="#FFC107"
       d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039L38.802 8.922C34.962 5.518 29.8 3.5 24 3.5C11.31 3.5 1.5 13.31 1.5 26S11.31 48.5 24 48.5c11.438 0 20.286-8.38 21.6-19.199l.011-.217z"
@@ -71,56 +71,77 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 items-center px-4 sm:px-6 lg:px-8">
-        <div className="mr-4 hidden items-center md:flex">
+        
+        {/* Left: Title and Mobile Nav */}
+        <div className="flex flex-shrink-0 items-center gap-2">
           <Link href="/" className="flex items-center gap-2">
             <Bot className="h-6 w-6 text-primary" />
             <span className="font-headline text-xl font-bold">Promptly</span>
           </Link>
+          <div className="md:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-6 w-6" />
+                  <span className="sr-only">Toggle Menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left">
+                <SheetHeader>
+                  <SheetTitle>
+                    <Link href="/" className="flex items-center gap-2">
+                      <Bot className="h-6 w-6 text-primary" />
+                      <span className="font-headline text-xl font-bold">
+                        Promptly
+                      </span>
+                    </Link>
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="mt-8 flex flex-col gap-4">
+                  <div className="relative w-full">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="Search prompts..." className="pl-10" />
+                  </div>
+                  <nav className="mt-4 flex flex-col gap-2">
+                    <Button variant="ghost" asChild className="justify-start">
+                      <Link href="#">Pricing</Link>
+                    </Button>
+                    <Button variant="ghost" asChild className="justify-start">
+                      <Link href="#">Community</Link>
+                    </Button>
+                  </nav>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
 
-        <div className="md:hidden">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-6 w-6" />
-                <span className="sr-only">Toggle Menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left">
-              <SheetHeader>
-                <SheetTitle>
-                  <Link href="/" className="flex items-center gap-2">
-                    <Bot className="h-6 w-6 text-primary" />
-                    <span className="font-headline text-xl font-bold">
-                      Promptly
-                    </span>
-                  </Link>
-                </SheetTitle>
-              </SheetHeader>
-              <nav className="mt-8 flex flex-col gap-2">
-                <Button variant="ghost" className="justify-start">
-                  Categories
-                </Button>
-                <Button variant="ghost" className="justify-start">
-                  Explore
-                </Button>
-                <Button variant="ghost" className="justify-start">
-                  Top Creators
-                </Button>
-              </nav>
-            </SheetContent>
-          </Sheet>
-        </div>
+        {/* Spacer */}
+        <div className="hidden flex-1 md:block" />
 
+<<<<<<< HEAD
         <div className="flex flex-1 items-center w-full md:justify-center">
           <div className="relative w-full max-w-xl ">
+=======
+        {/* Center: Desktop Nav & Search */}
+        <div className="hidden md:flex items-center gap-6">
+           <nav className="flex items-center gap-6 text-sm">
+             <Link href="#" className="transition-colors hover:text-foreground/80 text-foreground/60">Pricing</Link>
+             <Link href="#" className="transition-colors hover:text-foreground/80 text-foreground/60">Community</Link>
+           </nav>
+           <div className="relative w-full max-w-xs">
+>>>>>>> 83dbbcc (Робитимо тепер крок за кроком)
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search prompts..." className="pl-10" />
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Link href="/cart">
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Right: Cart & Auth */}
+        <div className="flex flex-shrink-0 items-center gap-2">
+          <Link href="/cart" className="hidden md:block">
             <Button variant="ghost" size="icon">
               <ShoppingCart className="h-5 w-5" />
               <span className="sr-only">Cart</span>
@@ -171,7 +192,7 @@ export default function Header() {
           ) : (
             <Button onClick={signInWithGoogle}>
               <GoogleIcon />
-              Sign In with Google
+              Sign In
             </Button>
           )}
         </div>
