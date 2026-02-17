@@ -96,17 +96,17 @@ function NotificationsSkeleton() {
 function NotificationIcon({ type }: { type: Notification['type'] }) {
 	switch (type) {
 		case 'sale':
-			return <Coins className='h-5 w-5 text-amber-500' />
+			return <Coins className='h-5 w-5 text-amber-500 mx-auto' />
 		case 'follow':
-			return <UserPlus className='h-5 w-5 text-blue-500' />
+			return <UserPlus className='h-5 w-5 text-blue-500 mx-auto' />
 		case 'comment':
-			return <MessageSquare className='h-5 w-5 text-green-500' />
+			return <MessageSquare className='h-5 w-5 text-green-500 mx-auto' />
 		case 'like':
-			return <Heart className='h-5 w-5 text-red-500' />
+			return <Heart className='h-5 w-5 text-red-500 mx-auto' />
 		case 'payout':
-			return <Banknote className='h-5 w-5 text-indigo-500' />
+			return <Banknote className='h-5 w-5 text-indigo-500 mx-auto' />
 		default:
-			return <Bell className='h-5 w-5 text-muted-foreground' />
+			return <Bell className='h-5 w-5 text-muted-foreground mx-auto' />
 	}
 }
 
@@ -251,7 +251,8 @@ export default function NotificationsPage() {
 																	<span>Prompt Sold</span>
 																	{creditsMatch && (
 																		<span className='font-bold text-green-600 flex items-center gap-1'>
-																			- <Coins className='h-4 w-4' /> {creditsMatch[1]}
+																			+ <Coins className='h-4 w-4' />{' '}
+																			{creditsMatch[1]}
 																		</span>
 																	)}
 																</>
@@ -305,15 +306,13 @@ export default function NotificationsPage() {
 															key={notif.id}
 															className={cn(!notif.isRead && 'bg-muted/50')}
 														>
-															<TableCell className='text-center'>
+															<TableCell className='text-center align-middle'>
 																<NotificationIcon type={notif.type} />
 															</TableCell>
 															<TableCell>
-																<div className='flex justify-between items-center'>
-																	<div className='font-medium flex items-center gap-2'>
-																		{eventDisplay}
-																	</div>
-																	<span className='text-xs text-muted-foreground whitespace-nowrap pl-4'>
+																<div className='flex items-center gap-2 font-medium'>
+																	{eventDisplay}
+																	<span className='text-xs text-muted-foreground font-normal whitespace-nowrap'>
 																		{notif.createdAt
 																			? formatDistanceToNow(
 																					notif.createdAt.toDate(),
