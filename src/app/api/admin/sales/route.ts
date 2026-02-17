@@ -81,11 +81,20 @@ export async function GET(request: NextRequest) {
 			const sale = doc.data() as SaleRecord
 			const createdAtDate = (sale.createdAt as Timestamp).toDate()
 
+			// Total Revenue only counts real money (EUR) transactions
 			if (sale.currency === 'eur') {
-				const grossInEur = sale.revenueDetails.gross / 100
-				totalRevenueEur += grossInEur
-				platformEarningsEur += sale.revenueDetails.platformFee / 100
+				totalRevenueEur += sale.revenueDetails.gross / 100
+			}
+			
+			// Platform Earnings includes all platform fees, converted to EUR equivalent
+			// For 'eur' transactions (credits/subs), the platformFee is the gross amount in cents.
+			// For 'crd' transactions (prompt purchases), the platformFee is in credits.
+			// We assume 100 credits = 1 EUR.
+			const feeInCentsOrCredits = sale.revenueDetails.platformFee;
+			platformEarningsEur += feeInCentsOrCredits / 100;
 
+
+			if (sale.currency === 'eur') {
 				let key: string
 				if (period === '1d') {
 					key = format(startOfHour(createdAtDate), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx")
@@ -94,6 +103,7 @@ export async function GET(request: NextRequest) {
 				} else {
 					key = format(startOfDay(createdAtDate), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx")
 				}
+				const grossInEur = sale.revenueDetails.gross / 100;
 				revenueChartData[key] = (revenueChartData[key] || 0) + grossInEur
 			}
 

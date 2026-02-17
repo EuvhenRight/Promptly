@@ -7,10 +7,10 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from '@/components/ui/sheet'
-import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
+import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
 import { signInWithGoogle, signOutUser } from '@/firebase/auth'
-import type { Cart, UserProfile } from '@/lib/types'
-import { doc } from 'firebase/firestore'
+import type { Cart, UserProfile, Notification as NotificationType } from '@/lib/types'
+import { collection, doc, query, where } from 'firebase/firestore'
 import {
 	Bell,
 	Bot,
@@ -38,11 +38,45 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '../ui/dropdown-menu'
+import { Badge } from '../ui/badge'
+import { useEffect, useState } from 'react'
+
+const LOCAL_CART_KEY = 'promptly_local_cart';
 
 export default function Header() {
 	const { user, isUserLoading } = useUser()
 	const firestore = useFirestore()
 	const router = useRouter()
+	const [localCartCount, setLocalCartCount] = useState(0);
+
+	useEffect(() => {
+		if (user) {
+			setLocalCartCount(0);
+			return;
+		}
+
+		const updateLocalCartCount = () => {
+			try {
+				const localCartRaw = localStorage.getItem(LOCAL_CART_KEY);
+				if (localCartRaw) {
+					const localCart = JSON.parse(localCartRaw);
+					setLocalCartCount(localCart.promptIds?.length ?? 0);
+				} else {
+					setLocalCartCount(0);
+				}
+			} catch {
+				setLocalCartCount(0);
+			}
+		};
+
+		updateLocalCartCount();
+
+		window.addEventListener('storage', updateLocalCartCount);
+
+		return () => {
+			window.removeEventListener('storage', updateLocalCartCount);
+		};
+	}, [user]);
 
 	const userProfileRef = useMemoFirebase(
 		() => (user ? doc(firestore, 'users', user.uid) : null),
@@ -55,8 +89,23 @@ export default function Header() {
 		[firestore, user],
 	)
 	const { data: cart } = useDoc<Cart>(cartRef)
-	const cartCount = cart?.promptIds?.length ?? 0
+	const cartCount = user ? (cart?.promptIds?.length ?? 0) : localCartCount;
 	const credits = userProfile?.credits ?? 0
+
+	const unreadQuery = useMemoFirebase(
+		() =>
+			user && firestore
+				? query(
+						collection(firestore, 'users', user.uid, 'notifications'),
+						where('isRead', '==', false),
+					)
+				: null,
+		[user, firestore],
+	)
+
+	const { data: unreadNotifications } =
+		useCollection<NotificationType>(unreadQuery)
+	const unreadCount = unreadNotifications?.length ?? 0
 
 	const pricingUrl = user ? '/account/plans' : '/plans'
 
@@ -254,6 +303,11 @@ export default function Header() {
 									>
 										<Bell className='mr-2 h-4 w-4' />
 										<span>Notifications</span>
+										{unreadCount > 0 && (
+											<Badge className='ml-auto h-5 min-w-5 p-0 flex items-center justify-center rounded-full bg-primary text-primary-foreground'>
+												{unreadCount > 9 ? '9+' : unreadCount}
+											</Badge>
+										)}
 									</DropdownMenuItem>
 									<DropdownMenuItem
 										onSelect={() => router.push('/account/profile')}
@@ -275,6 +329,7 @@ export default function Header() {
 									<DropdownMenuItem
 										onClick={async () => {
 											await signOutUser()
+											router.push('/')
 										}}
 									>
 										<LogOut className='mr-2 h-4 w-4' />
