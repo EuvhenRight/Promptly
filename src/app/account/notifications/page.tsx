@@ -36,7 +36,13 @@ import {
 	useUser,
 } from '@/firebase'
 import type { Notification } from '@/lib/types'
-import { collection, doc, orderBy, query } from 'firebase/firestore'
+import {
+	collection,
+	doc,
+	orderBy,
+	query,
+	writeBatch,
+} from 'firebase/firestore'
 import {
 	Bell,
 	Coins,
@@ -137,6 +143,30 @@ export default function NotificationsPage() {
 	)
 	const { data: notifications, isLoading: areNotificationsLoading } =
 		useCollection<Notification>(notificationsQuery)
+
+	useEffect(() => {
+		if (!firestore || !user || !notifications) return
+
+		const unreadNotifs = notifications.filter(n => !n.isRead)
+
+		if (unreadNotifs.length > 0) {
+			const batch = writeBatch(firestore)
+			unreadNotifs.forEach(notif => {
+				const notifRef = doc(
+					firestore,
+					'users',
+					user.uid,
+					'notifications',
+					notif.id,
+				)
+				batch.update(notifRef, { isRead: true })
+			})
+
+			batch.commit().catch(err => {
+				console.error('Failed to mark notifications as read:', err)
+			})
+		}
+	}, [firestore, user, notifications])
 
 	useEffect(() => {
 		if (!isUserLoading && !user) {

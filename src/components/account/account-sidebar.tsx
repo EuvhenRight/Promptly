@@ -4,6 +4,10 @@ import { Bell, Coins, Settings, Star, User, Wallet } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase'
+import { collection, query, where } from 'firebase/firestore'
+import { Badge } from '@/components/ui/badge'
+import type { Notification as NotificationType } from '@/lib/types'
 
 const navItems = [
 	{ href: '/account', label: 'Account', icon: Settings },
@@ -19,6 +23,23 @@ type AccountSidebarProps = {
 
 export default function AccountSidebar({ credits = 0 }: AccountSidebarProps) {
 	const pathname = usePathname()
+	const { user } = useUser()
+	const firestore = useFirestore()
+
+	const unreadQuery = useMemoFirebase(
+		() =>
+			user && firestore
+				? query(
+						collection(firestore, 'users', user.uid, 'notifications'),
+						where('isRead', '==', false),
+					)
+				: null,
+		[user, firestore],
+	)
+
+	const { data: unreadNotifications } =
+		useCollection<NotificationType>(unreadQuery)
+	const unreadCount = unreadNotifications?.length ?? 0
 
 	return (
 		<aside className='w-full lg:w-56 shrink-0 space-y-6 lg:sticky lg:top-24 self-start'>
@@ -29,19 +50,27 @@ export default function AccountSidebar({ credits = 0 }: AccountSidebarProps) {
 				<nav className='flex flex-row lg:flex-col gap-1 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0'>
 					{navItems.map(({ href, label, icon: Icon }) => {
 						const isActive = pathname === href
+						const isNotifications = label === 'Notifications'
 						return (
 							<Link
 								key={href}
 								href={href}
 								className={cn(
-									'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors',
+									'flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors',
 									isActive
 										? 'bg-muted text-foreground'
 										: 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
 								)}
 							>
-								<Icon className='h-4 w-4 shrink-0' />
-								{label}
+								<div className='flex items-center gap-2'>
+									<Icon className='h-4 w-4 shrink-0' />
+									{label}
+								</div>
+								{isNotifications && unreadCount > 0 && (
+									<Badge className='h-5 min-w-5 p-0 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground'>
+										{unreadCount > 9 ? '9+' : unreadCount}
+									</Badge>
+								)}
 							</Link>
 						)
 					})}
@@ -50,7 +79,7 @@ export default function AccountSidebar({ credits = 0 }: AccountSidebarProps) {
 			<div className='flex items-center gap-2 p-3 rounded-lg border bg-muted/30'>
 				<Coins className='h-4 w-4 text-amber-600 shrink-0' />
 				<div className='min-w-0'>
-					<p className='text-sm font-medium'>{credits} Credits</p>
+					<p className='text-sm font-medium'>{credits.toLocaleString()} Credits</p>
 					<p className='text-xs text-muted-foreground'>
 						{credits < 50 ? 'Running low!' : 'Available'}
 					</p>
