@@ -132,7 +132,9 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.planId == 'pro'
       ) || isAdmin();
-      allow create, delete: if isAdmin();
+      // Admins can create/delete; signed-in users can create prompts with themselves as author
+      allow create: if isAdmin() || (isSignedIn() && request.resource.data.authorId == request.auth.uid);
+      allow delete: if isAdmin();
       allow update: if
         isAdmin() ||
         ( // Rule for views: anyone can increment views by 1
@@ -156,7 +158,11 @@ service cloud.firestore {
 
       match /private/{docId} {
         allow get: if docId == 'content' && (isAdmin() || hasPurchased(promptId));
-        allow write: if docId == 'content' && isAdmin();
+        // Admins and prompt authors can write private content (for creation/editing)
+        allow write: if docId == 'content' && (
+          isAdmin() ||
+          get(/databases/$(database)/documents/prompts/$(promptId)).data.authorId == request.auth.uid
+        );
       }
 
       match /comments/{commentId} {
