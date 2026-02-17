@@ -36,7 +36,7 @@ import {
 	useUser,
 } from '@/firebase'
 import type { Notification } from '@/lib/types'
-import { collection, orderBy, query } from 'firebase/firestore'
+import { collection, doc, orderBy, query } from 'firebase/firestore'
 import {
 	Bell,
 	Coins,
