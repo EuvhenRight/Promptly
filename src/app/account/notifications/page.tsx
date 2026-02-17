@@ -7,10 +7,19 @@ import {
 	Card,
 	CardContent,
 	CardDescription,
+	CardFooter,
 	CardHeader,
 	CardTitle,
 } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from '@/components/ui/table'
 import {
 	useCollection,
 	useDoc,
@@ -23,7 +32,7 @@ import { collection, doc, orderBy, query } from 'firebase/firestore'
 import {
 	Bell,
 	Coins,
-	FileText,
+	FileSpreadsheet,
 	Heart,
 	Loader2,
 	MessageSquare,
@@ -46,20 +55,40 @@ function NotificationsSkeleton() {
 				<CardHeader>
 					<Skeleton className='h-6 w-1/3' />
 				</CardHeader>
-				<CardContent className='space-y-4'>
-					<div className='flex items-center gap-4 p-4'>
-						<Skeleton className='h-8 w-8 rounded-full' />
-						<div className='flex-1 space-y-2'>
-							<Skeleton className='h-4 w-3/4' />
-							<Skeleton className='h-4 w-1/2' />
-						</div>
-					</div>
-					<div className='flex items-center gap-4 p-4'>
-						<Skeleton className='h-8 w-8 rounded-full' />
-						<div className='flex-1 space-y-2'>
-							<Skeleton className='h-4 w-2/3' />
-							<Skeleton className='h-4 w-1/3' />
-						</div>
+				<CardContent>
+					<div className='rounded-md border'>
+						<Table>
+							<TableHeader>
+								<TableRow>
+									<TableHead className='w-12 text-center'>Type</TableHead>
+									<TableHead>Event</TableHead>
+									<TableHead>Credits</TableHead>
+									<TableHead>Date</TableHead>
+									<TableHead className='text-right'>Action</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{Array.from({ length: 3 }).map((_, i) => (
+									<TableRow key={i}>
+										<TableCell className='text-center'>
+											<Skeleton className='h-6 w-6 rounded-full mx-auto' />
+										</TableCell>
+										<TableCell>
+											<Skeleton className='h-4 w-48' />
+										</TableCell>
+										<TableCell>
+											<Skeleton className='h-4 w-12' />
+										</TableCell>
+										<TableCell>
+											<Skeleton className='h-4 w-20' />
+										</TableCell>
+										<TableCell className='text-right'>
+											<Skeleton className='h-4 w-16' />
+										</TableCell>
+									</TableRow>
+								))}
+							</TableBody>
+						</Table>
 					</div>
 				</CardContent>
 			</Card>
@@ -116,6 +145,16 @@ export default function NotificationsPage() {
 		}
 	}, [user, isUserLoading, router])
 
+	const getCreditsFromNotification = (notification: Notification) => {
+		if (notification.type === 'sale') {
+			const match = notification.body.match(/earned (\d+) credits/)
+			if (match && match[1]) {
+				return `+${match[1]}`
+			}
+		}
+		return null
+	}
+
 	const isLoading = isUserLoading || isProfileLoading || areNotificationsLoading
 
 	if (isLoading && !notifications) {
@@ -157,7 +196,7 @@ export default function NotificationsPage() {
 							</CardHeader>
 							<CardContent>
 								{!notifications || notifications.length === 0 ? (
-									<div className='flex flex-col items-center justify-center py-16 text-center'>
+									<div className='flex flex-col items-center justify-center py-16 text-center border rounded-lg'>
 										<div className='rounded-full bg-muted p-6 mb-4'>
 											<Bell className='h-14 w-14 text-muted-foreground' />
 										</div>
@@ -172,49 +211,76 @@ export default function NotificationsPage() {
 										</Button>
 									</div>
 								) : (
-									<div className='space-y-2'>
-										{notifications.map(notif => (
-											<div
-												key={notif.id}
-												className={cn(
-													'flex items-start gap-4 p-4 rounded-lg transition-colors',
-													!notif.isRead && 'bg-muted/50',
-												)}
-											>
-												<div
-													className={cn(
-														'mt-1 h-8 w-8 rounded-full flex items-center justify-center shrink-0',
-														!notif.isRead ? 'bg-background' : 'bg-muted',
-													)}
-												>
-													<NotificationIcon type={notif.type} />
-												</div>
-												<div className='flex-1'>
-													<p className='font-semibold'>{notif.title}</p>
-													<p className='text-sm text-muted-foreground'>
-														{notif.body}
-													</p>
-													<div className='flex items-center gap-4 mt-2'>
-														{notif.link && (
-															<Link
-																href={notif.link}
-																className='text-sm font-medium text-primary hover:underline flex items-center gap-1'
+									<div className='rounded-md border'>
+										<Table>
+											<TableHeader>
+												<TableRow>
+													<TableHead className='w-12 text-center'>Type</TableHead>
+													<TableHead>Event / Description</TableHead>
+													<TableHead>Credits</TableHead>
+													<TableHead>Date</TableHead>
+													<TableHead className='text-right'>Action</TableHead>
+												</TableRow>
+											</TableHeader>
+											<TableBody>
+												{notifications.map(notif => {
+													const credits = getCreditsFromNotification(notif)
+													return (
+														<TableRow
+															key={notif.id}
+															className={cn(!notif.isRead && 'bg-muted/50')}
+														>
+															<TableCell className='text-center'>
+																<NotificationIcon type={notif.type} />
+															</TableCell>
+															<TableCell>
+																<p className='font-medium'>{notif.title}</p>
+																<p className='text-sm text-muted-foreground'>
+																	{notif.body}
+																</p>
+															</TableCell>
+															<TableCell
+																className={cn(
+																	credits && 'font-bold text-green-600',
+																)}
 															>
-																<FileText className='h-4 w-4' /> View Details
-															</Link>
-														)}
-														<span className='text-xs text-muted-foreground'>
-															{notif.createdAt ? formatDistanceToNow(notif.createdAt.toDate(), {
-																addSuffix: true,
-															}) : ''}
-														</span>
-													</div>
-												</div>
-											</div>
-										))}
+																{credits ?? '—'}
+															</TableCell>
+															<TableCell className='text-muted-foreground'>
+																{notif.createdAt
+																	? formatDistanceToNow(
+																			notif.createdAt.toDate(),
+																			{ addSuffix: true },
+																		)
+																	: ''}
+															</TableCell>
+															<TableCell className='text-right'>
+																{notif.link && (
+																	<Button
+																		variant='link'
+																		asChild
+																		className='p-0 h-auto'
+																	>
+																		<Link href={notif.link}>Details</Link>
+																	</Button>
+																)}
+															</TableCell>
+														</TableRow>
+													)
+												})}
+											</TableBody>
+										</Table>
 									</div>
 								)}
 							</CardContent>
+							{notifications && notifications.length > 0 && (
+								<CardFooter>
+									<Button variant='outline'>
+										<FileSpreadsheet className='mr-2 h-4 w-4' />
+										Export to Table
+									</Button>
+								</CardFooter>
+							)}
 						</Card>
 					</div>
 				</div>
