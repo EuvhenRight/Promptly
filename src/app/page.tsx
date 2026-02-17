@@ -18,7 +18,6 @@ import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
 import type { Cart, UserProfile } from '@/lib/types'
 import { doc } from 'firebase/firestore'
 import { usePromptsFeed, type SortByOption } from '@/hooks/use-prompts-feed'
-import { useTypes } from '@/hooks/use-types'
 import { Loader2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useDebounce } from 'use-debounce'
@@ -99,7 +98,6 @@ export default function Home() {
 	const [activeFilterName, setActiveFilterName] = useState('Featured')
 	const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null)
 	const [selectedModelId, setSelectedModelId] = useState<string | null>(null)
-	const [isInitialTypeSet, setIsInitialTypeSet] = useState(false)
 	const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
 		null,
 	)
@@ -108,7 +106,6 @@ export default function Home() {
 	const [searchTerm, setSearchTerm] = useState('')
 	const [debouncedSearchTerm] = useDebounce(searchTerm, 500)
 	const [showPrivateOnly, setShowPrivateOnly] = useState(false)
-	const { types, isLoading: typesLoading } = useTypes()
 	const { user } = useUser()
 	const firestore = useFirestore()
 	const [hideMyPrompts, setHideMyPrompts] = useState(false)
@@ -118,7 +115,7 @@ export default function Home() {
 	useEffect(() => {
 		const stored = localStorage.getItem('hideMyPrompts')
 		if (stored) {
-			setHideMyPrompts(JSON.parse(stored))
+			setHideMyPrompts(JSON.parse(stored) === true)
 		}
 	}, [])
 
@@ -146,16 +143,6 @@ export default function Home() {
 	)
 	const isProOrAdmin =
 		userProfile?.planId === 'pro' || userProfile?.role === 'admin'
-
-	useEffect(() => {
-		if (!typesLoading && types.length > 0 && !isInitialTypeSet) {
-			const imagesType = types.find(t => t.name === 'Images')
-			if (imagesType) {
-				setSelectedTypeId(imagesType.id)
-			}
-			setIsInitialTypeSet(true)
-		}
-	}, [types, typesLoading, isInitialTypeSet])
 
 	const handleFilterChange = (
 		id: string,
@@ -332,10 +319,34 @@ export default function Home() {
 				/>
 				<div className='container mx-auto px-4 py-8 sm:px-6 lg:px-8'>
 					{error && (
-						<p className='text-destructive text-center'>
-							Error: {error.message}
-						</p>
+						<div className='text-destructive text-center py-4 space-y-2'>
+							<p>Error loading prompts: {error.message}</p>
+							{/index|Index/.test(String(error?.message)) && (
+								<p className='text-sm text-muted-foreground'>
+									Try clearing filters or run{' '}
+									<code className='text-xs'>firebase deploy --only firestore:indexes</code>{' '}
+									to deploy indexes.
+								</p>
+							)}
+						</div>
 					)}
+
+					{!loading &&
+					!error &&
+					(visiblePrompts.length === 0 || totalCount === 0) ? (
+						<div
+							className='flex flex-col items-center justify-center py-20 px-4 text-center min-h-[200px]'
+							role='status'
+							aria-live='polite'
+						>
+							<p className='text-lg font-semibold text-foreground'>
+								No prompts found
+							</p>
+							<p className='mt-2 text-sm text-muted-foreground'>
+								Try adjusting your filters or search terms
+							</p>
+						</div>
+					) : null}
 
 					<PromptFeed
 						prompts={visiblePrompts}
