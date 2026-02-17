@@ -15,6 +15,8 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
+    // Include 70 so <Image quality={70} /> does not warn (required in Next.js 16+)
+    qualities: [25, 50, 70, 75],
     remotePatterns: [
       { protocol: 'https', hostname: 'placehold.co', port: '', pathname: '/**' },
       { protocol: 'https', hostname: 'images.unsplash.com', port: '', pathname: '/**' },

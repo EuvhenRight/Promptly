@@ -1,5 +1,6 @@
 'use server';
 import { adminDb } from '@/firebase/admin'
+import { messageForLog } from '@/lib/error-log'
 import { NextResponse } from 'next/server'
 
 const DEFAULT_TAG_NAMES = [
@@ -36,7 +37,7 @@ export async function GET() {
 		return NextResponse.json(allTags)
 
 	} catch (err) {
-		console.error('Fetch tags error:', err)
+		console.error('Fetch tags error:', messageForLog(err))
 		return NextResponse.json(
 			{
 				error: 'Failed to fetch tags from Firestore.',
@@ -77,7 +78,7 @@ export async function POST(request: Request) {
 			message: `Seeded ${DEFAULT_TAG_NAMES.length} tags.`,
 		})
 	} catch (err) {
-		console.error('Tags POST error:', err)
+		console.error('Tags POST error:', messageForLog(err))
 		return NextResponse.json(
 			{
 				error: err instanceof Error ? err.message : 'Failed to save tags',

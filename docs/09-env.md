@@ -8,7 +8,7 @@
 |--------|------|
 | NEXT_PUBLIC_FIREBASE_API_KEY | Firebase Web API Key. |
 | NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN | Auth domain (наприклад, *.firebaseapp.com). |
-| NEXT_PUBLIC_FIREBASE_PROJECT_ID | ID проекту Firebase. |
+| NEXT_PUBLIC_FIREBASE_PROJECT_ID | ID проекту Firebase. **Use only the Promptly project** (Firestore must be enabled for this project). |
 | NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET | Bucket Storage (наприклад, *.appspot.com або *.firebasestorage.app). |
 | NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID | Sender ID для Messaging. |
 | NEXT_PUBLIC_FIREBASE_APP_ID | Web App ID. |
@@ -30,7 +30,7 @@
 ## Локальна розробка
 
 1. Скопіювати `.env.example` у `.env.local`.
-2. Заповнити Firebase config (з Firebase Console → Project settings → Your apps).
+2. Заповнити Firebase config **тільки з проекту Promptly** (Firebase Console → вибрати проект Promptly → Project settings → Your apps). Використовуйте `service-account.json` з цього ж проекту (Service accounts → Generate new private key).
 3. Додати Stripe keys та за потреби GEMINI_API_KEY.
 4. Для повного checkout/fulfill/purchase локально потрібен Firebase Admin (credentials) та Stripe secret.
 

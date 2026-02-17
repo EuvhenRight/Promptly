@@ -1,16 +1,9 @@
 'use client';
 
-import Masonry from 'react-masonry-css';
+import { useAutoAnimate } from '@formkit/auto-animate/react';
 import PromptCard from './prompt-card';
 import type { Prompt } from '@/lib/types';
 import { useEffect, useState } from 'react';
-
-const breakpointColumnsObj = {
-  default: 5,   // For screens > 1280px
-  1280: 4,    // For screens <= 1280px
-  1024: 3,    // For screens <= 1024px
-  767: 1,     // For screens <= 767px
-};
 
 interface PromptFeedProps {
   prompts: Prompt[];
@@ -19,21 +12,21 @@ interface PromptFeedProps {
 }
 
 export default function PromptFeed({ prompts, cartPromptIds, purchasedPromptIds }: PromptFeedProps) {
-  const [isClient, setIsClient] = useState(false)
+  const [isClient, setIsClient] = useState(false);
+  const [animationParent] = useAutoAnimate({ duration: 400, easing: 'ease-in-out' });
 
   useEffect(() => {
-    setIsClient(true)
-  }, [])
+    setIsClient(true);
+  }, []);
 
   if (!isClient || !prompts.length) {
-    return null
+    return null;
   }
 
   return (
-    <Masonry
-      breakpointCols={breakpointColumnsObj}
-      className="prompt-feed-grid"
-      columnClassName="prompt-feed-grid_column"
+    <div
+      ref={animationParent}
+      className="prompt-feed-grid grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4"
     >
       {prompts.map((prompt) => (
         <PromptCard
@@ -43,6 +36,6 @@ export default function PromptFeed({ prompts, cartPromptIds, purchasedPromptIds 
           isPurchased={purchasedPromptIds?.has(prompt.id) ?? false}
         />
       ))}
-    </Masonry>
-  )
+    </div>
+  );
 }

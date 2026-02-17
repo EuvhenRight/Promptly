@@ -1,5 +1,6 @@
 'use server';
 import { adminDb } from '@/firebase/admin'
+import { messageForLog } from '@/lib/error-log'
 import { NextResponse } from 'next/server'
 
 const DEFAULT_MODEL_NAMES = ['Nano Banana', 'Flux', 'GPT', 'Gemini', 'Midjourney', 'Stable Diffusion', 'Sora']
@@ -22,7 +23,7 @@ export async function GET() {
 
 		return NextResponse.json(allModels)
 	} catch (err) {
-		console.error('Fetch models error:', err)
+		console.error('Fetch models error:', messageForLog(err))
 		return NextResponse.json(
 			{
 				error: 'Failed to fetch models from Firestore.',
@@ -61,7 +62,7 @@ export async function POST(request: Request) {
 			message: `Seeded ${DEFAULT_MODEL_NAMES.length} models.`,
 		})
 	} catch (err) {
-		console.error('Models POST error:', err)
+		console.error('Models POST error:', messageForLog(err))
 		return NextResponse.json(
 			{
 				error: err instanceof Error ? err.message : 'Failed to save models',

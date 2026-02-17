@@ -1,5 +1,6 @@
 'use server';
 import { adminDb } from '@/firebase/admin'
+import { messageForLog } from '@/lib/error-log'
 import { NextResponse } from 'next/server'
 
 const DEFAULT_TYPE_NAMES = ['Video', 'Images', 'Audio']
@@ -21,7 +22,7 @@ export async function GET() {
 		}))
 		return NextResponse.json(allTypes)
 	} catch (err) {
-		console.error('Fetch types error:', err)
+		console.error('Fetch types error:', messageForLog(err))
 		return NextResponse.json(
 			{
 				error: 'Failed to fetch types from Firestore.',
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
 			message: `Seeded ${DEFAULT_TYPE_NAMES.length} types.`,
 		})
 	} catch (err) {
-		console.error('Types POST error:', err)
+		console.error('Types POST error:', messageForLog(err))
 		return NextResponse.json(
 			{
 				error: err instanceof Error ? err.message : 'Failed to save types',
