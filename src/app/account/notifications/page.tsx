@@ -21,27 +21,35 @@ import {
 	TableRow,
 } from '@/components/ui/table'
 import {
+	Pagination,
+	PaginationContent,
+	PaginationItem,
+	PaginationLink,
+	PaginationNext,
+	PaginationPrevious,
+} from '@/components/ui/pagination'
+import {
 	useCollection,
 	useDoc,
 	useFirestore,
 	useMemoFirebase,
 	useUser,
 } from '@/firebase'
-import type { Notification, UserProfile } from '@/lib/types'
+import type { Notification } from '@/lib/types'
 import { collection, doc, orderBy, query } from 'firebase/firestore'
 import {
 	Bell,
 	Coins,
-	FileSpreadsheet,
 	Heart,
 	Loader2,
 	MessageSquare,
 	UserPlus,
 	Banknote,
+	Star,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -62,13 +70,12 @@ function NotificationsSkeleton() {
 								<TableRow>
 									<TableHead className='w-12 text-center'>Type</TableHead>
 									<TableHead>Event</TableHead>
-									<TableHead>Credits</TableHead>
-									<TableHead>Date</TableHead>
-									<TableHead className='text-right'>Action</TableHead>
+									<TableHead>Prompt</TableHead>
+									<TableHead className='text-right'>Date</TableHead>
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{Array.from({ length: 3 }).map((_, i) => (
+								{Array.from({ length: 5 }).map((_, i) => (
 									<TableRow key={i}>
 										<TableCell className='text-center'>
 											<Skeleton className='h-6 w-6 rounded-full mx-auto' />
@@ -77,13 +84,10 @@ function NotificationsSkeleton() {
 											<Skeleton className='h-4 w-48' />
 										</TableCell>
 										<TableCell>
-											<Skeleton className='h-4 w-12' />
-										</TableCell>
-										<TableCell>
-											<Skeleton className='h-4 w-20' />
+											<Skeleton className='h-4 w-32' />
 										</TableCell>
 										<TableCell className='text-right'>
-											<Skeleton className='h-4 w-16' />
+											<Skeleton className='h-4 w-20' />
 										</TableCell>
 									</TableRow>
 								))}
@@ -113,17 +117,88 @@ function NotificationIcon({ type }: { type: Notification['type'] }) {
 	}
 }
 
+const getEventDetails = (notification: Notification) => {
+	const { type, title, body } = notification
+	let eventDisplay: React.ReactNode = title
+	let promptTitle: string | null = null
+
+	const promptTitleMatch = body.match(/"(.*?)"/)
+	if (promptTitleMatch) {
+		promptTitle = promptTitleMatch[1]
+	}
+
+	switch (type) {
+		case 'sale':
+			const creditsMatch = body.match(/(\d+)\s*credits/i)
+			eventDisplay = (
+				<div className='flex items-center gap-1.5'>
+					<span>Prompt Sold</span>
+					{creditsMatch && (
+						<span className='font-bold text-green-600 flex items-center gap-1'>
+							- <Coins className='h-4 w-4' /> {creditsMatch[1]}
+						</span>
+					)}
+				</div>
+			)
+			break
+		case 'comment':
+			const ratingMatch = body.match(/(\d+)-star/i)
+			const rating = ratingMatch ? parseInt(ratingMatch[1], 10) : 0
+			eventDisplay = (
+				<div className='flex items-center gap-2'>
+					<span>New Review</span>
+					{rating > 0 && (
+						<div className='flex items-center gap-0.5'>
+							{Array.from({ length: 5 }).map((_, i) => (
+								<Star
+									key={i}
+									className={cn(
+										'h-4 w-4',
+										i < rating
+											? 'text-yellow-400 fill-yellow-400'
+											: 'text-muted-foreground/30',
+									)}
+								/>
+							))}
+						</div>
+					)}
+				</div>
+			)
+			break
+		case 'follow':
+			const followerMatch = body.match(/^(.*?)\s+is now following you/i)
+			eventDisplay = (
+				<span>
+					New Follower:
+					<span className='font-semibold ml-1'>
+						{followerMatch ? followerMatch[1] : 'Someone'}
+					</span>
+				</span>
+			)
+			break
+		case 'like':
+			eventDisplay = 'New Like'
+			break
+		default:
+			eventDisplay = title
+			break
+	}
+
+	return { eventDisplay, promptTitle }
+}
+
 export default function NotificationsPage() {
 	const { user, isUserLoading } = useUser()
 	const firestore = useFirestore()
 	const router = useRouter()
+	const [currentPage, setCurrentPage] = useState(1)
+	const [itemsPerPage] = useState(10)
 
 	const userProfileRef = useMemoFirebase(
 		() => (user ? doc(firestore, 'users', user.uid) : null),
 		[firestore, user],
 	)
-	const { data: userProfile, isLoading: isProfileLoading } =
-		useDoc<UserProfile>(userProfileRef)
+	const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef)
 	const credits = userProfile?.credits ?? 0
 
 	const notificationsQuery = useMemoFirebase(
@@ -145,15 +220,16 @@ export default function NotificationsPage() {
 		}
 	}, [user, isUserLoading, router])
 
-	const getCreditsFromNotification = (notification: Notification) => {
-		if (notification.type === 'sale') {
-			const match = notification.body.match(/earned (\d+) credits/)
-			if (match && match[1]) {
-				return `+${match[1]}`
-			}
-		}
-		return null
-	}
+	const pageCount = notifications
+		? Math.ceil(notifications.length / itemsPerPage)
+		: 0
+	const paginatedNotifications = useMemo(() => {
+		if (!notifications) return []
+		return notifications.slice(
+			(currentPage - 1) * itemsPerPage,
+			currentPage * itemsPerPage,
+		)
+	}, [notifications, currentPage, itemsPerPage])
 
 	const isLoading = isUserLoading || isProfileLoading || areNotificationsLoading
 
@@ -195,7 +271,8 @@ export default function NotificationsPage() {
 								<CardTitle>Recent Activity</CardTitle>
 							</CardHeader>
 							<CardContent>
-								{!notifications || notifications.length === 0 ? (
+								{!paginatedNotifications ||
+								paginatedNotifications.length === 0 ? (
 									<div className='flex flex-col items-center justify-center py-16 text-center border rounded-lg'>
 										<div className='rounded-full bg-muted p-6 mb-4'>
 											<Bell className='h-14 w-14 text-muted-foreground' />
@@ -216,15 +293,15 @@ export default function NotificationsPage() {
 											<TableHeader>
 												<TableRow>
 													<TableHead className='w-12 text-center'>Type</TableHead>
-													<TableHead>Event / Description</TableHead>
-													<TableHead>Credits</TableHead>
-													<TableHead>Date</TableHead>
-													<TableHead className='text-right'>Action</TableHead>
+													<TableHead>Event</TableHead>
+													<TableHead>Prompt</TableHead>
+													<TableHead className='text-right'>Date</TableHead>
 												</TableRow>
 											</TableHeader>
 											<TableBody>
-												{notifications.map(notif => {
-													const credits = getCreditsFromNotification(notif)
+												{paginatedNotifications.map(notif => {
+													const { eventDisplay, promptTitle } =
+														getEventDetails(notif)
 													return (
 														<TableRow
 															key={notif.id}
@@ -234,36 +311,30 @@ export default function NotificationsPage() {
 																<NotificationIcon type={notif.type} />
 															</TableCell>
 															<TableCell>
-																<p className='font-medium'>{notif.title}</p>
+																<div className='font-medium'>{eventDisplay}</div>
 																<p className='text-sm text-muted-foreground'>
 																	{notif.body}
 																</p>
 															</TableCell>
-															<TableCell
-																className={cn(
-																	credits && 'font-bold text-green-600',
+															<TableCell>
+																{promptTitle && notif.link ? (
+																	<Link
+																		href={notif.link}
+																		className='font-medium text-primary hover:underline'
+																	>
+																		{promptTitle}
+																	</Link>
+																) : (
+																	<span className='text-muted-foreground'>—</span>
 																)}
-															>
-																{credits ?? '—'}
 															</TableCell>
-															<TableCell className='text-muted-foreground'>
+															<TableCell className='text-right text-muted-foreground'>
 																{notif.createdAt
 																	? formatDistanceToNow(
 																			notif.createdAt.toDate(),
 																			{ addSuffix: true },
 																		)
 																	: ''}
-															</TableCell>
-															<TableCell className='text-right'>
-																{notif.link && (
-																	<Button
-																		variant='link'
-																		asChild
-																		className='p-0 h-auto'
-																	>
-																		<Link href={notif.link}>Details</Link>
-																	</Button>
-																)}
 															</TableCell>
 														</TableRow>
 													)
@@ -273,12 +344,38 @@ export default function NotificationsPage() {
 									</div>
 								)}
 							</CardContent>
-							{notifications && notifications.length > 0 && (
-								<CardFooter>
-									<Button variant='outline'>
-										<FileSpreadsheet className='mr-2 h-4 w-4' />
-										Export to Table
-									</Button>
+							{pageCount > 1 && (
+								<CardFooter className='justify-end border-t pt-4'>
+									<Pagination>
+										<PaginationContent>
+											<PaginationItem>
+												<PaginationPrevious
+													onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+													disabled={currentPage === 1}
+												/>
+											</PaginationItem>
+											{Array.from({ length: pageCount }, (_, i) => i + 1).map(
+												page => (
+													<PaginationItem key={page}>
+														<PaginationLink
+															onClick={() => setCurrentPage(page)}
+															isActive={currentPage === page}
+														>
+															{page}
+														</PaginationLink>
+													</PaginationItem>
+												),
+											)}
+											<PaginationItem>
+												<PaginationNext
+													onClick={() =>
+														setCurrentPage(p => Math.min(pageCount, p + 1))
+													}
+													disabled={currentPage === pageCount}
+												/>
+											</PaginationItem>
+										</PaginationContent>
+									</Pagination>
 								</CardFooter>
 							)}
 						</Card>
