@@ -1,5 +1,6 @@
 'use server';
 import { adminDb } from '@/firebase/admin'
+import { messageForLog } from '@/lib/error-log'
 import { NextResponse } from 'next/server'
 
 const DEFAULT_CATEGORY_NAMES = [
@@ -29,7 +30,7 @@ export async function GET() {
 
 		return NextResponse.json(allCategories)
 	} catch (err) {
-		console.error('Fetch categories error:', err)
+		console.error('Fetch categories error:', messageForLog(err))
 		return NextResponse.json(
 			{
 				error: 'Failed to fetch categories from Firestore.',
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
 			message: `Seeded ${DEFAULT_CATEGORY_NAMES.length} categories.`,
 		})
 	} catch (err) {
-		console.error('Categories POST error:', err)
+		console.error('Categories POST error:', messageForLog(err))
 		return NextResponse.json(
 			{
 				error: err instanceof Error ? err.message : 'Failed to save categories',

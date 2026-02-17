@@ -102,6 +102,10 @@ export default function PromptCard({
 
 	const creditPrice = Math.round(prompt.price * 100)
 
+	// Skip Next.js image optimization for Firebase Storage to avoid upstream 504 timeouts and ensure first load works
+	const isFirebaseStorage =
+		imageUrl?.includes('storage.googleapis.com') || imageUrl?.includes('firebasestorage.googleapis.com')
+
 	return (
 		<div>
 			<div className='group relative w-full overflow-hidden rounded-2xl bg-card'>
@@ -114,6 +118,7 @@ export default function PromptCard({
 							height={imageHeight}
 							sizes='(max-width: 767px) 100vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw'
 							quality={70}
+							unoptimized={isFirebaseStorage}
 							className='w-full h-auto object-cover transition-transform duration-300 ease-in-out group-hover:scale-105'
 						/>
 					) : (

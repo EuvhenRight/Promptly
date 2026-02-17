@@ -244,6 +244,7 @@ export default function PublicProfilePage() {
 							fill
 							className='object-cover'
 							priority
+							unoptimized={userProfile.coverImageURL.includes('storage.googleapis.com') || userProfile.coverImageURL.includes('firebasestorage.googleapis.com')}
 						/>
 					)}
 					<div className='absolute inset-0 bg-gradient-to-t from-black/20 to-transparent' />
@@ -393,6 +394,7 @@ export default function PublicProfilePage() {
 															height={imgHeight}
 															sizes='(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 33vw'
 															className='object-cover w-full h-full'
+															unoptimized={img.includes('storage.googleapis.com') || img.includes('firebasestorage.googleapis.com')}
 														/>
 													) : (
 														<Skeleton className='w-full h-full' />

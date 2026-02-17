@@ -1,3 +1,4 @@
+import { SuppressTimeoutLog } from '@/components/suppress-timeout-log'
 import { Toaster } from '@/components/ui/toaster'
 import { FirebaseClientProvider } from '@/firebase'
 import { getFirebaseConfig } from '@/firebase/config'
@@ -47,6 +48,7 @@ export default function RootLayout({
 					disableTransitionOnChange
 				>
 					<FirebaseClientProvider config={firebaseConfig}>
+						<SuppressTimeoutLog />
 						<CategoriesProvider>
 							<TagsProvider>
 								<TypesProvider>

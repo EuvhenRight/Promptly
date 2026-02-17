@@ -2,6 +2,7 @@
 
 import { useFirestore } from '@/firebase'
 import type { Prompt } from '@/lib/types'
+import { messageForLog } from '@/lib/error-log'
 import {
 	collection,
 	DocumentData,
@@ -17,9 +18,17 @@ import {
 	endAt,
 	startAt,
 } from 'firebase/firestore'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 const PAGE_SIZE = 10
+
+function isTimeoutOrAbort(err: unknown): boolean {
+	if (err instanceof Error) {
+		const code = (err as Error & { code?: number }).code
+		return code === 23 || err.name === 'TimeoutError' || err.name === 'AbortError'
+	}
+	return !!(err && typeof err === 'object' && 'code' in err && (err as { code?: number }).code === 23)
+}
 
 export type SortByOption =
 	| 'createdAt:desc'
@@ -55,6 +64,7 @@ export function usePromptsFeed({
 		useState<QueryDocumentSnapshot<DocumentData> | null>(null)
 	const [hasMore, setHasMore] = useState(true)
 	const [totalCount, setTotalCount] = useState<number | null>(null)
+	const initialRetryRef = useRef(0)
 
 	const fetchPrompts = useCallback(
 		async (initialLoad = false) => {
@@ -189,9 +199,17 @@ export function usePromptsFeed({
 				setPrompts(prevPrompts =>
 					initialLoad ? newPrompts : [...prevPrompts, ...newPrompts],
 				)
-			} catch (err: any) {
-				console.error('Error fetching prompts:', err)
-				setError(err)
+			} catch (err: unknown) {
+				// Retry initial load once on timeout so first load can succeed
+				if (initialLoad && isTimeoutOrAbort(err) && initialRetryRef.current < 1) {
+					initialRetryRef.current += 1
+					console.warn('Prompts fetch timed out, retrying once...')
+					setLoading(false)
+					setTimeout(() => fetchPrompts(true), 1500)
+					return
+				}
+				console.error('Error fetching prompts:', messageForLog(err))
+				setError(err instanceof Error ? err : new Error(String(err)))
 			} finally {
 				setLoading(false)
 			}
@@ -213,7 +231,9 @@ export function usePromptsFeed({
 	)
 
 	useEffect(() => {
-		setPrompts([])
+		// Don't clear prompts here: keep previous list visible so FormKit Auto Animate
+		// can animate the reorder when new data arrives (same parent, children move).
+		initialRetryRef.current = 0
 		setLastVisible(null)
 		setHasMore(true)
 		setTotalCount(null)
