@@ -36,7 +36,7 @@ import {
 	useUser,
 } from '@/firebase'
 import type { Notification } from '@/lib/types'
-import { collection, doc, orderBy, query } from 'firebase/firestore'
+import { collection, orderBy, query } from 'firebase/firestore'
 import {
 	Bell,
 	Coins,
@@ -70,8 +70,6 @@ function NotificationsSkeleton() {
 								<TableRow>
 									<TableHead className='w-12 text-center'>Type</TableHead>
 									<TableHead>Event</TableHead>
-									<TableHead>Prompt</TableHead>
-									<TableHead className='text-right'>Date</TableHead>
 								</TableRow>
 							</TableHeader>
 							<TableBody>
@@ -82,12 +80,7 @@ function NotificationsSkeleton() {
 										</TableCell>
 										<TableCell>
 											<Skeleton className='h-4 w-48' />
-										</TableCell>
-										<TableCell>
-											<Skeleton className='h-4 w-32' />
-										</TableCell>
-										<TableCell className='text-right'>
-											<Skeleton className='h-4 w-20' />
+											<Skeleton className='h-4 w-64 mt-2' />
 										</TableCell>
 									</TableRow>
 								))}
@@ -117,76 +110,6 @@ function NotificationIcon({ type }: { type: Notification['type'] }) {
 	}
 }
 
-const getEventDetails = (notification: Notification) => {
-	const { type, title, body } = notification
-	let eventDisplay: React.ReactNode = title
-	let promptTitle: string | null = null
-
-	const promptTitleMatch = body.match(/"(.*?)"/)
-	if (promptTitleMatch) {
-		promptTitle = promptTitleMatch[1]
-	}
-
-	switch (type) {
-		case 'sale':
-			const creditsMatch = body.match(/(\d+)\s*credits/i)
-			eventDisplay = (
-				<div className='flex items-center gap-1.5'>
-					<span>Prompt Sold</span>
-					{creditsMatch && (
-						<span className='font-bold text-green-600 flex items-center gap-1'>
-							- <Coins className='h-4 w-4' /> {creditsMatch[1]}
-						</span>
-					)}
-				</div>
-			)
-			break
-		case 'comment':
-			const ratingMatch = body.match(/(\d+)-star/i)
-			const rating = ratingMatch ? parseInt(ratingMatch[1], 10) : 0
-			eventDisplay = (
-				<div className='flex items-center gap-2'>
-					<span>New Review</span>
-					{rating > 0 && (
-						<div className='flex items-center gap-0.5'>
-							{Array.from({ length: 5 }).map((_, i) => (
-								<Star
-									key={i}
-									className={cn(
-										'h-4 w-4',
-										i < rating
-											? 'text-yellow-400 fill-yellow-400'
-											: 'text-muted-foreground/30',
-									)}
-								/>
-							))}
-						</div>
-					)}
-				</div>
-			)
-			break
-		case 'follow':
-			const followerMatch = body.match(/^(.*?)\s+is now following you/i)
-			eventDisplay = (
-				<span>
-					New Follower:
-					<span className='font-semibold ml-1'>
-						{followerMatch ? followerMatch[1] : 'Someone'}
-					</span>
-				</span>
-			)
-			break
-		case 'like':
-			eventDisplay = 'New Like'
-			break
-		default:
-			eventDisplay = title
-			break
-	}
-
-	return { eventDisplay, promptTitle }
-}
-
 export default function NotificationsPage() {
 	const { user, isUserLoading } = useUser()
 	const firestore = useFirestore()
@@ -198,7 +121,8 @@ export default function NotificationsPage() {
 		() => (user ? doc(firestore, 'users', user.uid) : null),
 		[firestore, user],
 	)
-	const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef)
+	const { data: userProfile, isLoading: isProfileLoading } =
+		useDoc(userProfileRef)
 	const credits = userProfile?.credits ?? 0
 
 	const notificationsQuery = useMemoFirebase(
@@ -294,14 +218,88 @@ export default function NotificationsPage() {
 												<TableRow>
 													<TableHead className='w-12 text-center'>Type</TableHead>
 													<TableHead>Event</TableHead>
-													<TableHead>Prompt</TableHead>
-													<TableHead className='text-right'>Date</TableHead>
 												</TableRow>
 											</TableHeader>
 											<TableBody>
 												{paginatedNotifications.map(notif => {
-													const { eventDisplay, promptTitle } =
-														getEventDetails(notif)
+													let eventDisplay: React.ReactNode = notif.title
+													const promptTitleMatch = notif.body.match(/"(.*?)"/)
+													let bodyWithLink: React.ReactNode = notif.body
+
+													if (promptTitleMatch && notif.link) {
+														const promptTitle = promptTitleMatch[1]
+														const parts = notif.body.split(`"${promptTitle}"`)
+														bodyWithLink = (
+															<>
+																{parts[0]}
+																<Link
+																	href={notif.link}
+																	className='font-semibold text-primary hover:underline'
+																>
+																	"{promptTitle}"
+																</Link>
+																{parts[1]}
+															</>
+														)
+													}
+
+													switch (notif.type) {
+														case 'sale':
+															const creditsMatch = notif.body.match(/(\d+)\s*credits/i)
+															eventDisplay = (
+																<>
+																	<span>Prompt Sold</span>
+																	{creditsMatch && (
+																		<span className='font-bold text-green-600 flex items-center gap-1'>
+																			- <Coins className='h-4 w-4' /> {creditsMatch[1]}
+																		</span>
+																	)}
+																</>
+															)
+															break
+														case 'comment':
+															const ratingMatch = notif.body.match(/(\d+)-star/i)
+															const rating = ratingMatch ? parseInt(ratingMatch[1], 10) : 0
+															eventDisplay = (
+																<>
+																	<span>New Review</span>
+																	{rating > 0 && (
+																		<div className='flex items-center gap-0.5'>
+																			{Array.from({ length: 5 }).map((_, i) => (
+																				<Star
+																					key={i}
+																					className={cn(
+																						'h-4 w-4',
+																						i < rating
+																							? 'text-yellow-400 fill-yellow-400'
+																							: 'text-muted-foreground/30',
+																					)}
+																				/>
+																			))}
+																		</div>
+																	)}
+																</>
+															)
+															break
+														case 'follow':
+															const followerMatch = notif.body.match(/^(.*?)\s+is now following you/i)
+															eventDisplay = (
+																<>
+																	<span>New Follower:</span>
+																	<span className='font-semibold'>
+																		{followerMatch ? followerMatch[1] : 'Someone'}
+																	</span>
+																</>
+															)
+															break
+														case 'like':
+															eventDisplay = 'New Like'
+															break
+														default:
+															eventDisplay = notif.title
+															break
+													}
+
 													return (
 														<TableRow
 															key={notif.id}
@@ -311,30 +309,22 @@ export default function NotificationsPage() {
 																<NotificationIcon type={notif.type} />
 															</TableCell>
 															<TableCell>
-																<div className='font-medium'>{eventDisplay}</div>
-																<p className='text-sm text-muted-foreground'>
-																	{notif.body}
+																<div className='flex justify-between items-center'>
+																	<div className='font-medium flex items-center gap-2'>
+																		{eventDisplay}
+																	</div>
+																	<span className='text-xs text-muted-foreground whitespace-nowrap pl-4'>
+																		{notif.createdAt
+																			? formatDistanceToNow(
+																					notif.createdAt.toDate(),
+																					{ addSuffix: true },
+																				)
+																			: ''}
+																	</span>
+																</div>
+																<p className='text-sm text-muted-foreground mt-1'>
+																	{bodyWithLink}
 																</p>
-															</TableCell>
-															<TableCell>
-																{promptTitle && notif.link ? (
-																	<Link
-																		href={notif.link}
-																		className='font-medium text-primary hover:underline'
-																	>
-																		{promptTitle}
-																	</Link>
-																) : (
-																	<span className='text-muted-foreground'>—</span>
-																)}
-															</TableCell>
-															<TableCell className='text-right text-muted-foreground'>
-																{notif.createdAt
-																	? formatDistanceToNow(
-																			notif.createdAt.toDate(),
-																			{ addSuffix: true },
-																		)
-																	: ''}
 															</TableCell>
 														</TableRow>
 													)
