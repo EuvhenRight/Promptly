@@ -7,10 +7,10 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from '@/components/ui/sheet'
-import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
+import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
 import { signInWithGoogle, signOutUser } from '@/firebase/auth'
-import type { Cart, UserProfile } from '@/lib/types'
-import { doc } from 'firebase/firestore'
+import type { Cart, UserProfile, Notification as NotificationType } from '@/lib/types'
+import { collection, doc, query, where } from 'firebase/firestore'
 import {
 	Bell,
 	Bot,
@@ -38,6 +38,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '../ui/dropdown-menu'
+import { Badge } from '../ui/badge'
 
 export default function Header() {
 	const { user, isUserLoading } = useUser()
@@ -57,6 +58,21 @@ export default function Header() {
 	const { data: cart } = useDoc<Cart>(cartRef)
 	const cartCount = cart?.promptIds?.length ?? 0
 	const credits = userProfile?.credits ?? 0
+
+	const unreadQuery = useMemoFirebase(
+		() =>
+			user && firestore
+				? query(
+						collection(firestore, 'users', user.uid, 'notifications'),
+						where('isRead', '==', false),
+					)
+				: null,
+		[user, firestore],
+	)
+
+	const { data: unreadNotifications } =
+		useCollection<NotificationType>(unreadQuery)
+	const unreadCount = unreadNotifications?.length ?? 0
 
 	const pricingUrl = user ? '/account/plans' : '/plans'
 
@@ -254,6 +270,11 @@ export default function Header() {
 									>
 										<Bell className='mr-2 h-4 w-4' />
 										<span>Notifications</span>
+										{unreadCount > 0 && (
+											<Badge className='ml-auto h-5 min-w-5 p-0 flex items-center justify-center rounded-full bg-primary text-primary-foreground'>
+												{unreadCount > 9 ? '9+' : unreadCount}
+											</Badge>
+										)}
 									</DropdownMenuItem>
 									<DropdownMenuItem
 										onSelect={() => router.push('/account/profile')}
