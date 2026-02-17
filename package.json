@@ -10,7 +10,16 @@
 		"start": "next start",
 		"lint": "next lint",
 		"typecheck": "tsc --noEmit",
-		"stripe:sync": "node scripts/sync-stripe-to-firebase.js"
+		"stripe:sync": "node scripts/sync-stripe-to-firebase.js",
+		"install:test": "npm install --save-dev @playwright/test vitest @testing-library/react @testing-library/jest-dom @vitejs/plugin-react happy-dom",
+		"test": "vitest",
+		"test:run": "vitest run",
+		"test:unit": "vitest run tests/unit",
+		"test:integration": "vitest run tests/integration",
+		"test:contracts": "vitest run tests/contracts",
+		"test:e2e": "playwright test",
+		"test:e2e:ui": "playwright test --ui",
+		"test:e2e:headed": "playwright test --headed"
 	},
 	"engines": {
 		"node": ">=20.0.0"

@@ -29,6 +29,7 @@ import {
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
+import { Skeleton } from '../ui/skeleton'
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -157,7 +158,11 @@ export default function Header() {
 					</Link>
 
 					{isUserLoading ? (
-						<div className='h-10 w-24 animate-pulse rounded-md bg-muted' />
+						<div className='flex items-center gap-2'>
+							<Skeleton className='h-10 w-20' />
+							<Skeleton className='h-10 w-12' />
+							<Skeleton className='h-10 w-10 rounded-full' />
+						</div>
 					) : user ? (
 						<>
 							<Button

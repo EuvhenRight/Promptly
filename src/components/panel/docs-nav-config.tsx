@@ -3,6 +3,7 @@ import {
 	BookOpen,
 	Code,
 	Database,
+	FileCheck,
 	FileJson,
 	GitBranch,
 	Home,
@@ -13,7 +14,7 @@ import {
 	Server,
 	Settings,
 	Shield,
-	FileCheck,
+	TestTube,
 } from 'lucide-react'
 import type { PanelNavConfig } from './types'
 
@@ -35,6 +36,7 @@ export const DOCS_NAV_CONFIG: PanelNavConfig = {
 		{ href: '/docs/env', label: 'Змінні середовища', icon: Settings },
 		{ href: '/docs/todo-refactor', label: 'TODO та рефакторинг', icon: ListTodo },
 		{ href: '/docs/features-summary', label: 'Зведення можливостей', icon: FileCheck },
+		{ href: '/docs/testing', label: 'Тестування', icon: TestTube },
 		{ href: '/admin', label: 'Back to Admin Panel', icon: ArrowLeft, separatorBefore: true },
 	],
 	getIsActive(href, pathname) {

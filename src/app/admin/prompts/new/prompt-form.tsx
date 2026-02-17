@@ -49,6 +49,7 @@ const promptFormSchema = z.object({
 })
 
 export type PromptFormValues = z.infer<typeof promptFormSchema>
+export { promptFormSchema }
 
 interface PromptFormProps {
 	onSubmit: (values: PromptFormValues) => Promise<void>
