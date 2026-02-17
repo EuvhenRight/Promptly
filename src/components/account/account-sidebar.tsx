@@ -67,7 +67,7 @@ export default function AccountSidebar({ credits = 0 }: AccountSidebarProps) {
 									{label}
 								</div>
 								{isNotifications && unreadCount > 0 && (
-									<Badge className='h-5 min-w-5 p-0 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground'>
+									<Badge className='h-5 min-w-5 p-0 flex items-center justify-center rounded-full bg-primary text-primary-foreground'>
 										{unreadCount > 9 ? '9+' : unreadCount}
 									</Badge>
 								)}
