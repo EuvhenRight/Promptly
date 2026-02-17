@@ -1,5 +1,6 @@
 'use server';
 import { adminDb } from '@/firebase/admin'
+import { messageForLog } from '@/lib/error-log'
 import admin from 'firebase-admin'
 import { NextResponse } from 'next/server'
 
@@ -47,7 +48,7 @@ export async function GET(request: Request) {
 
 		return NextResponse.json(items)
 	} catch (err) {
-		console.error('Search bar backgrounds GET error:', err)
+		console.error('Search bar backgrounds GET error:', messageForLog(err))
 		return NextResponse.json(
 			{
 				error: 'Failed to fetch backgrounds from Firestore',
@@ -101,7 +102,7 @@ export async function POST(request: Request) {
 			isActive,
 		})
 	} catch (err) {
-		console.error('Search bar backgrounds POST error:', err)
+		console.error('Search bar backgrounds POST error:', messageForLog(err))
 		return NextResponse.json(
 			{
 				error:
