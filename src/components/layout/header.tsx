@@ -296,6 +296,7 @@ export default function Header() {
 									<DropdownMenuItem
 										onClick={async () => {
 											await signOutUser()
+											router.push('/')
 										}}
 									>
 										<LogOut className='mr-2 h-4 w-4' />
