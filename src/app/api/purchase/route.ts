@@ -1,4 +1,6 @@
 
+'use server'
+
 import { adminDb } from '@/firebase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import admin from 'firebase-admin'
@@ -33,8 +35,13 @@ async function handleSinglePromptPurchase(
 		const userData = userDoc.data() as UserProfile
 		promptData = promptDoc.data() as Prompt
 
+		if (promptData.authorId === userId) {
+			throw new Error('You cannot purchase your own prompt.')
+		}
+
 		if (userData.purchasedPrompts?.includes(promptId)) {
-			return // User already owns this prompt, transaction succeeds silently
+			// Already owned, succeed silently but don't charge.
+			return
 		}
 
 		creditPrice = Math.round(promptData.price * 100)
@@ -105,7 +112,7 @@ async function handleSinglePromptPurchase(
 		})
 	})
 
-	if (promptData) {
+	if (promptData && !((await getDoc(userRef)).data() as UserProfile).purchasedPrompts?.includes(promptId) ) {
 		const historyRef = db
 			.collection('users')
 			.doc(userId)
@@ -135,7 +142,7 @@ async function handleCartPurchase(
 	}
 
 	let totalCreditCost = 0
-	const promptDetails: { id: string; title: string }[] = []
+	const purchasedPromptDetails: { id: string; title: string }[] = []
 
 	await db.runTransaction(async transaction => {
 		const userRef = db.doc(`users/${userId}`)
@@ -143,19 +150,35 @@ async function handleCartPurchase(
 		const userDoc = await transaction.get(userRef)
 		if (!userDoc.exists) throw new Error('User not found.')
 		const userData = userDoc.data() as UserProfile
+		const userTotalCredits = userData.credits ?? 0
 
 		const promptRefs = promptIds.map(id => db.doc(`prompts/${id}`))
 		const promptDocs = await transaction.getAll(...promptRefs)
 
-		let calculatedTotalCost = 0
+		const purchasablePrompts: FirebaseFirestore.DocumentSnapshot[] = []
 
 		for (const pDoc of promptDocs) {
-			if (!pDoc.exists) throw new Error(`Prompt with ID ${pDoc.id} not found.`)
+			if (!pDoc.exists) {
+				console.warn(`Prompt with ID ${pDoc.id} not found during cart purchase. Skipping.`)
+				continue
+			}
 			const pData = pDoc.data()!
-			const creditPrice = Math.round(pData.price * 100)
+			const isAuthor = pData.authorId === userId
+			const isPurchased = userData.purchasedPrompts?.includes(pDoc.id)
 
-			calculatedTotalCost += creditPrice
-			promptDetails.push({ id: pDoc.id, title: pData.title })
+			if (isAuthor || isPurchased) {
+				continue; // Skip this item, don't add to purchasable list
+			}
+
+			purchasablePrompts.push(pDoc);
+		}
+		
+		let calculatedTotalCost = 0;
+		for (const pDoc of purchasablePrompts) {
+			const pData = pDoc.data()!
+			const creditPrice = Math.round(pData.price * 100);
+			calculatedTotalCost += creditPrice;
+			purchasedPromptDetails.push({ id: pDoc.id, title: pData.title });
 
 			// Update prompt sales stat
 			transaction.update(pDoc.ref, {
@@ -173,13 +196,8 @@ async function handleCartPurchase(
 					credits: admin.firestore.FieldValue.increment(earningsAmount),
 					earnings: admin.firestore.FieldValue.increment(earningsAmount),
 				})
-
-				// Create a notification for the author
-				const notificationRef = db
-					.collection('users')
-					.doc(authorId)
-					.collection('notifications')
-					.doc()
+				
+				const notificationRef = db.collection('users').doc(authorId).collection('notifications').doc()
 				transaction.set(notificationRef, {
 					type: 'sale',
 					title: 'Prompt Sold!',
@@ -190,13 +208,11 @@ async function handleCartPurchase(
 					userId: authorId,
 				})
 			}
-
+			
 			// Create a sale record for each item
-			const saleRef = db.collection('sales').doc()
-			const sellerEarning = Math.floor(
-				creditPrice * (1 - PLATFORM_COMMISSION_RATE),
-			)
-			const platformFee = creditPrice - sellerEarning
+			const saleRef = db.collection('sales').doc();
+			const sellerEarning = Math.floor(creditPrice * (1 - PLATFORM_COMMISSION_RATE));
+			const platformFee = creditPrice - sellerEarning;
 			transaction.set(saleRef, {
 				type: 'prompt',
 				status: 'completed',
@@ -204,47 +220,42 @@ async function handleCartPurchase(
 				buyerId: userId,
 				sellerId: authorId,
 				promptIds: [pDoc.id],
-				revenueDetails: {
-					gross: creditPrice,
-					platformFee: platformFee,
-					sellerEarning: sellerEarning,
-				},
+				revenueDetails: { gross: creditPrice, platformFee, sellerEarning },
 				currency: 'crd',
 				paymentMethod: 'credits',
-			})
+			});
 		}
 
-		totalCreditCost = calculatedTotalCost
-		const userTotalCredits = userData.credits ?? 0
+		totalCreditCost = calculatedTotalCost;
 		if (userTotalCredits < totalCreditCost) {
 			throw new Error('Insufficient credits.')
 		}
 
-		// Update buyer's profile
-		transaction.update(userRef, {
-			purchasedPrompts: admin.firestore.FieldValue.arrayUnion(...promptIds),
-			credits: admin.firestore.FieldValue.increment(-totalCreditCost),
+		// Update buyer's profile only if there are items to purchase
+		if (purchasablePrompts.length > 0) {
+			transaction.update(userRef, {
+				purchasedPrompts: admin.firestore.FieldValue.arrayUnion(...purchasablePrompts.map(p => p.id)),
+				credits: admin.firestore.FieldValue.increment(-totalCreditCost),
+			})
+		}
+		
+		// Clear all original items from cart
+		transaction.update(cartRef, { promptIds: admin.firestore.FieldValue.arrayRemove(...promptIds) })
+	})
+
+	// Write to purchase history if anything was actually purchased
+	if (purchasedPromptDetails.length > 0) {
+		const historyRef = db.collection('users').doc(userId).collection('purchaseHistory').doc()
+		await historyRef.set({
+			type: 'cart',
+			amountCents: totalCreditCost,
+			currency: 'crd',
+			createdAt: admin.firestore.FieldValue.serverTimestamp(),
+			promptIds: purchasedPromptDetails.map(p => p.id),
+			promptTitles: purchasedPromptDetails.map(p => p.title),
+			description: `${purchasedPromptDetails.length} prompts from cart`,
 		})
-
-		// Clear cart
-		transaction.update(cartRef, { promptIds: [] })
-	})
-
-	// Write to purchase history (outside transaction)
-	const historyRef = db
-		.collection('users')
-		.doc(userId)
-		.collection('purchaseHistory')
-		.doc()
-	await historyRef.set({
-		type: 'cart',
-		amountCents: totalCreditCost,
-		currency: 'crd',
-		createdAt: admin.firestore.FieldValue.serverTimestamp(),
-		promptIds: promptIds,
-		promptTitles: promptDetails.map(d => d.title),
-		description: `${promptIds.length} prompts from cart`,
-	})
+	}
 
 	return NextResponse.json({ success: true })
 }
