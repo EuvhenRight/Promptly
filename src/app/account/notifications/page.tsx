@@ -34,6 +34,8 @@ import {
 	useFirestore,
 	useMemoFirebase,
 	useUser,
+	errorEmitter,
+	FirestorePermissionError,
 } from '@/firebase'
 import type { Notification } from '@/lib/types'
 import {
@@ -162,8 +164,16 @@ export default function NotificationsPage() {
 				batch.update(notifRef, { isRead: true })
 			})
 
-			batch.commit().catch(err => {
-				console.error('Failed to mark notifications as read:', err)
+			batch.commit().catch(error => {
+				console.error('Failed to mark notifications as read:', error)
+				errorEmitter.emit(
+					'permission-error',
+					new FirestorePermissionError({
+						path: `users/${user.uid}/notifications`,
+						operation: 'write',
+						requestResourceData: { isRead: true },
+					}),
+				)
 			})
 		}
 	}, [firestore, user, notifications])
@@ -277,7 +287,7 @@ export default function NotificationsPage() {
 														case 'sale':
 															const creditsMatch = notif.body.match(/(\d+)\s*credits/i)
 															eventDisplay = (
-																<>
+																<div className='flex items-center gap-2'>
 																	<span>Prompt Sold</span>
 																	{creditsMatch && (
 																		<span className='font-bold text-green-600 flex items-center gap-1'>
@@ -285,14 +295,14 @@ export default function NotificationsPage() {
 																			{creditsMatch[1]}
 																		</span>
 																	)}
-																</>
+																</div>
 															)
 															break
 														case 'comment':
 															const ratingMatch = notif.body.match(/(\d+)-star/i)
 															const rating = ratingMatch ? parseInt(ratingMatch[1], 10) : 0
 															eventDisplay = (
-																<>
+																<div className='flex items-center gap-2'>
 																	<span>New Review</span>
 																	{rating > 0 && (
 																		<div className='flex items-center gap-0.5'>
@@ -309,19 +319,11 @@ export default function NotificationsPage() {
 																			))}
 																		</div>
 																	)}
-																</>
+																</div>
 															)
 															break
 														case 'follow':
-															const followerMatch = notif.body.match(/^(.*?)\s+is now following you/i)
-															eventDisplay = (
-																<>
-																	<span>New Follower:</span>
-																	<span className='font-semibold'>
-																		{followerMatch ? followerMatch[1] : 'Someone'}
-																	</span>
-																</>
-															)
+															eventDisplay = 'New Follower'
 															break
 														case 'like':
 															eventDisplay = 'New Like'
@@ -340,16 +342,18 @@ export default function NotificationsPage() {
 																<NotificationIcon type={notif.type} />
 															</TableCell>
 															<TableCell>
-																<div className='flex items-center gap-2 font-medium'>
-																	{eventDisplay}
-																	<span className='text-xs text-muted-foreground font-normal whitespace-nowrap'>
-																		{notif.createdAt
-																			? formatDistanceToNow(
-																					notif.createdAt.toDate(),
-																					{ addSuffix: true },
-																				)
-																			: ''}
-																	</span>
+																<div className='flex items-center justify-between'>
+																	<div className='flex items-center gap-2 font-medium'>
+																		{eventDisplay}
+																		<span className='text-xs text-muted-foreground font-normal whitespace-nowrap'>
+																			{notif.createdAt
+																				? formatDistanceToNow(
+																						notif.createdAt.toDate(),
+																						{ addSuffix: true },
+																					)
+																				: ''}
+																		</span>
+																	</div>
 																</div>
 																<p className='text-sm text-muted-foreground mt-1'>
 																	{bodyWithLink}
