@@ -74,16 +74,8 @@ export default function PromptCard({
 		e.preventDefault()
 		e.stopPropagation()
 
-		if (!user) {
-			toast({
-				title: 'Please sign in',
-				description: 'You need to be signed in to add items to your cart.',
-			})
-			return
-		}
-		if (!firestore) return
+		addPromptToCart(user ? firestore : null, user?.uid ?? null, prompt.id)
 
-		addPromptToCart(firestore, user.uid, prompt.id)
 		toast({
 			title: 'Added to cart',
 			description: `"${prompt.title}" has been added to your cart.`,

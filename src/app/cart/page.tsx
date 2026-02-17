@@ -26,8 +26,16 @@ import { collection, doc, documentId, query, where } from 'firebase/firestore'
 import { Coins, Loader2, Trash2 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { PlaceHolderImages } from '@/lib/placeholder-images'
+import { signInWithGoogle } from '@/firebase/auth'
+import { Badge } from '@/components/ui/badge'
+
+const LOCAL_CART_KEY = 'promptly_local_cart';
+
+type ProcessedCartItem = Prompt & {
+	purchaseStatus: 'purchasable' | 'owned' | 'author'
+}
 
 function CartSkeleton() {
 	return (
@@ -69,11 +77,40 @@ function CartSkeleton() {
 }
 
 export default function CartPage() {
-	const { user } = useUser()
+	const { user, isUserLoading } = useUser()
 	const firestore = useFirestore()
 	const { toast } = useToast()
 	const [removingId, setRemovingId] = useState<string | null>(null)
 	const [isPurchasing, setIsPurchasing] = useState(false)
+	const [localCartIds, setLocalCartIds] = useState<string[]>([]);
+
+	// Effect to handle local storage for guests
+	useEffect(() => {
+		if (user) {
+			setLocalCartIds([]);
+			return;
+		}
+
+		const updateLocalCart = () => {
+			try {
+				const localCartRaw = localStorage.getItem(LOCAL_CART_KEY);
+				if (localCartRaw) {
+					const localCart = JSON.parse(localCartRaw);
+					setLocalCartIds(localCart.promptIds ?? []);
+				} else {
+					setLocalCartIds([]);
+				}
+			} catch {
+				setLocalCartIds([]);
+			}
+		};
+
+		updateLocalCart();
+		window.addEventListener('storage', updateLocalCart);
+		return () => {
+			window.removeEventListener('storage', updateLocalCart);
+		};
+	}, [user]);
 
 	const userProfileRef = useMemoFirebase(
 		() => (user ? doc(firestore, 'users', user.uid) : null),
@@ -87,32 +124,61 @@ export default function CartPage() {
 	)
 	const { data: cart, isLoading: isCartLoading } = useDoc<Cart>(cartRef)
 
+	const cartPromptIds = useMemo(() => (user ? cart?.promptIds : localCartIds), [user, cart, localCartIds]);
+
 	const promptsQuery = useMemoFirebase(() => {
-		if (!firestore || !cart?.promptIds || cart.promptIds.length === 0) {
-			return null
+		if (!firestore || !cartPromptIds || cartPromptIds.length === 0) {
+			return null;
 		}
 		return query(
 			collection(firestore, 'prompts'),
-			where(documentId(), 'in', cart.promptIds),
+			where(documentId(), 'in', cartPromptIds),
 		)
-	}, [firestore, cart?.promptIds])
+	}, [firestore, cartPromptIds]);
 
 	const { data: cartItems, isLoading: areItemsLoading } =
 		useCollection<Prompt>(promptsQuery)
 
-	const isLoading =
-		isCartLoading ||
-		(cart?.promptIds && cart.promptIds.length > 0 && areItemsLoading)
+	const purchasedPromptIds = useMemo(
+		() => new Set(userProfile?.purchasedPrompts ?? []),
+		[userProfile?.purchasedPrompts],
+	)
 
-	const totalCreditCost = useMemo(() => {
-		if (!cartItems) return 0
-		return cartItems.reduce((acc, item) => acc + Math.round(item.price * 100), 0)
-	}, [cartItems])
+	const processedCartItems: ProcessedCartItem[] = useMemo(() => {
+		if (!cartItems) return []
+		return cartItems.map(item => {
+			const isAuthor = item.authorId === user?.uid
+			const isAlreadyPurchased = purchasedPromptIds.has(item.id)
+			let purchaseStatus: 'purchasable' | 'owned' | 'author' = 'purchasable'
+			if (isAuthor) {
+				purchaseStatus = 'author'
+			} else if (isAlreadyPurchased) {
+				purchaseStatus = 'owned'
+			}
+			return { ...item, purchaseStatus }
+		})
+	}, [cartItems, user?.uid, purchasedPromptIds])
+
+	const { purchasableItems, totalCreditCost } = useMemo(() => {
+		const purchasable = processedCartItems.filter(
+			item => item.purchaseStatus === 'purchasable',
+		)
+		const cost = purchasable.reduce(
+			(acc, item) => acc + Math.round(item.price * 100),
+			0,
+		)
+		return { purchasableItems: purchasable, totalCreditCost: cost }
+	}, [processedCartItems])
+	
+	const isLoading =
+		isUserLoading || isCartLoading ||
+		(cartPromptIds && cartPromptIds.length > 0 && areItemsLoading)
+
 
 	const handleRemove = (promptId: string, title: string) => {
-		if (!user || !firestore) return
+		if (removingId) return;
 		setRemovingId(promptId)
-		removePromptFromCart(firestore, user.uid, promptId)
+		removePromptFromCart(user ? firestore : null, user?.uid ?? null, promptId)
 		toast({
 			title: 'Removed from cart',
 			description: `"${title}" has been removed from your cart.`,
@@ -121,12 +187,12 @@ export default function CartPage() {
 	}
 
 	const handlePurchase = async () => {
-		if (!user || !firestore || !cart?.promptIds || cart.promptIds.length === 0) {
+		if (!user || !firestore || purchasableItems.length === 0) {
 			return
 		}
 		setIsPurchasing(true)
 		try {
-			await purchaseCartWithCredits(firestore, user.uid, cart.promptIds)
+			await purchaseCartWithCredits(firestore, user.uid, purchasableItems.map(p => p.id))
 			toast({
 				title: 'Purchase Successful!',
 				description: 'The prompts have been added to your account.',
@@ -143,25 +209,11 @@ export default function CartPage() {
 	}
 
 	const renderContent = () => {
-		if (!user) {
-			return (
-				<div className='text-center py-16 bg-muted/50 rounded-lg'>
-					<h2 className='text-2xl font-semibold'>Sign in to view your cart</h2>
-					<p className='text-muted-foreground mt-2'>
-						You need to be signed in to add and view cart items.
-					</p>
-					<Button asChild className='mt-6'>
-						<Link href='/'>Go to Home</Link>
-					</Button>
-				</div>
-			)
-		}
-
-		if (isLoading) {
+		if (isLoading && !cartItems) {
 			return <CartSkeleton />
 		}
 
-		if (!cart || !cartItems || cartItems.length === 0) {
+		if (!processedCartItems || processedCartItems.length === 0) {
 			return (
 				<div className='text-center py-16 bg-muted/50 rounded-lg'>
 					<h2 className='text-2xl font-semibold'>Your cart is empty.</h2>
@@ -180,7 +232,7 @@ export default function CartPage() {
 		return (
 			<div className='grid grid-cols-1 lg:grid-cols-3 gap-8'>
 				<div className='lg:col-span-2 space-y-4'>
-					{cartItems.map(item => {
+					{processedCartItems.map(item => {
 						const imageIdentifier = item.images?.[0]
 						let itemImage: string | undefined
 
@@ -217,9 +269,19 @@ export default function CartPage() {
 									</p>
 								</div>
 								<div className='flex items-center gap-4'>
-									<div className='flex items-center gap-1 font-bold text-lg'>
-										<Coins className='h-5 w-5 text-amber-500' />
-										<span>{creditPrice}</span>
+									<div className='text-lg font-bold w-24 text-right'>
+										{item.purchaseStatus === 'purchasable' && (
+											<div className='flex items-center justify-end gap-1'>
+												<Coins className='h-5 w-5 text-amber-500' />
+												<span>{creditPrice}</span>
+											</div>
+										)}
+										{item.purchaseStatus === 'owned' && (
+											<Badge variant='outline'>Owned</Badge>
+										)}
+										{item.purchaseStatus === 'author' && (
+											<Badge variant='secondary'>Your Item</Badge>
+										)}
 									</div>
 									<Button
 										variant='ghost'
@@ -251,7 +313,7 @@ export default function CartPage() {
 								<span>Your balance</span>
 								<span className='flex items-center gap-1'>
 									<Coins className='h-4 w-4 text-amber-500' />
-									{userProfile?.credits ?? 0}
+									{userProfile?.credits?.toLocaleString() ?? 0}
 								</span>
 							</div>
 							<Separator />
@@ -259,12 +321,29 @@ export default function CartPage() {
 								<span>Total Cost</span>
 								<span className='flex items-center gap-1'>
 									<Coins className='h-5 w-5 text-amber-500' />
-									{totalCreditCost}
+									{totalCreditCost.toLocaleString()}
 								</span>
 							</div>
+							{processedCartItems.length > purchasableItems.length && (
+								<p className='text-xs text-muted-foreground'>
+									Note: Already owned items and your own items are excluded from the total.
+								</p>
+							)}
 						</CardContent>
 						<CardFooter>
-							{hasEnoughCredits ? (
+						{!user ? (
+								<Button
+									size='lg'
+									className='w-full'
+									onClick={() => signInWithGoogle()}
+								>
+									Sign In to Purchase
+								</Button>
+							) : purchasableItems.length === 0 ? (
+								<Button size='lg' className='w-full' disabled>
+									Nothing to purchase
+								</Button>
+							) : hasEnoughCredits ? (
 								<Button
 									size='lg'
 									className='w-full'

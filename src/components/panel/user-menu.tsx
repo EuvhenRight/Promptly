@@ -69,6 +69,7 @@ export function UserMenu() {
 				<DropdownMenuItem
 					onClick={async () => {
 						await signOutUser()
+						router.push('/')
 					}}
 				>
 					Logout
