@@ -11,6 +11,7 @@
 		"lint": "next lint",
 		"typecheck": "tsc --noEmit",
 		"stripe:sync": "node scripts/sync-stripe-to-firebase.js",
+		"install:test": "npm install --save-dev @playwright/test vitest @testing-library/react @testing-library/jest-dom @vitejs/plugin-react happy-dom",
 		"test": "vitest",
 		"test:run": "vitest run",
 		"test:unit": "vitest run tests/unit",
@@ -91,12 +92,6 @@
 		"genkit-cli": "^1.20.0",
 		"postcss": "^8.4.38",
 		"tailwindcss": "^3.4.4",
-		"typescript": "^5.5.3",
-		"@testing-library/jest-dom": "^6.6.3",
-		"@testing-library/react": "^16.1.0",
-		"@vitejs/plugin-react": "^4.3.4",
-		"happy-dom": "^20.0.0",
-		"vitest": "^2.1.8",
-		"@playwright/test": "^1.51.0"
+		"typescript": "^5.5.3"
 	}
 }
