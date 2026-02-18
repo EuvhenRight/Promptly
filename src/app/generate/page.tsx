@@ -296,7 +296,7 @@ export default function GeneratePage() {
                                         </DialogTrigger>
                                         <DialogContent className="max-w-7xl w-full p-0 bg-transparent border-none shadow-none" hideCloseButton>
                                             <Image src={generatedImageUrl} alt="Generated image" width={1920} height={1080} className="w-full h-auto object-contain max-h-[90vh] rounded-lg" />
-                                            <DialogClose className="absolute right-4 top-4 rounded-full p-2 bg-black/50 text-white opacity-80 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary data-[state=open]:text-muted-foreground'>
+                                            <DialogClose className="absolute right-4 top-4 rounded-full p-2 bg-black/50 text-white opacity-80 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary data-[state=open]:text-muted-foreground">
                                                 <X className="h-8 w-8" />
                                                 <span className="sr-only">Close</span>
                                             </DialogClose>
@@ -312,3 +312,4 @@ export default function GeneratePage() {
         </div>
     );
 }
+    
