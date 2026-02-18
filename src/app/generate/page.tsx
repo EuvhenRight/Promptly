@@ -29,7 +29,6 @@ const formSchema = z.object({
     prompt: z.string().min(1, 'Please enter a prompt.'),
     model: z.string().min(1, 'Please select a model.'),
     aspectRatio: z.string().optional(),
-    outputFormat: z.string().optional(),
 });
 
 type GenerationFormValues = z.infer<typeof formSchema>;
@@ -55,8 +54,8 @@ export default function GeneratePage() {
     const credits = userProfile?.credits ?? 0;
 
     const accessibleModels = useMemo(
-        () => AVAILABLE_MODELS.filter(model => model.plans.includes(userPlan)),
-        [userPlan]
+        () => AVAILABLE_MODELS, // All models accessible for now
+        []
     );
 
     const form = useForm<GenerationFormValues>({
@@ -65,7 +64,6 @@ export default function GeneratePage() {
             prompt: '',
             model: accessibleModels[0]?.id,
             aspectRatio: '1:1',
-            outputFormat: 'jpg',
         },
     });
 
@@ -118,6 +116,7 @@ export default function GeneratePage() {
                 variant: 'destructive',
                 title: 'Insufficient Credits',
                 description: `You need at least ${GENERATION_COST} credits to generate an image.`,
+                action: <Link href="/account/plans#credits">Buy Credits</Link>
             });
             return;
         }
@@ -125,19 +124,11 @@ export default function GeneratePage() {
         setIsGenerating(true);
         setGeneratedImageUrl(null);
 
-        const selectedModel = AVAILABLE_MODELS.find(m => m.id === data.model);
-        if (!selectedModel) {
-            toast({ variant: 'destructive', title: 'Invalid model selected.' });
-            setIsGenerating(false);
-            return;
-        }
-
         const generationInput: GenerateImageInput = {
-            model: selectedModel.ref,
+            modelId: data.model,
             prompt: data.prompt,
             referenceImageUrl: referenceImagePreview ?? undefined,
             aspectRatio: data.aspectRatio,
-            outputFormat: data.outputFormat,
         };
 
         try {
@@ -222,32 +213,10 @@ export default function GeneratePage() {
                                             <SelectContent>
                                                 <SelectItem value="1:1">1:1 (Square)</SelectItem>
                                                 <SelectItem value="16:9">16:9 (Widescreen)</SelectItem>
-                                                <SelectItem value="21:9">21:9 (Cinematic)</SelectItem>
                                                 <SelectItem value="2:3">2:3 (Portrait)</SelectItem>
+                                                <SelectItem value="21:9">21:9 (Cinematic)</SelectItem>
                                                 <SelectItem value="9:16">9:16 (Tall Portrait)</SelectItem>
                                                 <SelectItem value="9:21">9:21 (Extra Tall)</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormField
-                                control={form.control}
-                                name="outputFormat"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Output Format</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Choose an output format" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="jpg">JPG</SelectItem>
-                                                <SelectItem value="png">PNG</SelectItem>
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
@@ -331,7 +300,7 @@ export default function GeneratePage() {
                                             </div>
                                         </div>
                                         <Button variant="link" asChild>
-                                            <Link href="/account/plans">Buy more</Link>
+                                            <Link href="/account/plans#credits">Buy more</Link>
                                         </Button>
                                     </CardContent>
                                 </Card>
@@ -391,4 +360,3 @@ export default function GeneratePage() {
         </div>
     );
 }
-    

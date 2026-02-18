@@ -7,14 +7,14 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import Replicate from 'replicate';
+import { AVAILABLE_MODELS } from '@/lib/ai-models';
 
 const GenerateImageInputSchema = z.object({
-  model: z.string().describe('The Replicate model version to use.'),
+  modelId: z.string().describe('The ID of the model to use from ai-models.ts.'),
   prompt: z.string().describe('The text prompt for image generation.'),
   // Optional reference image as a data URI
   referenceImageUrl: z.string().optional().describe("A reference image as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
   aspectRatio: z.string().optional().describe('The aspect ratio of the generated image.'),
-  outputFormat: z.string().optional().describe('The output format of the generated image (e.g., "jpg", "png").'),
 });
 export type GenerateImageInput = z.infer<typeof GenerateImageInputSchema>;
 
@@ -38,30 +38,43 @@ const generateImageFlow = ai.defineFlow(
       throw new Error('REPLICATE_API_TOKEN environment variable not set.');
     }
 
+    const selectedModel = AVAILABLE_MODELS.find(m => m.id === input.modelId);
+    if (!selectedModel) {
+        throw new Error(`Model with ID "${input.modelId}" not found.`);
+    }
+
     const replicate = new Replicate();
 
     const replicateInput: any = {
         prompt: input.prompt,
     };
 
-    if (input.aspectRatio) {
-        replicateInput.aspect_ratio = input.aspectRatio;
+    if (selectedModel.supportsAspectRatio) {
+        if (input.aspectRatio) {
+            replicateInput.aspect_ratio = input.aspectRatio;
+        }
+    } else {
+        if (input.aspectRatio) {
+            const [w, h] = input.aspectRatio.split(':').map(Number);
+            const baseSize = 1024;
+            if (w > h) {
+                replicateInput.width = baseSize;
+                replicateInput.height = Math.round((baseSize * h) / w);
+            } else {
+                replicateInput.height = baseSize;
+                replicateInput.width = Math.round((baseSize * w) / h);
+            }
+        }
     }
     
-    if (input.outputFormat) {
-        replicateInput.output_format = input.outputFormat;
-    }
-
     // If a reference image is provided, add it to the input.
-    // Note: The exact input key (e.g., 'image', 'init_image') can vary by model.
-    // We'll use 'image' as a common default.
     if (input.referenceImageUrl) {
         replicateInput.image = input.referenceImageUrl;
     }
 
     try {
       const output = (await replicate.run(
-        input.model as `${string}/${string}:${string}`,
+        selectedModel.ref,
         {
           input: replicateInput,
         }
