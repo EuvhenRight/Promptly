@@ -36,7 +36,7 @@ export default function SubHeader({
 	const isLoading = categoriesLoading || tagsLoading || modelsLoading
 
 	return (
-		<div className='border-b bg-background/95'>
+		<div className='sticky top-16 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'>
 			<div className='container mx-auto px-4 sm:px-6 lg:px-8'>
 				<div className='flex items-center gap-4'>
 					<nav className='hidden sm:flex items-center gap-2'>
