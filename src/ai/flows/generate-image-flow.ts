@@ -35,7 +35,11 @@ const generateImageFlow = ai.defineFlow(
   },
   async (input) => {
     if (!process.env.REPLICATE_API_TOKEN) {
-      throw new Error('REPLICATE_API_TOKEN environment variable not set.');
+      // This is the most likely cause of the production error.
+      // The secret is not available in the App Hosting environment.
+      throw new Error(
+        'REPLICATE_API_TOKEN is not set on the server. Please check your App Hosting secrets configuration and ensure the backend has permission to access it. This is the most likely cause of the "Server Components render" error in production.'
+      );
     }
 
     const selectedModel = AVAILABLE_MODELS.find(m => m.id === input.modelId);
