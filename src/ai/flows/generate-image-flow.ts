@@ -6,7 +6,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import Replicate from 'replicate';
+import { getReplicateClient } from '@/lib/replicate';
 import { AVAILABLE_MODELS } from '@/lib/ai-models';
 
 const GenerateImageInputSchema = z.object({
@@ -34,22 +34,12 @@ const generateImageFlow = ai.defineFlow(
     outputSchema: GenerateImageOutputSchema,
   },
   async (input) => {
-    if (!process.env.REPLICATE_API_TOKEN) {
-      // This is the most likely cause of the production error.
-      // The secret is not available in the App Hosting environment.
-      throw new Error(
-        'REPLICATE_API_TOKEN is not set on the server. Please check your App Hosting secrets configuration and ensure the backend has permission to access it. This is the most likely cause of the "Server Components render" error in production.'
-      );
-    }
-
     const selectedModel = AVAILABLE_MODELS.find(m => m.id === input.modelId);
     if (!selectedModel) {
         throw new Error(`Model with ID "${input.modelId}" not found.`);
     }
 
-    const replicate = new Replicate({
-      auth: process.env.REPLICATE_API_TOKEN,
-    });
+    const replicate = await getReplicateClient();
 
     const replicateInput: any = {
         prompt: input.prompt,
