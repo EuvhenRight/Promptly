@@ -243,7 +243,6 @@ export function PromptForm({
 														alt='Current image preview'
 														fill
 														className='object-contain'
-														unoptimized
 													/>
 												</div>
 											)}

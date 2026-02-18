@@ -641,7 +641,6 @@ export default function PromptDetailPage() {
 								sizes='(max-width: 1023px) 90vw, 50vw'
 								className='w-full h-auto object-contain'
 								priority
-								unoptimized={promptImage.includes('storage.googleapis.com') || promptImage.includes('firebasestorage.googleapis.com')}
 							/>
 						)}
 						{promptImage && (
@@ -688,7 +687,6 @@ export default function PromptDetailPage() {
 											width={1920}
 											height={1080}
 											className='w-full h-auto object-contain max-h-[90vh] rounded-lg'
-											unoptimized={promptImage.includes('storage.googleapis.com') || promptImage.includes('firebasestorage.googleapis.com')}
 										/>
 										<DialogClose className='absolute right-4 top-4 rounded-full p-2 bg-black/50 text-white opacity-80 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary data-[state=open]:text-muted-foreground'>
 											<X className='h-8 w-8' />
