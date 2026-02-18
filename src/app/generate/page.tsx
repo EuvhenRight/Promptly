@@ -27,6 +27,9 @@ import { deductCreditsForGeneration, createPrompt, type CreatePromptData } from 
 import { useRouter } from 'next/navigation';
 import { PromptForm, type PromptFormValues } from '@/app/admin/prompts/new/prompt-form';
 import { rehostImage } from '@/app/admin/prompts/actions';
+import { useCategories } from '@/hooks/use-categories';
+import { useTypes } from '@/hooks/use-types';
+import { useModels } from '@/hooks/use-models';
 
 
 const formSchema = z.object({
@@ -51,6 +54,10 @@ export default function GeneratePage() {
     const [referenceImage, setReferenceImage] = useState<File | null>(null);
     const [referenceImagePreview, setReferenceImagePreview] = useState<string | null>(null);
     const [isSubmittingPrompt, setIsSubmittingPrompt] = useState(false);
+
+    const { categories } = useCategories();
+    const { types } = useTypes();
+    const { models } = useModels();
 
     const userProfileRef = useMemoFirebase(
         () => (user ? doc(firestore, 'users', user.uid) : null),
@@ -219,6 +226,14 @@ export default function GeneratePage() {
             setIsSubmittingPrompt(false);
         }
     };
+    
+    const selectedModelInfo = accessibleModels.find(m => m.id === form.getValues('model'));
+    const firestoreModel = models.find(m => m.name === selectedModelInfo?.name);
+    const imagesType = types.find(t => t.name.toLowerCase() === 'images');
+    const availableCategories = categories.filter(c => c.name && c.id);
+    const randomCategory = availableCategories.length > 0 
+        ? availableCategories[Math.floor(Math.random() * availableCategories.length)] 
+        : null;
 
     return (
         <div className="flex min-h-screen flex-col">
@@ -420,8 +435,12 @@ export default function GeneratePage() {
                                         onSubmit={handleCreatePrompt}
                                         isSubmitting={isSubmittingPrompt}
                                         initialData={{
+                                            title: form.getValues('prompt').split(' ').slice(0, 6).join(' '),
                                             privateContent: form.getValues('prompt'),
                                             imageUrl: generatedImageUrl,
+                                            categoryId: randomCategory?.id || '',
+                                            typeId: imagesType?.id || '',
+                                            modelId: firestoreModel?.id || '',
                                         }}
                                     />
                                 </CardContent>
