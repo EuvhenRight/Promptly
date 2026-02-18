@@ -12,6 +12,17 @@
 - [ ] Розглянути rate limiting для `/api/checkout` та `/api/purchase`.
 - [ ] Переконатися, що в production не використовуються тестові ключі Stripe/Firebase; винести перевірку env у старт або health-check.
 
+## Головна сторінка (src/app/page.tsx)
+
+- [ ] Створити компонент `GoogleSignInButton` (`components/auth/google-sign-in-button.tsx`) — іконка та кнопка дублюються в page, header, cart, plans, user-menu.
+- [ ] Винести `AuthModal` у окремий файл `components/auth/auth-modal.tsx`.
+- [ ] Винести `FeedSkeleton` у `components/home/feed-skeleton.tsx`.
+- [ ] Створити хук `useFeedFilters` — об’єднати логіку фільтрів (activeFilter, selectedTypeId, categoryId, tagId, modelId, sortBy, searchTerm, showPrivateOnly) та хендлери (handleFilterChange, handleSortChange, handleSearch).
+- [ ] Створити хук `useInfiniteScrollWithPaywall` — розділити логіку IntersectionObserver + paywall від основного компонента.
+- [ ] Перенести `mainLinks` у `lib/constants.ts` або `config/home.ts`.
+- [ ] Спростити умову показу Footer: `(!shouldShowPaywall || (shouldShowPaywall && !isAuthModalOpen))` → `!isAuthModalOpen`.
+- [ ] Після рефакторингу `page.tsx` має бути ~80–120 рядків (композиція компонентів).
+
 ## Архітектура та код
 
 - [ ] Видалити `'use server'` з `src/app/api/purchase/route.ts` якщо він там лишився помилково (API routes вже виконуються на сервері).
