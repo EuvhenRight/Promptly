@@ -16,14 +16,8 @@ export default function PromptFeed({ prompts, cartPromptIds, purchasedPromptIds 
 
   useEffect(() => {
     setIsClient(true);
-    if (animationParent.current) {
-        // Dynamically import and use autoAnimate if needed, to avoid build issues.
-        import('@formkit/auto-animate').then(mod => {
-            if (animationParent.current) {
-                mod.default(animationParent.current);
-            }
-        }).catch(err => console.error("Failed to load auto-animate", err));
-    }
+    // The dynamic import was causing build issues, so it has been removed.
+    // We can re-evaluate animation libraries in the future if needed.
   }, []);
 
   if (!isClient || !prompts.length) {
