@@ -20,7 +20,7 @@ import {
 } from 'firebase/firestore'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = 20
 
 function isTimeoutOrAbort(err: unknown): boolean {
 	if (err instanceof Error) {
