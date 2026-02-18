@@ -104,24 +104,28 @@ export default function PromptCard({
 
 	const creditPrice = Math.round(prompt.price * 100)
 
-	const isPriority = index < 5 // Prioritize first 5 images
-	const isLoadingEager = index >= 5 && index < 10 // Eagerly load the next 5
+	// 3-tier loading strategy based on your recommendation
+	const isPriority = index < 3 // First 3 images are critical
+	const isEager = index >= 3 && index < 8 // Next 5 are loaded eagerly
 
 	const imageProps: any = {
 		src: imageUrl,
 		alt: prompt.title,
 		width: imageWidth,
 		height: imageHeight,
-		sizes: '(max-width: 767px) 100vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw',
-		quality: 70,
+		sizes:
+			'(max-width: 767px) 100vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw',
+		quality: 75,
 		className:
 			'w-full h-auto object-cover transition-transform duration-300 ease-in-out group-hover:scale-105',
 	}
 
 	if (isPriority) {
 		imageProps.priority = true
+	} else if (isEager) {
+		imageProps.loading = 'eager'
 	} else {
-		imageProps.loading = isLoadingEager ? 'eager' : 'lazy'
+		imageProps.loading = 'lazy'
 	}
 
 	return (

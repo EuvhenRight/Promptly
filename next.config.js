@@ -15,7 +15,9 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    // Include 70 so <Image quality={70} /> does not warn (required in Next.js 16+)
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 60,
+    // Include 70 and 75 so <Image quality={70/75} /> does not warn
     qualities: [25, 50, 70, 75],
     remotePatterns: [
       { protocol: 'https', hostname: 'placehold.co', port: '', pathname: '/**' },
