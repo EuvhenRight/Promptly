@@ -26,20 +26,6 @@ export async function suggestRelevantTags(input: SuggestRelevantTagsInput): Prom
   return suggestRelevantTagsFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'suggestRelevantTagsPrompt',
-  input: {schema: SuggestRelevantTagsInputSchema},
-  output: {schema: SuggestRelevantTagsOutputSchema},
-  prompt: `You are an AI prompt tag suggestion assistant.
-
-  Given the title and description of a prompt, you will suggest relevant tags that can be used to improve the discoverability of the prompt.
-  The tags should be relevant to the content of the prompt and should be commonly used terms.
-  Return a JSON array of strings.
-
-  Title: {{{title}}}
-  Description: {{{description}}}`,
-});
-
 const suggestRelevantTagsFlow = ai.defineFlow(
   {
     name: 'suggestRelevantTagsFlow',
@@ -47,7 +33,9 @@ const suggestRelevantTagsFlow = ai.defineFlow(
     outputSchema: SuggestRelevantTagsOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    // This is a placeholder implementation.
+    // The actual call to an AI model (like one from Replicate) will be added here later.
+    console.log(`[Flow: suggestRelevantTags] Called with title: "${input.title}". Returning empty tags as a placeholder.`);
+    return { tags: [] };
   }
 );

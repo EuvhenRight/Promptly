@@ -24,14 +24,14 @@
 |--------|------|
 | STRIPE_SECRET_KEY | Секретний ключ Stripe (sk_test_... / sk_live_...). |
 | STRIPE_CURRENCY | Валюта (наприклад, eur, usd). |
-| GEMINI_API_KEY | Для Genkit/Google GenAI (AI flows). |
+| REPLICATE_API_TOKEN | Ваш API токен з Replicate.com для AI-функцій. |
 | Firebase Admin | Зазвичай через сервісний акаунт (файл ключа або default credentials у GCP). У App Hosting — через Secret Manager та конфіг. |
 
 ## Локальна розробка
 
 1. Скопіювати `.env.example` у `.env.local`.
 2. Заповнити Firebase config **тільки з проекту Promptly** (Firebase Console → вибрати проект Promptly → Project settings → Your apps). Використовуйте `service-account.json` з цього ж проекту (Service accounts → Generate new private key).
-3. Додати Stripe keys та за потреби GEMINI_API_KEY.
+3. Додати Stripe keys та `REPLICATE_API_TOKEN`.
 4. Для повного checkout/fulfill/purchase локально потрібен Firebase Admin (credentials) та Stripe secret.
 
 ## Примітки
