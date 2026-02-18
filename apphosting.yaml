@@ -58,7 +58,3 @@ env:
       - BUILD
       - RUNTIME
   # --- END FIREBASE CONFIG ---
-  - secret: REPLICATE_API_TOKEN
-    availability:
-      - BUILD
-      - RUNTIME
