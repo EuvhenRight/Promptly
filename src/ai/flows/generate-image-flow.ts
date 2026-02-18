@@ -14,6 +14,7 @@ export const GenerateImageInputSchema = z.object({
   // Optional reference image as a data URI
   referenceImageUrl: z.string().optional().describe("A reference image as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
   aspectRatio: z.string().optional().describe('The aspect ratio of the generated image.'),
+  outputFormat: z.string().optional().describe('The output format of the generated image (e.g., "jpg", "png").'),
 });
 export type GenerateImageInput = z.infer<typeof GenerateImageInputSchema>;
 
@@ -45,6 +46,10 @@ const generateImageFlow = ai.defineFlow(
 
     if (input.aspectRatio) {
         replicateInput.aspect_ratio = input.aspectRatio;
+    }
+    
+    if (input.outputFormat) {
+        replicateInput.output_format = input.outputFormat;
     }
 
     // If a reference image is provided, add it to the input.

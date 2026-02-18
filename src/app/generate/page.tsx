@@ -29,6 +29,7 @@ const formSchema = z.object({
     prompt: z.string().min(1, 'Please enter a prompt.'),
     model: z.string().min(1, 'Please select a model.'),
     aspectRatio: z.string().optional(),
+    outputFormat: z.string().optional(),
 });
 
 type GenerationFormValues = z.infer<typeof formSchema>;
@@ -64,6 +65,7 @@ export default function GeneratePage() {
             prompt: '',
             model: accessibleModels[0]?.id,
             aspectRatio: '1:1',
+            outputFormat: 'jpg',
         },
     });
 
@@ -135,6 +137,7 @@ export default function GeneratePage() {
             prompt: data.prompt,
             referenceImageUrl: referenceImagePreview ?? undefined,
             aspectRatio: data.aspectRatio,
+            outputFormat: data.outputFormat,
         };
 
         try {
@@ -219,9 +222,32 @@ export default function GeneratePage() {
                                             <SelectContent>
                                                 <SelectItem value="1:1">1:1 (Square)</SelectItem>
                                                 <SelectItem value="16:9">16:9 (Widescreen)</SelectItem>
-                                                <SelectItem value="9:16">9:16 (Portrait)</SelectItem>
-                                                <SelectItem value="4:3">4:3 (Standard)</SelectItem>
-                                                <SelectItem value="3:4">3:4 (Standard Portrait)</SelectItem>
+                                                <SelectItem value="21:9">21:9 (Cinematic)</SelectItem>
+                                                <SelectItem value="2:3">2:3 (Portrait)</SelectItem>
+                                                <SelectItem value="9:16">9:16 (Tall Portrait)</SelectItem>
+                                                <SelectItem value="9:21">9:21 (Extra Tall)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="outputFormat"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Output Format</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Choose an output format" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="jpg">JPG</SelectItem>
+                                                <SelectItem value="png">PNG</SelectItem>
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
