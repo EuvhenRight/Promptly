@@ -1,5 +1,6 @@
 'use client';
 
+import { testImagen4 } from '@/ai/flows/test-imagen-flow';
 import { generateImage, type GenerateImageInput } from '@/ai/flows/generate-image-flow';
 import Footer from '@/components/layout/footer';
 import Header from '@/components/layout/header';
@@ -41,6 +42,7 @@ export default function GeneratePage() {
     const { toast } = useToast();
     const [activeTab, setActiveTab] = useState('image');
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isTesting, setIsTesting] = useState(false);
     const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
     const [referenceImage, setReferenceImage] = useState<File | null>(null);
     const [referenceImagePreview, setReferenceImagePreview] = useState<string | null>(null);
@@ -99,6 +101,25 @@ export default function GeneratePage() {
                 setReferenceImagePreview(reader.result as string);
             };
             reader.readAsDataURL(file);
+        }
+    };
+
+    const handleTest = async () => {
+        setIsTesting(true);
+        setGeneratedImageUrl(null);
+        try {
+            const result = await testImagen4();
+            setGeneratedImageUrl(result.imageUrl);
+            toast({ title: 'Test successful!' });
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Test Failed',
+                description: error.message,
+                duration: 10000,
+            });
+        } finally {
+            setIsTesting(false);
         }
     };
 
@@ -282,14 +303,20 @@ export default function GeneratePage() {
                                     <span>Cost:</span>
                                     <span>{GENERATION_COST} credits</span>
                                 </p>
-                                <Button type="submit" className="w-full" size="lg" disabled={isGenerating}>
-                                    {isGenerating ? (
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <Sparkles className="mr-2 h-4 w-4" />
-                                    )}
-                                    Generate image
-                                </Button>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <Button type="submit" className="w-full" size="lg" disabled={isGenerating || isTesting}>
+                                        {isGenerating ? (
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <Sparkles className="mr-2 h-4 w-4" />
+                                        )}
+                                        Generate image
+                                    </Button>
+                                    <Button type="button" variant="outline" className="w-full" size="lg" onClick={handleTest} disabled={isGenerating || isTesting}>
+                                        {isTesting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                        Test Imagen-4
+                                    </Button>
+                                </div>
                                 <Card>
                                     <CardContent className="pt-4 flex items-center justify-between">
                                         <div className="flex items-center gap-2">
@@ -315,14 +342,14 @@ export default function GeneratePage() {
                     backgroundSize: '20px 20px',
                 }}>
                     <div className="w-full max-w-2xl text-center">
-                        {isGenerating && (
+                        {(isGenerating || isTesting) && (
                             <div className="space-y-4">
                                 <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
-                                <h3 className="text-lg font-semibold">Generating your masterpiece...</h3>
+                                <h3 className="text-lg font-semibold">Generating...</h3>
                                 <p className="text-muted-foreground">This may take a moment.</p>
                             </div>
                         )}
-                        {!isGenerating && !generatedImageUrl && (
+                        {!isGenerating && !isTesting && !generatedImageUrl && (
                              <div className="space-y-4 text-left">
                                 <h3 className="text-xl font-semibold text-center">Available Models for Testing</h3>
                                 <p className="text-muted-foreground text-center">Here is a list of models configured in the system.</p>
@@ -341,7 +368,7 @@ export default function GeneratePage() {
                                 </div>
                             </div>
                         )}
-                        {!isGenerating && generatedImageUrl && (
+                        {!isGenerating && !isTesting && generatedImageUrl && (
                            <Card className="relative group overflow-hidden">
                                 <Image src={generatedImageUrl} alt="Generated image" width={1024} height={1024} className="w-full h-auto object-contain" />
                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
