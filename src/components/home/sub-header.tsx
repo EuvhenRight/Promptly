@@ -11,6 +11,7 @@ import Link from 'next/link'
 import type { UserProfile } from '@/lib/types'
 
 interface SubHeaderProps {
+	isHidden?: boolean
 	activeFilter: string
 	onFilterChange: (
 		id: string,
@@ -26,6 +27,7 @@ export default function SubHeader({
 	onFilterChange,
 	mainLinks,
 	userProfile,
+	isHidden,
 }: SubHeaderProps) {
 	const { categories, isLoading: categoriesLoading } = useCategories()
 	const { tags, isLoading: tagsLoading } = useTags()
@@ -37,7 +39,10 @@ export default function SubHeader({
 
 	return (
 		<div
-			className='sticky top-16 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'
+			className={cn(
+				'sticky z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 filter-container',
+				isHidden ? 'top-0' : 'top-16',
+			)}
 		>
 			<div className='container mx-auto px-4 sm:px-6 lg:px-8'>
 				<div className='flex items-center gap-4'>
