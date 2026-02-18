@@ -49,28 +49,32 @@ const generateImageFlow = ai.defineFlow(
         prompt: input.prompt,
     };
 
-    if (selectedModel.supportsAspectRatio) {
-        if (input.aspectRatio) {
-            replicateInput.aspect_ratio = input.aspectRatio;
-        }
-    } else {
-        if (input.aspectRatio) {
-            const [w, h] = input.aspectRatio.split(':').map(Number);
-            const baseSize = 1024;
-            if (w > h) {
-                replicateInput.width = baseSize;
-                replicateInput.height = Math.round((baseSize * h) / w);
-            } else {
-                replicateInput.height = baseSize;
-                replicateInput.width = Math.round((baseSize * w) / h);
-            }
-        }
+    if (input.aspectRatio) {
+      if (selectedModel.supportsAspectRatio) {
+          replicateInput.aspect_ratio = input.aspectRatio;
+      } else {
+          // Calculate width and height for models that don't support aspect_ratio directly
+          const [w, h] = input.aspectRatio.split(':').map(Number);
+          const baseSize = 1024; // A common base size for models like SDXL
+          if (w > h) {
+              replicateInput.width = baseSize;
+              replicateInput.height = Math.round((baseSize * h) / w);
+          } else {
+              replicateInput.height = baseSize;
+              replicateInput.width = Math.round((baseSize * w) / h);
+          }
+      }
     }
     
     // If a reference image is provided, add it to the input.
     if (input.referenceImageUrl) {
         replicateInput.image = input.referenceImageUrl;
     }
+
+    // --- DEBUG LOGGING ---
+    console.log('[Flow: generateImage] Calling Replicate with model:', selectedModel.ref);
+    console.log('[Flow: generateImage] Input parameters:', JSON.stringify(replicateInput, null, 2));
+    // --- END DEBUG LOGGING ---
 
     try {
       const output = (await replicate.run(
