@@ -8,7 +8,7 @@ function initFirebaseAdmin() {
   }
 
   // This configuration is designed for serverless environments like Vercel or Netlify.
-  // It relies exclusively on environment variables.
+  // It relies exclusively on environment variables set in the hosting provider's UI.
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   // The private key from a JSON file has literal `\n` characters. When stored as an
