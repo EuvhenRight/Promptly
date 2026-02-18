@@ -18,6 +18,20 @@ export const AVAILABLE_MODELS: AiModel[] = [
         supportsAspectRatio: true,
     },
     {
+        id: 'flux-1-dev',
+        name: 'FLUX.1 Dev (experimental)',
+        ref: 'black-forest-labs/flux.1-dev:da8c8b7ade9487920785196f131109405d46f53e34d7d4c82e666a7b8e5c84b1',
+        plans: ['free', 'starter', 'pro'],
+        supportsAspectRatio: false, // Uses width/height
+    },
+    {
+        id: 'ideogram-1.0',
+        name: 'Ideogram 1.0',
+        ref: 'ideogram/ideogram-1.0:b94b49653696245133b9c7b2c589e49b805408a385f0611e868e82e5414d021c',
+        plans: ['free', 'starter', 'pro'],
+        supportsAspectRatio: true,
+    },
+    {
         id: 'sdxl',
         name: 'SDXL',
         ref: 'stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b',
@@ -25,23 +39,9 @@ export const AVAILABLE_MODELS: AiModel[] = [
         supportsAspectRatio: false,
     },
     {
-        id: 'playground-v2.5',
-        name: 'Playground v2.5',
-        ref: 'playgroundai/playground-v2.5:59570a9d422c0b801edd531189c44d1502b45a057201b54fa31572922a488e04',
-        plans: ['free', 'starter', 'pro'],
-        supportsAspectRatio: false,
-    },
-    {
         id: 'openjourney',
         name: 'OpenJourney (Midjourney Style)',
         ref: 'prompthero/openjourney:9936c2001faa2194a261c01381f90e65261879985476014a0a37a334593a05eb',
-        plans: ['free', 'starter', 'pro'],
-        supportsAspectRatio: false,
-    },
-    {
-        id: 'stable-diffusion-2-1',
-        name: 'Stable Diffusion 2.1',
-        ref: 'stability-ai/stable-diffusion-2-1:db21e45d3f7023abc2a46ee38a23973f6dce167b653d32b545f5585a7008d872',
         plans: ['free', 'starter', 'pro'],
         supportsAspectRatio: false,
     },
