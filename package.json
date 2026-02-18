@@ -25,7 +25,6 @@
 		"node": ">=20.0.0"
 	},
 	"dependencies": {
-		"@formkit/auto-animate": "^0.9.0",
 		"@genkit-ai/google-genai": "^1.20.0",
 		"@genkit-ai/next": "^1.20.0",
 		"@google-cloud/secret-manager": "^5.0.0",

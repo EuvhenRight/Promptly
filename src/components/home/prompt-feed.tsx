@@ -1,9 +1,8 @@
 'use client';
 
-import { useAutoAnimate } from '@formkit/auto-animate/react';
 import PromptCard from './prompt-card';
 import type { Prompt } from '@/lib/types';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface PromptFeedProps {
   prompts: Prompt[];
@@ -13,10 +12,18 @@ interface PromptFeedProps {
 
 export default function PromptFeed({ prompts, cartPromptIds, purchasedPromptIds }: PromptFeedProps) {
   const [isClient, setIsClient] = useState(false);
-  const [animationParent] = useAutoAnimate({ duration: 400, easing: 'ease-in-out' });
+  const animationParent = useRef(null);
 
   useEffect(() => {
     setIsClient(true);
+    if (animationParent.current) {
+        // Dynamically import and use autoAnimate if needed, to avoid build issues.
+        import('@formkit/auto-animate').then(mod => {
+            if (animationParent.current) {
+                mod.default(animationParent.current);
+            }
+        }).catch(err => console.error("Failed to load auto-animate", err));
+    }
   }, []);
 
   if (!isClient || !prompts.length) {
