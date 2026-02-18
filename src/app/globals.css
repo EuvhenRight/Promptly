@@ -273,19 +273,4 @@
     overflow: visible !important;
     max-width: 100%;
   }
-
-  /* Hiding Header Animation */
-  .header-container {
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: transform;
-  }
-  
-  .filter-container {
-    transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: top;
-  }
-  
-  .header-hidden {
-    transform: translateY(-100%);
-  }  
 }

@@ -22,7 +22,6 @@ import { Loader2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useDebounce } from 'use-debounce'
 import { Button } from '@/components/ui/button'
-import { useScrollDirection } from '@/hooks/useScrollDirection'
 
 function AuthModal({
 	open,
@@ -111,16 +110,6 @@ export default function Home() {
 	const firestore = useFirestore()
 	const [hideMyPrompts, setHideMyPrompts] = useState(false)
 	const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
-	const [isScrolled, setIsScrolled] = useState(false)
-	const scrollDir = useScrollDirection()
-
-	useEffect(() => {
-		const handleScroll = () => {
-			setIsScrolled(window.scrollY > 200)
-		}
-		window.addEventListener('scroll', handleScroll, { passive: true })
-		return () => window.removeEventListener('scroll', handleScroll)
-	}, [])
 
 	useEffect(() => {
 		const stored = localStorage.getItem('hideMyPrompts')
@@ -304,13 +293,10 @@ export default function Home() {
 		[loading, hasMore, loadMore, shouldShowPaywall],
 	)
 
-	const isHeaderHidden = scrollDir === 'down' && isScrolled && !isAuthModalOpen
-
 	return (
 		<div className='flex min-h-screen flex-col bg-background'>
-			<Header isHidden={isHeaderHidden} />
+			<Header />
 			<SubHeader
-				isHidden={isHeaderHidden}
 				activeFilter={activeFilter}
 				onFilterChange={handleFilterChange}
 				mainLinks={mainLinks}
