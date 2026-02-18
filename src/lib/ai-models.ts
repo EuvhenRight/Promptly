@@ -8,9 +8,15 @@ export type AiModel = {
 };
 
 // This list is updated based on your suggestions and publicly available models on Replicate.
-// Models like Imagen 4 are not included as they are not publicly available on the platform.
 export const AVAILABLE_MODELS: AiModel[] = [
-    // FLUX family (Black Forest Labs)
+    {
+        id: 'google-imagen-4',
+        name: 'Google Imagen 4',
+        ref: 'google/imagen-4', // This works as the user has access
+        plans: ['pro'],
+        supportsAspectRatio: true,
+        costEstimate: 'середньо (~0.04–0.06 €)'
+    },
     {
         id: 'flux-schnell',
         name: 'FLUX.1 [schnell] — швидкий і дешевий',
@@ -27,9 +33,7 @@ export const AVAILABLE_MODELS: AiModel[] = [
         supportsAspectRatio: true,
         costEstimate: 'середньо (~0.02–0.05 €)'
     },
-
-    // Other popular models
-     {
+    {
         id: 'stable-diffusion-3',
         name: 'Stable Diffusion 3',
         ref: 'stability-ai/stable-diffusion-3:fde492d5a9e9768a335044b93c233181b37bce82b13289047f68cf503e433435',
