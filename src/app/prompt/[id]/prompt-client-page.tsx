@@ -38,7 +38,7 @@ import type {
 	PromptPrivateContent,
 	UserProfile,
 } from '@/lib/types'
-import { cn } from '@/lib/utils'
+import { cn, isFirebaseStorageUrl } from '@/lib/utils'
 import {
 	collection,
 	doc,
@@ -56,7 +56,6 @@ import {
 	Heart,
 	Loader2,
 	MoreHorizontal,
-	PlusCircle,
 	ShoppingCart,
 	Star,
 	Trash2,
@@ -106,7 +105,7 @@ function getWithdrawalConsent(promptId: string): boolean {
 	try {
 		const stored = localStorage.getItem(WITHDRAWAL_CONSENT_KEY)
 		if (!stored) return false
-		const parsed = JSON.parse(stored) as Record<string, boolean>
+		const parsed = JSON.parse(stored) as unknown as Record<string, boolean>
 		return !!parsed[promptId]
 	} catch {
 		return false
@@ -117,7 +116,7 @@ function setWithdrawalConsent(promptId: string): void {
 	if (typeof window === 'undefined') return
 	try {
 		const stored = localStorage.getItem(WITHDRAWAL_CONSENT_KEY)
-		const parsed: Record<string, boolean> = stored ? JSON.parse(stored) : {}
+		const parsed: Record<string, boolean> = stored ? (JSON.parse(stored) as unknown as Record<string, boolean>) : {}
 		parsed[promptId] = true
 		localStorage.setItem(WITHDRAWAL_CONSENT_KEY, JSON.stringify(parsed))
 	} catch {
@@ -159,7 +158,7 @@ export default function PromptClientPage() {
 	const { data: cart } = useDoc<Cart>(cartRef)
 
 	const isInCart = useMemo(
-		() => cart?.promptIds?.includes(params.id as string) ?? false,
+		() => cart?.promptIds?.includes(params.id) ?? false,
 		[cart, params.id],
 	)
 
@@ -195,11 +194,11 @@ export default function PromptClientPage() {
     return doc(firestore, 'users', prompt.authorId, 'followers', user.uid);
 	}, [firestore, prompt?.authorId, user?.uid]);
 
-	const { data: amIFollowingDoc } = useDoc(amIFollowingRef);
+	const { data: amIFollowingDoc } = useDoc<object>(amIFollowingRef);
 	const isFollowing = !!amIFollowingDoc;
 
 	const isFavorite = useMemo(
-		() => userProfile?.favoritePrompts?.includes(params.id as string) ?? false,
+		() => userProfile?.favoritePrompts?.includes(params.id) ?? false,
 		[userProfile, params.id],
 	)
 
@@ -216,7 +215,7 @@ export default function PromptClientPage() {
 	)
 
 	const isPurchased =
-		userProfile?.purchasedPrompts?.includes(params.id as string) ?? false
+		userProfile?.purchasedPrompts?.includes(params.id) ?? false
 	const isFree = prompt?.price === 0
 	const isAdmin = userProfile?.role === 'admin'
 	const isAuthor = user?.uid === prompt?.authorId
@@ -229,7 +228,7 @@ export default function PromptClientPage() {
 		withdrawalConsentGiven ||
 		(typeof window !== 'undefined' &&
 			params.id &&
-			getWithdrawalConsent(params.id as string))
+			getWithdrawalConsent(params.id))
 	const canFetchPrivateContent =
 		canViewContent && (!needsWithdrawalConsent || hasWithdrawalConsent)
 
@@ -241,7 +240,7 @@ export default function PromptClientPage() {
 
 	useEffect(() => {
 		if (params.id && firestore && !viewIncremented.current) {
-			incrementPromptView(firestore, params.id as string)
+			incrementPromptView(firestore, params.id)
 			viewIncremented.current = true
 		}
 	}, [params.id, firestore])
@@ -264,7 +263,7 @@ export default function PromptClientPage() {
 					setIsLoadingPrivateContent(false)
 				}
 			}
-			fetchPrivateContent(firestore, params.id as string)
+			void fetchPrivateContent(firestore, params.id)
 		}
 	}, [canFetchPrivateContent, firestore, params.id, privateContent])
 
@@ -306,11 +305,11 @@ export default function PromptClientPage() {
 			})
 			setShowPurchaseConfirm(false)
 			setWithdrawalConsentCheckbox(false)
-		} catch (error: any) {
+		} catch (error) {
 			toast({
 				variant: 'destructive',
 				title: 'Purchase Failed',
-				description: error.message,
+				description: error instanceof Error ? error.message : 'An unknown error occurred.',
 			})
 		} finally {
 			setIsPurchasing(false)
@@ -335,11 +334,11 @@ export default function PromptClientPage() {
 				await followUser(firestore, user.uid, prompt.authorId);
 				toast({ title: `You are now following ${prompt.authorDisplayName}` });
 			}
-		} catch (error: any) {
+		} catch (error) {
 			toast({
 				variant: 'destructive',
 				title: 'Error',
-				description: error.message || 'Could not update follow status.',
+				description: error instanceof Error ? error.message : 'Could not update follow status.',
 			});
 		} finally {
 			setIsFollowLoading(false);
@@ -355,7 +354,7 @@ export default function PromptClientPage() {
 			})
 			return
 		}
-		toggleFavoritePrompt(firestore, user.uid, prompt.id, isFavorite)
+		void toggleFavoritePrompt(firestore, user.uid, prompt.id, isFavorite)
 		toast({
 			title: isFavorite ? 'Removed from favorites' : 'Added to favorites',
 		})
@@ -363,7 +362,7 @@ export default function PromptClientPage() {
 
 	const handleCopy = () => {
 		if (!privateContent) return
-		navigator.clipboard.writeText(privateContent).then(() => {
+		void navigator.clipboard.writeText(privateContent).then(() => {
 			toast({ title: 'Copied to clipboard!' })
 		})
 	}
@@ -377,7 +376,7 @@ export default function PromptClientPage() {
 		try {
 			await addPromptCommentAndRating({
 				firestore,
-				promptId: params.id as string,
+				promptId: params.id,
 				userId: user.uid,
 				...data,
 			})
@@ -385,11 +384,11 @@ export default function PromptClientPage() {
 				title: 'Review submitted!',
 				description: 'Thank you for your feedback.',
 			})
-		} catch (error: any) {
+		} catch (error) {
 			toast({
 				variant: 'destructive',
 				title: 'Error submitting review',
-				description: error.message,
+				description: error instanceof Error ? error.message : 'An unknown error occurred.',
 			})
 		} finally {
 			setIsSubmittingComment(false)
@@ -405,17 +404,17 @@ export default function PromptClientPage() {
 		try {
 			await updatePromptComment({
 				firestore,
-				promptId: params.id as string,
+				promptId: params.id,
 				userId: user.uid,
 				...data,
 			})
 			toast({ title: 'Review updated!' })
 			setIsEditingComment(false)
-		} catch (error: any) {
+		} catch (error) {
 			toast({
 				variant: 'destructive',
 				title: 'Error updating review',
-				description: error.message,
+				description: error instanceof Error ? error.message : 'An unknown error occurred.',
 			})
 		} finally {
 			setIsSubmittingComment(false)
@@ -428,15 +427,15 @@ export default function PromptClientPage() {
 		try {
 			await deletePromptComment({
 				firestore,
-				promptId: params.id as string,
+				promptId: params.id,
 				userId: user.uid,
 			})
 			toast({ title: 'Review deleted' })
-		} catch (error: any) {
+		} catch (error) {
 			toast({
 				variant: 'destructive',
 				title: 'Error deleting review',
-				description: error.message,
+				description: error instanceof Error ? error.message : 'An unknown error occurred.',
 			})
 		} finally {
 			setIsDeletingComment(false)
@@ -445,7 +444,7 @@ export default function PromptClientPage() {
 	}
 
 	const handleShare = () => {
-		navigator.clipboard.writeText(window.location.href)
+		void navigator.clipboard.writeText(window.location.href)
 		toast({ title: 'Link copied to clipboard!' })
 	}
 
@@ -463,7 +462,7 @@ export default function PromptClientPage() {
 				return (
 					<AddCommentForm
 						key={`edit-${userComment.userId}`}
-						promptId={params.id as string}
+						promptId={params.id}
 						initialData={userComment}
 						isSubmitting={isSubmittingComment}
 						onSubmit={handleUpdateComment}
@@ -560,7 +559,7 @@ export default function PromptClientPage() {
 		return (
 			<AddCommentForm
 				key='add'
-				promptId={params.id as string}
+				promptId={params.id}
 				isSubmitting={isSubmittingComment}
 				onSubmit={handleAddComment}
 				submitButtonText='Submit Review'
@@ -625,6 +624,7 @@ export default function PromptClientPage() {
                                     sizes='(max-width: 1023px) 90vw, 50vw'
                                     className='w-full h-auto object-contain'
                                     priority
+                                    unoptimized={isFirebaseStorageUrl(promptImage)}
                                 />
                             )}
                             {promptImage && (
@@ -671,6 +671,7 @@ export default function PromptClientPage() {
                                                 width={1920}
                                                 height={1080}
                                                 className='w-full h-auto object-contain max-h-[90vh] rounded-lg'
+                                                unoptimized={isFirebaseStorageUrl(promptImage)}
                                             />
                                             <DialogClose className='absolute right-4 top-4 rounded-full p-2 bg-black/50 text-white opacity-80 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary data-[state=open]:text-muted-foreground'>
                                                 <X className='h-8 w-8' />
@@ -730,7 +731,7 @@ export default function PromptClientPage() {
                                 </div>
                             </div>
                             {user && user.uid !== prompt.authorId && (
-                                <Button variant='outline' onClick={handleFollowToggle} disabled={isFollowLoading}>
+                                <Button variant='outline' onClick={() => void handleFollowToggle()} disabled={isFollowLoading}>
                                     {isFollowLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                     {isFollowing ? 'Unfollow' : 'Follow'}
                                 </Button>
@@ -904,7 +905,7 @@ export default function PromptClientPage() {
                                                         </AlertDialogCancel>
                                                         {(userProfile?.credits ?? 0) >= creditPrice ? (
                                                             <AlertDialogAction
-                                                                onClick={handleBuyNow}
+                                                                onClick={() => void handleBuyNow()}
                                                                 disabled={isPurchasing || !withdrawalConsentCheckbox}
                                                             >
                                                                 {isPurchasing && (
@@ -954,8 +955,8 @@ export default function PromptClientPage() {
                                     </p>
                                     <Button
                                         onClick={() => {
-                                            if (params.id) {
-                                                setWithdrawalConsent(params.id as string)
+                                            if (params.id && typeof params.id === 'string') {
+                                                setWithdrawalConsent(params.id)
                                                 setWithdrawalConsentGiven(true)
                                             }
                                         }}
@@ -1033,7 +1034,7 @@ export default function PromptClientPage() {
 							Cancel
 						</AlertDialogCancel>
 						<AlertDialogAction
-							onClick={handleDeleteComment}
+							onClick={() => void handleDeleteComment()}
 							disabled={isDeletingComment}
 							className='bg-destructive hover:bg-destructive/90'
 						>

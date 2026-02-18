@@ -3,14 +3,14 @@
 import { Badge } from '@/components/ui/badge'
 import { useCategories } from '@/hooks/use-categories'
 import type { Prompt, UserProfile } from '@/lib/types'
-import { Check, Coins, Crown, Eye, Heart, PlusCircle, ShoppingCart } from 'lucide-react'
+import { Check, Coins, Crown, Eye, Heart, ShoppingCart } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Skeleton } from '../ui/skeleton'
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
 import { toggleFavoritePrompt } from '@/firebase/users'
 import { useToast } from '@/hooks/use-toast'
-import { cn } from '@/lib/utils'
+import { cn, isFirebaseStorageUrl } from '@/lib/utils'
 import { doc } from 'firebase/firestore'
 import React from 'react'
 import { PlaceHolderImages } from '@/lib/placeholder-images'
@@ -65,7 +65,7 @@ export default function PromptCard({
 			return
 		}
 
-		toggleFavoritePrompt(firestore, user.uid, prompt.id, isFavorite)
+		void toggleFavoritePrompt(firestore, user.uid, prompt.id, isFavorite)
 
 		toast({
 			title: isFavorite ? 'Removed from favorites' : 'Added to favorites',
@@ -104,28 +104,24 @@ export default function PromptCard({
 
 	const creditPrice = Math.round(prompt.price * 100)
 
+	const isFirebaseStorage = isFirebaseStorageUrl(imageUrl)
+
 	// 3-tier loading strategy based on your recommendation
 	const isPriority = index < 3 // First 3 images are critical
 	const isEager = index >= 3 && index < 8 // Next 5 are loaded eagerly
 
-	const imageProps: any = {
-		src: imageUrl,
+	const imageProps: React.ComponentProps<typeof Image> = {
+		src: imageUrl!,
 		alt: prompt.title,
 		width: imageWidth,
 		height: imageHeight,
 		sizes:
 			'(max-width: 767px) 100vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw',
 		quality: 75,
+		unoptimized: isFirebaseStorage,
 		className:
 			'w-full h-auto object-cover transition-transform duration-300 ease-in-out group-hover:scale-105',
-	}
-
-	if (isPriority) {
-		imageProps.priority = true
-	} else if (isEager) {
-		imageProps.loading = 'eager'
-	} else {
-		imageProps.loading = 'lazy'
+		...(isPriority ? { priority: true } : isEager ? { loading: 'eager' as const } : { loading: 'lazy' as const }),
 	}
 
 	return (

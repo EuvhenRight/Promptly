@@ -75,6 +75,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import * as React from 'react'
 import { PlaceHolderImages } from '@/lib/placeholder-images'
+import { isFirebaseStorageUrl } from '@/lib/utils'
 
 const ActionCell = ({ prompt }: { prompt: Prompt }) => {
 	const { toast } = useToast()
@@ -92,11 +93,11 @@ const ActionCell = ({ prompt }: { prompt: Prompt }) => {
 				title: 'Prompt Deleted',
 				description: `"${promptToDelete.title}" has been successfully deleted.`,
 			})
-		} catch (error: any) {
+		} catch (error) {
 			toast({
 				variant: 'destructive',
 				title: 'Error Deleting Prompt',
-				description: error.message || 'An unknown error occurred.',
+				description: error instanceof Error ? error.message : 'An unknown error occurred.',
 			})
 		} finally {
 			setPromptToDelete(null)
@@ -143,7 +144,7 @@ const ActionCell = ({ prompt }: { prompt: Prompt }) => {
 					<AlertDialogFooter>
 						<AlertDialogCancel>Cancel</AlertDialogCancel>
 						<AlertDialogAction
-							onClick={handleDelete}
+							onClick={() => void handleDelete()}
 							className='bg-destructive hover:bg-destructive/90'
 						>
 							Delete
@@ -181,6 +182,7 @@ export const columns: ColumnDef<Prompt>[] = [
 					height='64'
 					src={imageUrl}
 					width='64'
+					unoptimized={isFirebaseStorageUrl(imageUrl)}
 				/>
 			) : (
 				<div className='h-16 w-16 bg-muted rounded-md flex items-center justify-center text-xs text-muted-foreground'>

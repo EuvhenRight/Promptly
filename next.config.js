@@ -1,49 +1,87 @@
-const path = require('path');
+const path = require('path')
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    // !! WARN !!
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
-    // !! WARN !!
-    ignoreBuildErrors: true,
-  },
-  images: {
-    formats: ['image/avif', 'image/webp'],
-    minimumCacheTTL: 60,
-    // Include 70 and 75 so <Image quality={70/75} /> does not warn
-    qualities: [25, 50, 70, 75],
-    remotePatterns: [
-      { protocol: 'https', hostname: 'placehold.co', port: '', pathname: '/**' },
-      { protocol: 'https', hostname: 'images.unsplash.com', port: '', pathname: '/**' },
-      { protocol: 'https', hostname: 'picsum.photos', port: '', pathname: '/**' },
-      { protocol: 'https', hostname: 'firebasestorage.googleapis.com', port: '', pathname: '/**' },
-      { protocol: 'https', hostname: 'storage.googleapis.com', port: '', pathname: '/**' },
-      { protocol: 'https', hostname: 'cdn.prompthero.com', port: '', pathname: '/**' },
-      { protocol: 'https', hostname: 'replicate.delivery', port: '', pathname: '/**' },
-    ],
-  },
-  // Explicit Turbopack config so Next.js doesn't warn when using `next dev --turbopack`.
-  // root is the default (project root); having a key here makes the warning logic recognize Turbopack as configured.
-  turbopack: {
-    root: path.join(__dirname),
-  },
-  /**
-   * Custom webpack configuration to disable caching.
-   * This can help prevent issues with "dirty builds" on some hosting platforms
-   * by ensuring a clean build every time, at the cost of a slightly longer
-   * build time.
-   */
-  webpack: (config) => {
-    config.cache = false;
-    return config;
-  },
-};
+	experimental: {
+		imgOptTimeoutInSeconds: 30,
+	},
+	eslint: {
+		// Warning: This allows production builds to successfully complete even if
+		// your project has ESLint errors.
+		ignoreDuringBuilds: true,
+	},
+	typescript: {
+		// !! WARN !!
+		// Dangerously allow production builds to successfully complete even if
+		// your project has type errors.
+		// !! WARN !!
+		ignoreBuildErrors: true,
+	},
+	images: {
+		formats: ['image/avif', 'image/webp'],
+		minimumCacheTTL: 86400,
+		// Include 70 and 75 so <Image quality={70/75} /> does not warn
+		qualities: [25, 50, 70, 75],
+		remotePatterns: [
+			{
+				protocol: 'https',
+				hostname: 'placehold.co',
+				port: '',
+				pathname: '/**',
+			},
+			{
+				protocol: 'https',
+				hostname: 'images.unsplash.com',
+				port: '',
+				pathname: '/**',
+			},
+			{
+				protocol: 'https',
+				hostname: 'picsum.photos',
+				port: '',
+				pathname: '/**',
+			},
+			{
+				protocol: 'https',
+				hostname: 'firebasestorage.googleapis.com',
+				port: '',
+				pathname: '/**',
+			},
+			{
+				protocol: 'https',
+				hostname: 'storage.googleapis.com',
+				port: '',
+				pathname: '/**',
+			},
+			{
+				protocol: 'https',
+				hostname: 'cdn.prompthero.com',
+				port: '',
+				pathname: '/**',
+			},
+			{
+				protocol: 'https',
+				hostname: 'replicate.delivery',
+				port: '',
+				pathname: '/**',
+			},
+		],
+	},
+	// Explicit Turbopack config so Next.js doesn't warn when using `next dev --turbopack`.
+	// root is the default (project root); having a key here makes the warning logic recognize Turbopack as configured.
+	turbopack: {
+		root: path.join(__dirname),
+	},
+	/**
+	 * Custom webpack configuration to disable caching.
+	 * This can help prevent issues with "dirty builds" on some hosting platforms
+	 * by ensuring a clean build every time, at the cost of a slightly longer
+	 * build time.
+	 */
+	webpack: config => {
+		config.cache = false
+		return config
+	},
+}
 
-module.exports = nextConfig;
+module.exports = nextConfig
