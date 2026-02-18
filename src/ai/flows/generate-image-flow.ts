@@ -8,7 +8,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import Replicate from 'replicate';
 
-export const GenerateImageInputSchema = z.object({
+const GenerateImageInputSchema = z.object({
   model: z.string().describe('The Replicate model version to use.'),
   prompt: z.string().describe('The text prompt for image generation.'),
   // Optional reference image as a data URI
@@ -18,7 +18,7 @@ export const GenerateImageInputSchema = z.object({
 });
 export type GenerateImageInput = z.infer<typeof GenerateImageInputSchema>;
 
-export const GenerateImageOutputSchema = z.object({
+const GenerateImageOutputSchema = z.object({
   imageUrl: z.string().describe('The URL of the generated image.'),
 });
 export type GenerateImageOutput = z.infer<typeof GenerateImageOutputSchema>;
