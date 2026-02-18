@@ -81,7 +81,7 @@ function getSearchTerms(title: string): string[] {
 
 export async function createPrompt(
 	firestore: Firestore,
-	adminId: string,
+	authorId: string,
 	data: CreatePromptData,
 ): Promise<{ success: boolean; error?: string; promptId?: string }> {
 	const newPromptRef = doc(collection(firestore, 'prompts'))
@@ -90,7 +90,7 @@ export async function createPrompt(
 	const batch = writeBatch(firestore)
 
 	try {
-		const authorRef = doc(firestore, 'users', adminId)
+		const authorRef = doc(firestore, 'users', authorId)
 		const authorSnap = await getDoc(authorRef)
 		if (!authorSnap.exists()) {
 			throw new Error('Could not create prompt: author profile not found.')
@@ -98,7 +98,7 @@ export async function createPrompt(
 		const authorData = authorSnap.data() as UserProfile
 
 		const publicData = {
-			authorId: adminId,
+			authorId: authorId,
 			authorDisplayName: authorData.displayName,
 			authorPhotoURL: authorData.photoURL,
 			authorUsername: authorData.username,

@@ -5,7 +5,7 @@ import { generateImage, type GenerateImageInput } from '@/ai/flows/generate-imag
 import Footer from '@/components/layout/footer';
 import Header from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -23,7 +23,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Dialog, DialogContent, DialogTrigger, DialogClose } from '@/components/ui/dialog';
-import { deductCreditsForGeneration } from '@/firebase/users';
+import { deductCreditsForGeneration, createPrompt, type CreatePromptData } from '@/firebase/users';
+import { useRouter } from 'next/navigation';
+import { PromptForm, type PromptFormValues } from '@/app/admin/prompts/new/prompt-form';
+import { rehostImage } from '@/app/admin/prompts/actions';
 
 
 const formSchema = z.object({
@@ -40,12 +43,14 @@ export default function GeneratePage() {
     const { user, isUserLoading } = useUser();
     const firestore = useFirestore();
     const { toast } = useToast();
+    const router = useRouter();
     const [activeTab, setActiveTab] = useState('image');
     const [isGenerating, setIsGenerating] = useState(false);
     const [isTesting, setIsTesting] = useState(false);
     const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
     const [referenceImage, setReferenceImage] = useState<File | null>(null);
     const [referenceImagePreview, setReferenceImagePreview] = useState<string | null>(null);
+    const [isSubmittingPrompt, setIsSubmittingPrompt] = useState(false);
 
     const userProfileRef = useMemoFirebase(
         () => (user ? doc(firestore, 'users', user.uid) : null),
@@ -167,6 +172,53 @@ export default function GeneratePage() {
             setIsGenerating(false);
         }
     }
+
+    const handleCreatePrompt = async (data: PromptFormValues) => {
+        if (!user || !firestore) {
+            toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in.' });
+            return;
+        }
+        if (!generatedImageUrl) {
+            toast({ variant: 'destructive', title: 'No Image', description: 'An image must be generated first.' });
+            return;
+        }
+    
+        setIsSubmittingPrompt(true);
+    
+        try {
+            toast({ title: 'Saving your image...', description: 'Please wait.' });
+            const rehostedImageUrl = await rehostImage(generatedImageUrl, `gen-${Date.now()}`);
+    
+            const promptData: CreatePromptData = {
+                title: data.title,
+                description: data.description,
+                price: data.price,
+                isPrivate: data.isPrivate,
+                categoryId: data.categoryId,
+                typeId: data.typeId,
+                modelId: data.modelId,
+                tags: data.tags,
+                privateContent: data.privateContent,
+                imageUrl: rehostedImageUrl,
+            };
+    
+            toast({ title: 'Creating prompt...', description: 'Just a moment.' });
+            const result = await createPrompt(firestore, user.uid, promptData);
+    
+            if (result.success && result.promptId) {
+                toast({ title: 'Prompt Created!', description: 'Your prompt has been successfully published.' });
+                router.push(`/prompt/${result.promptId}`);
+            } else {
+                throw new Error(result.error || 'An unknown error occurred while saving the prompt.');
+            }
+    
+        } catch (error: any) {
+            console.error('Failed to create prompt from generated image:', error);
+            toast({ variant: 'destructive', title: 'Error Creating Prompt', description: error.message });
+        } finally {
+            setIsSubmittingPrompt(false);
+        }
+    };
 
     return (
         <div className="flex min-h-screen flex-col">
@@ -337,59 +389,42 @@ export default function GeneratePage() {
                 </div>
 
                 {/* Right Panel */}
-                <div className="lg:col-span-8 xl:col-span-9 p-6 flex items-center justify-center bg-zinc-100 dark:bg-zinc-900" style={{
+                <div className="lg:col-span-8 xl:col-span-9 p-6 flex flex-col items-center justify-center bg-zinc-100 dark:bg-zinc-900" style={{
                     backgroundImage: 'radial-gradient(circle at 1px 1px, hsl(var(--muted-foreground) / 0.3) 1px, transparent 0)',
                     backgroundSize: '20px 20px',
                 }}>
-                    <div className="w-full max-w-2xl text-center">
+                    <div className="w-full max-w-4xl">
                         {(isGenerating || isTesting) && (
-                            <div className="space-y-4">
+                            <div className="space-y-4 text-center">
                                 <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
                                 <h3 className="text-lg font-semibold">Generating...</h3>
                                 <p className="text-muted-foreground">This may take a moment.</p>
                             </div>
                         )}
                         {!isGenerating && !isTesting && !generatedImageUrl && (
-                             <div className="space-y-4 text-left">
-                                <h3 className="text-xl font-semibold text-center">Available Models for Testing</h3>
-                                <p className="text-muted-foreground text-center">Here is a list of models configured in the system.</p>
-                                <div className="space-y-3 rounded-lg border bg-card p-4 max-h-96 overflow-y-auto">
-                                    {AVAILABLE_MODELS.map(model => (
-                                        <div key={model.id} className="text-xs border-b pb-2 last:border-b-0">
-                                            <p className="font-bold text-sm">{model.name}</p>
-                                            <p className="text-muted-foreground">
-                                                <span className="font-medium text-foreground">ID:</span> {model.id}
-                                            </p>
-                                            <p className="text-muted-foreground truncate">
-                                                <span className="font-medium text-foreground">Ref:</span> {model.ref}
-                                            </p>
-                                        </div>
-                                    ))}
-                                </div>
+                            <div className="text-center">
+                                <Sparkles className="mx-auto h-12 w-12 text-muted-foreground" />
+                                <h3 className="mt-4 text-lg font-semibold">AI Image Generation</h3>
+                                <p className="mt-2 text-sm text-muted-foreground">
+                                    Enter a prompt on the left to start generating. Your image will appear here.
+                                </p>
                             </div>
                         )}
                         {!isGenerating && !isTesting && generatedImageUrl && (
-                           <Card className="relative group overflow-hidden">
-                                <Image src={generatedImageUrl} alt="Generated image" width={1024} height={1024} className="w-full h-auto object-contain" />
-                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                                    <Button size="icon" asChild>
-                                        <a href={generatedImageUrl} download="generated-image.png">
-                                            <Download />
-                                        </a>
-                                    </Button>
-                                     <Dialog>
-                                        <DialogTrigger asChild>
-                                            <Button size="icon"><Expand /></Button>
-                                        </DialogTrigger>
-                                        <DialogContent className="max-w-7xl w-full p-0 bg-transparent border-none shadow-none" hideCloseButton>
-                                            <Image src={generatedImageUrl} alt="Generated image" width={1920} height={1080} className="w-full h-auto object-contain max-h-[90vh] rounded-lg" />
-                                            <DialogClose className="absolute right-4 top-4 rounded-full p-2 bg-black/50 text-white opacity-80 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary data-[state=open]:text-muted-foreground">
-                                                <X className="h-8 w-8" />
-                                                <span className="sr-only">Close</span>
-                                            </DialogClose>
-                                        </DialogContent>
-                                    </Dialog>
-                                </div>
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Finalize and Submit Your Prompt</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <PromptForm 
+                                        onSubmit={handleCreatePrompt}
+                                        isSubmitting={isSubmittingPrompt}
+                                        initialData={{
+                                            privateContent: form.getValues('prompt'),
+                                            imageUrl: generatedImageUrl,
+                                        }}
+                                    />
+                                </CardContent>
                             </Card>
                         )}
                     </div>

@@ -459,3 +459,5 @@ export async function deductCreditsForGeneration(
 		throw error;
 	}
 }
+
+export { createPrompt, type CreatePromptData } from './prompts';
