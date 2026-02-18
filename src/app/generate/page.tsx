@@ -323,10 +323,22 @@ export default function GeneratePage() {
                             </div>
                         )}
                         {!isGenerating && !generatedImageUrl && (
-                            <div className="space-y-4">
-                                <ImageIcon className="mx-auto h-16 w-16 text-muted-foreground" />
-                                <h3 className="text-xl font-semibold">Your generated media will show here</h3>
-                                <p className="text-muted-foreground">Use the form to the left to start</p>
+                             <div className="space-y-4 text-left">
+                                <h3 className="text-xl font-semibold text-center">Available Models for Testing</h3>
+                                <p className="text-muted-foreground text-center">Here is a list of models configured in the system.</p>
+                                <div className="space-y-3 rounded-lg border bg-card p-4 max-h-96 overflow-y-auto">
+                                    {AVAILABLE_MODELS.map(model => (
+                                        <div key={model.id} className="text-xs border-b pb-2 last:border-b-0">
+                                            <p className="font-bold text-sm">{model.name}</p>
+                                            <p className="text-muted-foreground">
+                                                <span className="font-medium text-foreground">ID:</span> {model.id}
+                                            </p>
+                                            <p className="text-muted-foreground truncate">
+                                                <span className="font-medium text-foreground">Ref:</span> {model.ref}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
                         {!isGenerating && generatedImageUrl && (
