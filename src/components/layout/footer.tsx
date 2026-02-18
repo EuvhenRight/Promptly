@@ -1,5 +1,15 @@
 import Link from 'next/link'
-import { Bot, FileText, Home, PlusCircle, Shield, ShoppingBag, Users } from 'lucide-react'
+import {
+  Bot,
+  Cookie,
+  FileText,
+  Home,
+  Info,
+  PlusCircle,
+  Shield,
+  ShoppingBag,
+  Users,
+} from 'lucide-react'
 
 const currentYear = new Date().getFullYear()
 
@@ -17,6 +27,8 @@ const communityLinks = [
 const legalLinks = [
   { href: '/legal/terms', label: 'Terms of Service', icon: FileText },
   { href: '/legal/privacy', label: 'Privacy Policy', icon: Shield },
+  { href: '/legal/cookies', label: 'Cookie Policy', icon: Cookie },
+  { href: '/about', label: 'About', icon: Info },
 ]
 
 function FooterLink({

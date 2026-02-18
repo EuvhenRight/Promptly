@@ -97,6 +97,34 @@ import {
 	DialogTrigger,
 	DialogClose,
 } from '@/components/ui/dialog'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
+
+const WITHDRAWAL_CONSENT_KEY = 'promptly_withdrawal_consent'
+
+function getWithdrawalConsent(promptId: string): boolean {
+	if (typeof window === 'undefined') return false
+	try {
+		const stored = localStorage.getItem(WITHDRAWAL_CONSENT_KEY)
+		if (!stored) return false
+		const parsed = JSON.parse(stored) as Record<string, boolean>
+		return !!parsed[promptId]
+	} catch {
+		return false
+	}
+}
+
+function setWithdrawalConsent(promptId: string): void {
+	if (typeof window === 'undefined') return
+	try {
+		const stored = localStorage.getItem(WITHDRAWAL_CONSENT_KEY)
+		const parsed: Record<string, boolean> = stored ? JSON.parse(stored) : {}
+		parsed[promptId] = true
+		localStorage.setItem(WITHDRAWAL_CONSENT_KEY, JSON.stringify(parsed))
+	} catch {
+		// ignore
+	}
+}
 
 const PromptDetailSkeleton = () => (
 	<div className='grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12'>
@@ -184,6 +212,8 @@ export default function PromptDetailPage() {
 	const [showPurchaseConfirm, setShowPurchaseConfirm] = useState(false)
 	const [isPurchasing, setIsPurchasing] = useState(false)
 	const [isFollowLoading, setIsFollowLoading] = useState(false)
+	const [withdrawalConsentCheckbox, setWithdrawalConsentCheckbox] = useState(false)
+	const [withdrawalConsentGiven, setWithdrawalConsentGiven] = useState(false)
 
 	// --- Memoized Derived State ---
 	const amIFollowingRef = useMemoFirebase(() => {
@@ -219,6 +249,16 @@ export default function PromptDetailPage() {
 	const canViewContent = prompt && (isPurchased || isFree || isAdmin || isAuthor)
 	const canComment = canViewContent && user
 
+	const needsWithdrawalConsent =
+		canViewContent && isPurchased && !isFree && !isAdmin
+	const hasWithdrawalConsent =
+		withdrawalConsentGiven ||
+		(typeof window !== 'undefined' &&
+			params.id &&
+			getWithdrawalConsent(params.id as string))
+	const canFetchPrivateContent =
+		canViewContent && (!needsWithdrawalConsent || hasWithdrawalConsent)
+
 	// --- Effects ---
 	useEffect(() => {
 		if (params.id && firestore && !viewIncremented.current) {
@@ -228,7 +268,7 @@ export default function PromptDetailPage() {
 	}, [params.id, firestore])
 
 	useEffect(() => {
-		if (canViewContent && firestore && params.id && !privateContent) {
+		if (canFetchPrivateContent && firestore && params.id && !privateContent) {
 			setIsLoadingPrivateContent(true)
 			const fetchPrivateContent = async (db: Firestore, promptId: string) => {
 				const contentRef = doc(db, 'prompts', promptId, 'private', 'content')
@@ -247,7 +287,7 @@ export default function PromptDetailPage() {
 			}
 			fetchPrivateContent(firestore, params.id as string)
 		}
-	}, [canViewContent, firestore, params.id, privateContent])
+	}, [canFetchPrivateContent, firestore, params.id, privateContent])
 
 	// --- Handlers ---
 	const handleAddToCart = () => {
@@ -275,14 +315,18 @@ export default function PromptDetailPage() {
 			})
 			return
 		}
+		if (!withdrawalConsentCheckbox) return
 		setIsPurchasing(true)
 		try {
 			await purchasePromptWithCredits(user.uid, prompt.id)
+			setWithdrawalConsent(prompt.id)
+			setWithdrawalConsentGiven(true)
 			toast({
 				title: 'Purchase Successful!',
 				description: `You have unlocked "${prompt.title}".`,
 			})
 			setShowPurchaseConfirm(false)
+			setWithdrawalConsentCheckbox(false)
 		} catch (error: any) {
 			toast({
 				variant: 'destructive',
@@ -805,7 +849,10 @@ export default function PromptDetailPage() {
 										</Button>
 										<AlertDialog
 											open={showPurchaseConfirm}
-											onOpenChange={setShowPurchaseConfirm}
+											onOpenChange={(open) => {
+												setShowPurchaseConfirm(open)
+												if (!open) setWithdrawalConsentCheckbox(false)
+											}}
 										>
 											<AlertDialogTrigger asChild>
 												<Button
@@ -851,6 +898,23 @@ export default function PromptDetailPage() {
 															You do not have enough credits for this purchase.
 														</p>
 													)}
+													<div className='flex items-start space-x-2 pt-2'>
+														<Checkbox
+															id='withdrawal-consent'
+															checked={withdrawalConsentCheckbox}
+															onCheckedChange={(checked) =>
+																setWithdrawalConsentCheckbox(checked === true)
+															}
+														/>
+														<Label
+															htmlFor='withdrawal-consent'
+															className='text-sm font-normal cursor-pointer leading-tight'
+														>
+															I agree to immediate access to this digital content
+															and acknowledge that I will lose my 14-day right of
+															withdrawal under EU consumer law.
+														</Label>
+													</div>
 												</div>
 												<AlertDialogFooter>
 													<AlertDialogCancel disabled={isPurchasing}>
@@ -859,7 +923,7 @@ export default function PromptDetailPage() {
 													{(userProfile?.credits ?? 0) >= creditPrice ? (
 														<AlertDialogAction
 															onClick={handleBuyNow}
-															disabled={isPurchasing}
+															disabled={isPurchasing || !withdrawalConsentCheckbox}
 														>
 															{isPurchasing && (
 																<Loader2 className='mr-2 h-4 w-4 animate-spin' />
@@ -895,6 +959,28 @@ export default function PromptDetailPage() {
 									</p>
 								</div>
 							</>
+						) : needsWithdrawalConsent && !hasWithdrawalConsent ? (
+							<div className='rounded-lg border border-amber-500/50 bg-amber-500/10 p-6 space-y-4'>
+								<h3 className='font-semibold text-foreground'>
+									Before viewing your purchased content
+								</h3>
+								<p className='text-sm text-muted-foreground'>
+									Under EU consumer law, you have a 14-day right to withdraw from
+									complete purchases. By viewing this digital content now, you
+									expressly agree to immediate access and acknowledge that you
+									will lose your right of withdrawal for this purchase.
+								</p>
+								<Button
+									onClick={() => {
+										if (params.id) {
+											setWithdrawalConsent(params.id as string)
+											setWithdrawalConsentGiven(true)
+										}
+									}}
+								>
+									I agree, view content
+								</Button>
+							</div>
 						) : (
 							<>
 								<div className='flex flex-wrap items-center justify-between gap-4'>
