@@ -112,10 +112,12 @@ export default function Header({ isVisible = true }: { isVisible?: boolean }) {
 	const pricingUrl = user ? '/account/plans' : '/plans'
 
 	return (
-		<header className={cn(
-            'sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-transform duration-300 md:transform-none',
-            !isVisible && '-translate-y-full'
-        )}>
+		<header
+			className={cn(
+				'sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 h-16 transition-transform duration-300 ease-in-out md:transform-none',
+				!isVisible && '-translate-y-full',
+			)}
+		>
 			<div className='container mx-auto flex h-16 items-center px-4 sm:px-6 lg:px-8'>
 				<div className='flex flex-shrink-0 items-center gap-2'>
 					<Link href='/' className='flex items-center gap-2'>
