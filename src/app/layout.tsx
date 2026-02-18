@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import type { Metadata } from 'next'
 import { Inter, Space_Grotesk } from 'next/font/google'
 import './globals.css'
+import { CookieBanner } from '@/components/cookie-banner'
 import { ThemeProvider } from '@/components/theme-provider'
 
 const fontInter = Inter({
@@ -55,6 +56,7 @@ export default function RootLayout({
 									<ModelsProvider>
 										{children}
 										<Toaster />
+										<CookieBanner />
 									</ModelsProvider>
 								</TypesProvider>
 							</TagsProvider>
