@@ -21,6 +21,7 @@ type PromptCardProps = {
 	prompt: Prompt
 	isInCart?: boolean
 	isPurchased?: boolean
+	index: number
 }
 
 const formatStat = (num: number): string => {
@@ -33,6 +34,7 @@ export default function PromptCard({
 	prompt,
 	isInCart,
 	isPurchased,
+	index,
 }: PromptCardProps) {
 	const { getNames } = useCategories()
 	const categoryId = prompt.categoryId ?? prompt.categories?.[0]
@@ -102,6 +104,9 @@ export default function PromptCard({
 
 	const creditPrice = Math.round(prompt.price * 100)
 
+	const isPriority = index < 5 // Prioritize first 5 images
+	const isLoadingEager = index >= 5 && index < 10 // Eagerly load the next 5
+
 	return (
 		<div>
 			<div className='group relative w-full overflow-hidden rounded-2xl bg-card'>
@@ -113,7 +118,9 @@ export default function PromptCard({
 							width={imageWidth}
 							height={imageHeight}
 							sizes='(max-width: 767px) 100vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw'
-							quality={70}
+							quality={75}
+							priority={isPriority}
+							loading={isLoadingEager ? 'eager' : 'lazy'}
 							className='w-full h-auto object-cover transition-transform duration-300 ease-in-out group-hover:scale-105'
 						/>
 					) : (
