@@ -25,24 +25,26 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 const FREE_FEATURES = [
+	'500 credits per month',
 	'For personal use only',
-	'Limited generation access',
 	'Lower processing priority',
 	'All creations are public',
+	'20% sales commission',
 ]
 
 const STARTER_FEATURES = [
-	'✨ 3,600 total generation credits',
+	'✨ 4,000 credits per month',
 	'Private generations',
 	'Access to all models',
-	'Unlimited concurrent processing',
+	'10% sales commission',
 ]
 
 const PRO_FEATURES = [
-	'✨ 7,200 total generation credits',
+	'✨ 8,000 credits per month',
 	'All STARTER Features',
-	'Private prompts',
-	'50% discount on all our courses',
+	'0% sales commission',
+	'Private prompts (invisible to others)',
+	'Unlimited concurrent processing',
 ]
 
 const FAQ_ITEMS = [
@@ -113,7 +115,7 @@ export default function PlansPage() {
 							</Button>
 						</div>
 						<span className='text-sm text-green-600 font-medium'>
-							Save up to 15% with yearly billing!
+							Save up to 10% with yearly billing!
 						</span>
 					</div>
 
@@ -162,14 +164,14 @@ export default function PlansPage() {
 								</CardDescription>
 								<div className='flex items-baseline justify-center gap-2'>
 									<p className='text-4xl font-bold'>
-										€{billingPeriod === 'yearly' ? '9' : '10'}
+										€{billingPeriod === 'yearly' ? '8' : '9'}
 									</p>
 									<span className='text-sm text-muted-foreground'>/ mo</span>
 								</div>
 								<p className='text-xs text-muted-foreground'>
 									{billingPeriod === 'yearly' && (
 										<span className='text-green-600'>
-											(Billed yearly at €108)
+											(Billed yearly at €97)
 										</span>
 									)}
 								</p>
@@ -206,14 +208,14 @@ export default function PlansPage() {
 								<CardDescription>For experts creating daily.</CardDescription>
 								<div className='flex items-baseline justify-center gap-2'>
 									<p className='text-4xl font-bold'>
-										€{billingPeriod === 'yearly' ? '19' : '22'}
+										€{billingPeriod === 'yearly' ? '17' : '19'}
 									</p>
 									<span className='text-sm text-muted-foreground'>/ mo</span>
 								</div>
 								<p className='text-xs text-muted-foreground'>
 									{billingPeriod === 'yearly' && (
 										<span className='text-green-600'>
-											(Billed yearly at €228)
+											(Billed yearly at €205)
 										</span>
 									)}
 								</p>

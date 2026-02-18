@@ -52,7 +52,6 @@ const PRO_FEATURES = [
 	'0% sales commission',
 	'Private prompts (invisible to others)',
 	'Unlimited concurrent processing',
-	'50% discount on all our courses',
 ]
 
 const FAQ_ITEMS = [
