@@ -45,7 +45,7 @@ import { cn } from '@/lib/utils'
 
 const LOCAL_CART_KEY = 'promptly_local_cart';
 
-export default function Header({ isVisible = true }: { isVisible?: boolean }) {
+export default function Header() {
 	const { user, isUserLoading } = useUser()
 	const firestore = useFirestore()
 	const router = useRouter()
@@ -113,10 +113,7 @@ export default function Header({ isVisible = true }: { isVisible?: boolean }) {
 
 	return (
 		<header
-			className={cn(
-				'sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 h-16 transition-transform duration-300 ease-in-out md:transform-none',
-				!isVisible && '-translate-y-full',
-			)}
+			className='sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 h-16'
 		>
 			<div className='container mx-auto flex h-16 items-center px-4 sm:px-6 lg:px-8'>
 				<div className='flex flex-shrink-0 items-center gap-2'>
