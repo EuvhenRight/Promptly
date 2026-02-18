@@ -40,7 +40,9 @@ const suggestRelevantTagsFlow = ai.defineFlow(
       return { tags: [] };
     }
 
-    const replicate = new Replicate();
+    const replicate = new Replicate({
+      auth: process.env.REPLICATE_API_TOKEN,
+    });
 
     const prompt = `Based on the following title and description for an AI prompt, generate a list of 5 to 7 relevant tags. These tags will be used to categorize and find the prompt on a marketplace. The tags should be short, relevant, and in English. Output ONLY a comma-separated list of tags. For example: cyberpunk, futuristic, neon, city, character design.
 

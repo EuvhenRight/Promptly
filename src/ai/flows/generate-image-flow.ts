@@ -47,7 +47,9 @@ const generateImageFlow = ai.defineFlow(
         throw new Error(`Model with ID "${input.modelId}" not found.`);
     }
 
-    const replicate = new Replicate();
+    const replicate = new Replicate({
+      auth: process.env.REPLICATE_API_TOKEN,
+    });
 
     const replicateInput: any = {
         prompt: input.prompt,
