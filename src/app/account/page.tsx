@@ -425,7 +425,6 @@ export default function AccountPage() {
 													alt='Featured'
 													fill
 													className='object-cover'
-													unoptimized
 												/>
 											) : (
 												<div className='flex items-center justify-center h-full'>

@@ -300,7 +300,6 @@ export default function AdminSearchBarBackgroundsPage() {
 											fill
 											className='object-cover'
 											sizes='(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw'
-											unoptimized
 										/>
 										{bg.isActive && (
 											<div className='absolute left-2 top-2 rounded bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground'>
@@ -373,7 +372,6 @@ export default function AdminSearchBarBackgroundsPage() {
 										alt={editItem.name}
 										fill
 										className='object-cover'
-										unoptimized
 									/>
 								</div>
 							)}
