@@ -107,22 +107,29 @@ export default function PromptCard({
 	const isPriority = index < 5 // Prioritize first 5 images
 	const isLoadingEager = index >= 5 && index < 10 // Eagerly load the next 5
 
+	const imageProps: any = {
+		src: imageUrl,
+		alt: prompt.title,
+		width: imageWidth,
+		height: imageHeight,
+		sizes: '(max-width: 767px) 100vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw',
+		quality: 70,
+		className:
+			'w-full h-auto object-cover transition-transform duration-300 ease-in-out group-hover:scale-105',
+	}
+
+	if (isPriority) {
+		imageProps.priority = true
+	} else {
+		imageProps.loading = isLoadingEager ? 'eager' : 'lazy'
+	}
+
 	return (
 		<div>
 			<div className='group relative w-full overflow-hidden rounded-2xl bg-card'>
 				<Link href={`/prompt/${prompt.id}`} className='block cursor-pointer'>
 					{imageUrl ? (
-						<Image
-							src={imageUrl}
-							alt={prompt.title}
-							width={imageWidth}
-							height={imageHeight}
-							sizes='(max-width: 767px) 100vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw'
-							quality={75}
-							priority={isPriority}
-							loading={isLoadingEager ? 'eager' : 'lazy'}
-							className='w-full h-auto object-cover transition-transform duration-300 ease-in-out group-hover:scale-105'
-						/>
+						<Image {...imageProps} />
 					) : (
 						<Skeleton className='w-full aspect-[4/5]' />
 					)}
