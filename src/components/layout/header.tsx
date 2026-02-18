@@ -25,6 +25,7 @@ import {
 	Upload,
 	User,
 	Wallet,
+    Sparkles,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -144,6 +145,12 @@ export default function Header() {
 							</SheetHeader>
 							<div className='mt-8 flex flex-col gap-4'>
 								<nav className='mt-4 flex flex-col gap-2'>
+                                    <Button variant='ghost' asChild className='justify-start'>
+										<Link href='/generate'>
+											<Sparkles className='mr-2 h-4 w-4' />
+											Generate
+										</Link>
+									</Button>
 									<Button variant='ghost' asChild className='justify-start'>
 										<Link href='/cart'>
 											<ShoppingCart className='mr-2 h-4 w-4' />
@@ -164,6 +171,12 @@ export default function Header() {
 
 				<div className='hidden md:flex items-center gap-6 ml-10'>
 					<nav className='flex items-center gap-6 text-sm'>
+						<Link
+							href='/generate'
+							className='transition-colors text-foreground/80 font-medium hover:text-accent dark:hover:text-primary'
+						>
+							Generate
+						</Link>
 						<Link
 							href={pricingUrl}
 							className='transition-colors text-foreground/80 font-medium hover:text-accent dark:hover:text-primary'
