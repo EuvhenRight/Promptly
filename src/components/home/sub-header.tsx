@@ -40,8 +40,8 @@ export default function SubHeader({
 	return (
 		<div
 			className={cn(
-				'sticky top-16 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-transform duration-300 ease-in-out md:transform-none',
-				!isHeaderVisible && '-translate-y-16',
+				'sticky z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-transform duration-300 ease-in-out',
+				isHeaderVisible ? 'top-16' : 'top-0',
 			)}
 		>
 			<div className='container mx-auto px-4 sm:px-6 lg:px-8'>
