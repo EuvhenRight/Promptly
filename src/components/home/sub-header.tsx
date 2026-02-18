@@ -40,7 +40,7 @@ export default function SubHeader({
 	return (
 		<div
 			className={cn(
-				'sticky z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-all duration-300',
+				'sticky z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60',
 				isHeaderVisible ? 'top-16' : 'top-0',
 			)}
 		>
