@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import Replicate from 'replicate';
 
 const SuggestRelevantTagsInputSchema = z.object({
   title: z.string().describe('The title of the prompt.'),
@@ -33,9 +34,39 @@ const suggestRelevantTagsFlow = ai.defineFlow(
     outputSchema: SuggestRelevantTagsOutputSchema,
   },
   async input => {
-    // This is a placeholder implementation.
-    // The actual call to an AI model (like one from Replicate) will be added here later.
-    console.log(`[Flow: suggestRelevantTags] Called with title: "${input.title}". Returning empty tags as a placeholder.`);
-    return { tags: [] };
+    // Ensure the API token is set, otherwise Replicate will throw an error
+    if (!process.env.REPLICATE_API_TOKEN) {
+      console.error('REPLICATE_API_TOKEN environment variable not set.');
+      return { tags: [] };
+    }
+
+    const replicate = new Replicate();
+
+    const prompt = `Based on the following title and description for an AI prompt, generate a list of 5 to 7 relevant tags. These tags will be used to categorize and find the prompt on a marketplace. The tags should be short, relevant, and in English. Output ONLY a comma-separated list of tags. For example: cyberpunk, futuristic, neon, city, character design.
+
+Title: "${input.title}"
+Description: "${input.description}"`;
+
+    try {
+      const output = (await replicate.run(
+        "meta/meta-llama-3-8b-instruct",
+        {
+          input: {
+            prompt: prompt,
+            temperature: 0.5,
+            max_new_tokens: 50,
+          },
+        }
+      )) as string[];
+
+      const tagString = output.join('');
+      const tags = tagString.split(',').map(tag => tag.trim()).filter(Boolean);
+
+      return { tags };
+    } catch (error) {
+      console.error('[Flow: suggestRelevantTags] Error calling Replicate API:', error);
+      // Return an empty array on error to avoid breaking the calling code
+      return { tags: [] };
+    }
   }
 );
