@@ -38,10 +38,10 @@ import {
 import Image from 'next/image'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { signInWithGoogle } from '@/firebase/auth'
 import { PlaceHolderImages } from '@/lib/placeholder-images'
-import { cn } from '@/lib/utils'
+import { cn, isFirebaseStorageUrl } from '@/lib/utils'
 
 function PublicProfileSkeleton() {
 	return (
@@ -134,7 +134,7 @@ export default function PublicProfilePage() {
 			loggedInUser.uid,
 		)
 	}, [firestore, userProfile, loggedInUser])
-	const { data: amIFollowingDoc } = useDoc(amIFollowingRef)
+	const { data: amIFollowingDoc } = useDoc<object>(amIFollowingRef)
 	const isFollowing = !!amIFollowingDoc
 
 	const followersQuery = useMemoFirebase(() => {
@@ -167,11 +167,11 @@ export default function PublicProfilePage() {
 				await followUser(firestore, loggedInUser.uid, userProfile.uid)
 				toast({ title: `You are now following ${userProfile.displayName}` })
 			}
-		} catch (error: any) {
+		} catch (error) {
 			toast({
 				variant: 'destructive',
 				title: 'Error',
-				description: error.message || 'Could not update follow status.',
+				description: error instanceof Error ? error.message : 'Could not update follow status.',
 			})
 		} finally {
 			setIsFollowLoading(false)
@@ -183,7 +183,7 @@ export default function PublicProfilePage() {
 			signInWithGoogle()
 			return
 		}
-		handleFollowToggle()
+		void handleFollowToggle()
 	}
 
 	if (profileLoading) {
@@ -329,18 +329,21 @@ export default function PublicProfilePage() {
 						)}
 						{socialLinks.length > 0 && (
 							<div className='flex items-center gap-4 mt-4'>
-								{socialLinks.map(link => (
-									<a
-										key={link.label}
-										href={link.href}
-										target='_blank'
-										rel='noopener noreferrer'
-										className='text-muted-foreground hover:text-primary transition-colors'
-										aria-label={link.label}
-									>
-										<link.icon className='h-5 w-5' />
-									</a>
-								))}
+								{socialLinks.map(socialLink => {
+									const Icon = socialLink.icon
+									return (
+										<a
+											key={socialLink.label}
+											href={socialLink.href}
+											target='_blank'
+											rel='noopener noreferrer'
+											className='text-muted-foreground hover:text-primary transition-colors'
+											aria-label={socialLink.label}
+										>
+											<Icon className='h-5 w-5' />
+										</a>
+									)
+								})}
 							</div>
 						)}
 					</div>
@@ -393,6 +396,7 @@ export default function PublicProfilePage() {
 															height={imgHeight}
 															sizes='(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 33vw'
 															className='object-cover w-full h-full'
+															unoptimized={isFirebaseStorageUrl(img)}
 														/>
 													) : (
 														<Skeleton className='w-full h-full' />

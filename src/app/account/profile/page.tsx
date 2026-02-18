@@ -53,7 +53,7 @@ import {
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import AccountSidebar from '@/components/account/account-sidebar'
 import {
 	Table,
@@ -64,7 +64,7 @@ import {
 	TableRow,
 } from '@/components/ui/table'
 import { PlaceHolderImages } from '@/lib/placeholder-images'
-import { cn } from '@/lib/utils'
+import { cn, isFirebaseStorageUrl } from '@/lib/utils'
 
 function ProfileSkeleton() {
 	return (
@@ -148,6 +148,7 @@ function PromptGrid({ prompts }: { prompts: Prompt[] }) {
 										width={imgWidth}
 										height={imgHeight}
 										className='object-cover w-full h-full group-hover:scale-105 transition-transform duration-300'
+										unoptimized={isFirebaseStorageUrl(img)}
 									/>
 								)}
 							</div>
@@ -178,15 +179,17 @@ export default function ProfilePage() {
 	const { user, isUserLoading } = useUser()
 	const firestore = useFirestore()
 	const router = useRouter()
-	const [showFeaturedImage, setShowFeaturedImage] = useState<boolean | null>(
+	const [, setShowFeaturedImage] = useState<boolean | null>(
 		null,
 	)
 
 	useEffect(() => {
 		const storedPreference = localStorage.getItem('showFeaturedImage')
-		setShowFeaturedImage(
-			storedPreference !== null ? JSON.parse(storedPreference) : true,
-		)
+		const value =
+			storedPreference !== null
+				? (JSON.parse(storedPreference) as boolean)
+				: true
+		setShowFeaturedImage(value)
 	}, [])
 
 	const userProfileRef = useMemoFirebase(
@@ -278,7 +281,7 @@ export default function ProfilePage() {
 			return map
 		}
 		let cancelled = false
-		;(async () => {
+		void (async () => {
 			const all: Record<string, string> = {}
 			for (let i = 0; i < ids.length; i += batchSize) {
 				if (cancelled) return

@@ -22,6 +22,7 @@ import {
 } from '@/firebase'
 import { useToast } from '@/hooks/use-toast'
 import type { Cart, Prompt, UserProfile } from '@/lib/types'
+import { isFirebaseStorageUrl } from '@/lib/utils'
 import { collection, doc, documentId, query, where } from 'firebase/firestore'
 import { Coins, Loader2, Trash2 } from 'lucide-react'
 import Image from 'next/image'
@@ -95,7 +96,7 @@ export default function CartPage() {
 			try {
 				const localCartRaw = localStorage.getItem(LOCAL_CART_KEY);
 				if (localCartRaw) {
-					const localCart = JSON.parse(localCartRaw);
+					const localCart = JSON.parse(localCartRaw) as { promptIds?: string[] };
 					setLocalCartIds(localCart.promptIds ?? []);
 				} else {
 					setLocalCartIds([]);
@@ -197,11 +198,11 @@ export default function CartPage() {
 				title: 'Purchase Successful!',
 				description: 'The prompts have been added to your account.',
 			})
-		} catch (error: any) {
+		} catch (error) {
 			toast({
 				variant: 'destructive',
 				title: 'Purchase Failed',
-				description: error.message || 'An unknown error occurred.',
+				description: error instanceof Error ? error.message : 'An unknown error occurred.',
 			})
 		} finally {
 			setIsPurchasing(false)
@@ -259,6 +260,7 @@ export default function CartPage() {
 											alt={item.title}
 											fill
 											className='object-cover'
+											unoptimized={isFirebaseStorageUrl(itemImage)}
 										/>
 									)}
 								</div>
@@ -347,7 +349,7 @@ export default function CartPage() {
 								<Button
 									size='lg'
 									className='w-full'
-									onClick={handlePurchase}
+									onClick={() => void handlePurchase()}
 									disabled={isPurchasing}
 								>
 									{isPurchasing && (
