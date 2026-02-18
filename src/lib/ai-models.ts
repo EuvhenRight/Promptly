@@ -12,13 +12,13 @@ export const AVAILABLE_MODELS: AiModel[] = [
         id: 'stable-diffusion-3',
         name: 'Stable Diffusion 3',
         ref: 'stability-ai/stable-diffusion-3:fde492d5a9e9d4a234a41e95e1975001d784a9b5f925e01694a15993b9c44d15',
-        plans: ['pro'],
+        plans: ['free', 'starter', 'pro'],
     },
     {
         id: 'stable-diffusion-2',
         name: 'Stable Diffusion 2.1',
         ref: 'stability-ai/stable-diffusion-2-1:b7aa9a23d3839446f53480a71109047e170c01377461a35560b45d2334849a63',
-        plans: ['starter', 'pro'],
+        plans: ['free', 'starter', 'pro'],
     },
     {
         id: 'sdxl',
@@ -30,7 +30,7 @@ export const AVAILABLE_MODELS: AiModel[] = [
         id: 'playground-v2.5',
         name: 'Playground v2.5',
         ref: 'playgroundai/playground-v2.5:59570a9cf54033a859b840594e9eba532986423985474668f448c4146313ed43',
-        plans: ['starter', 'pro'],
+        plans: ['free', 'starter', 'pro'],
     },
     {
         id: 'openjourney',

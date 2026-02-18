@@ -28,6 +28,7 @@ import { deductCreditsForGeneration } from '@/firebase/users';
 const formSchema = z.object({
     prompt: z.string().min(1, 'Please enter a prompt.'),
     model: z.string().min(1, 'Please select a model.'),
+    aspectRatio: z.string().optional(),
 });
 
 type GenerationFormValues = z.infer<typeof formSchema>;
@@ -62,6 +63,7 @@ export default function GeneratePage() {
         defaultValues: {
             prompt: '',
             model: accessibleModels[0]?.id,
+            aspectRatio: '1:1',
         },
     });
 
@@ -132,6 +134,7 @@ export default function GeneratePage() {
             model: selectedModel.ref,
             prompt: data.prompt,
             referenceImageUrl: referenceImagePreview ?? undefined,
+            aspectRatio: data.aspectRatio,
         };
 
         try {
@@ -194,6 +197,31 @@ export default function GeneratePage() {
                                                         {model.name}
                                                     </SelectItem>
                                                 ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            
+                            <FormField
+                                control={form.control}
+                                name="aspectRatio"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Aspect Ratio</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Choose an aspect ratio" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="1:1">1:1 (Square)</SelectItem>
+                                                <SelectItem value="16:9">16:9 (Widescreen)</SelectItem>
+                                                <SelectItem value="9:16">9:16 (Portrait)</SelectItem>
+                                                <SelectItem value="4:3">4:3 (Standard)</SelectItem>
+                                                <SelectItem value="3:4">3:4 (Standard Portrait)</SelectItem>
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
