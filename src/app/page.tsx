@@ -97,7 +97,9 @@ export default function Home() {
 	const [activeFilter, setActiveFilter] = useState('Featured')
 	const [activeFilterName, setActiveFilterName] = useState('Featured')
 	const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null)
-	const [selectedModelId, setSelectedModelId] = useState<string | null>(null)
+	const [selectedModelId, setSelectedModelId] = useState<string | null>(
+		null,
+	)
 	const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
 		null,
 	)
@@ -284,7 +286,7 @@ export default function Home() {
 					}
 				},
 				{
-					rootMargin: '600px',
+					rootMargin: '1200px',
 				},
 			)
 
