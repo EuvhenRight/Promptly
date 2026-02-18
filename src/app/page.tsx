@@ -109,8 +109,30 @@ export default function Home() {
 	const { user } = useUser()
 	const firestore = useFirestore()
 	const [hideMyPrompts, setHideMyPrompts] = useState(false)
-
 	const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+	const [isHeaderVisible, setIsHeaderVisible] = useState(true)
+	const lastScrollY = useRef(0)
+
+	const controlHeader = useCallback(() => {
+		const currentScrollY = window.scrollY
+		if (window.innerWidth < 768) {
+			if (currentScrollY > lastScrollY.current && currentScrollY > 80) {
+				setIsHeaderVisible(false)
+			} else {
+				setIsHeaderVisible(true)
+			}
+		} else {
+			setIsHeaderVisible(true)
+		}
+		lastScrollY.current = currentScrollY
+	}, [])
+
+	useEffect(() => {
+		window.addEventListener('scroll', controlHeader)
+		return () => {
+			window.removeEventListener('scroll', controlHeader)
+		}
+	}, [controlHeader])
 
 	useEffect(() => {
 		const stored = localStorage.getItem('hideMyPrompts')
@@ -296,8 +318,9 @@ export default function Home() {
 
 	return (
 		<div className='flex min-h-screen flex-col bg-background'>
-			<Header />
+			<Header isVisible={isHeaderVisible} />
 			<SubHeader
+				isHeaderVisible={isHeaderVisible}
 				activeFilter={activeFilter}
 				onFilterChange={handleFilterChange}
 				mainLinks={mainLinks}

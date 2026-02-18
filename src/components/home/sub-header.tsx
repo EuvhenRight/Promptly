@@ -19,6 +19,7 @@ interface SubHeaderProps {
 	) => void
 	mainLinks: string[]
 	userProfile: UserProfile | null
+	isHeaderVisible: boolean
 }
 
 export default function SubHeader({
@@ -26,6 +27,7 @@ export default function SubHeader({
 	onFilterChange,
 	mainLinks,
 	userProfile,
+	isHeaderVisible,
 }: SubHeaderProps) {
 	const { categories, isLoading: categoriesLoading } = useCategories()
 	const { tags, isLoading: tagsLoading } = useTags()
@@ -36,7 +38,12 @@ export default function SubHeader({
 	const isLoading = categoriesLoading || tagsLoading || modelsLoading
 
 	return (
-		<div className='sticky top-16 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'>
+		<div
+			className={cn(
+				'sticky z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-all duration-300',
+				isHeaderVisible ? 'top-16' : 'top-0',
+			)}
+		>
 			<div className='container mx-auto px-4 sm:px-6 lg:px-8'>
 				<div className='flex items-center gap-4'>
 					<nav className='hidden sm:flex items-center gap-2'>
