@@ -45,7 +45,7 @@ function CheckoutReturnContent() {
 			})
 	}, [sessionId])
 
-	// When payment is complete, fulfill: grant prompts to user so they stay opened
+	// When payment is complete, fulfill: grant prompts/credits to user
 	useEffect(() => {
 		if (status !== 'complete' || !sessionId || fulfillCalled.current) return
 		fulfillCalled.current = true
@@ -120,34 +120,46 @@ function CheckoutReturnContent() {
 					<div className='rounded-xl border bg-card shadow-sm p-8 text-center'>
 						<CheckCircle2 className='mx-auto h-16 w-16 text-green-600 dark:text-green-500 mb-6' />
 						<h1 className='font-headline text-2xl font-bold text-foreground mb-2'>
-							Thank you for your payment
+							Thank you for your purchase
 						</h1>
 						<p className='text-muted-foreground mb-6'>
-							Your purchase was successful.
-							{grantedCredits > 0 && (
-								<> {grantedCredits.toLocaleString()} credits have been added to your wallet.</>
-							)}
-							{grantedPromptIds.length > 0 && (
+							{type === 'plan' && grantedCredits > 0 && (
 								<>
-									{' '}
-									The prompt{grantedPromptIds.length !== 1 ? 's are' : ' is'} now
-									unlocked for you.
+									Your plan has been upgraded and{' '}
+									<span className='text-foreground font-semibold'>
+										{grantedCredits.toLocaleString()} credits
+									</span>{' '}
+									have been added to your wallet.
 								</>
 							)}
-							{grantedCredits === 0 && grantedPromptIds.length === 0 && (
-								<> A confirmation email will be sent to you.</>
+							{type === 'credits' && grantedCredits > 0 && (
+								<>
+									<span className='text-foreground font-semibold'>
+										{grantedCredits.toLocaleString()} credits
+									</span>{' '}
+									have been added to your wallet.
+								</>
 							)}
-							{' '}
-							{customerEmail && (grantedCredits > 0 || grantedPromptIds.length > 0) && (
+							{(type === 'prompt' || type === 'cart') &&
+								grantedPromptIds.length > 0 && (
+									<>
+										The prompt{grantedPromptIds.length !== 1 ? 's are' : ' is'}{' '}
+										now unlocked for you.
+									</>
+								)}
+							{customerEmail && (
 								<>
 									{' '}
-									Confirmation will be sent to{' '}
-									<span className='text-foreground font-medium'>{customerEmail}</span>.
+									A confirmation email has been sent to{' '}
+									<span className='text-foreground font-medium'>
+										{customerEmail}
+									</span>
+									.
 								</>
 							)}
 						</p>
 						<div className='flex flex-col sm:flex-row gap-3 justify-center'>
-							{type === 'cart' ? (
+							{type === 'cart' || (type === 'prompt' && grantedPromptIds.length > 1) ? (
 								<>
 									<Button asChild size='lg'>
 										<Link href='/'>Back to home</Link>
@@ -161,23 +173,15 @@ function CheckoutReturnContent() {
 									<Button asChild size='lg'>
 										<Link href='/'>Back to home</Link>
 									</Button>
-									{grantedCredits > 0 && (
+									{(type === 'credits' || type === 'plan') && (
 										<Button asChild size='lg' variant='outline'>
 											<Link href='/account/wallet'>View my wallet</Link>
 										</Button>
 									)}
-									{grantedPromptIds.length > 0 && (
+									{type === 'prompt' && grantedPromptIds.length === 1 && (
 										<Button asChild size='lg' variant='outline'>
-											<Link
-												href={
-													grantedPromptIds.length === 1
-														? `/prompt/${grantedPromptIds[0]}`
-														: '/account/profile'
-												}
-											>
-												{grantedPromptIds.length === 1
-													? 'View your prompt'
-													: 'View my prompts'}
+											<Link href={`/prompt/${grantedPromptIds[0]}`}>
+												View your prompt
 											</Link>
 										</Button>
 									)}

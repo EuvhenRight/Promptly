@@ -23,16 +23,17 @@ function getOrigin(req: NextRequest): string {
 		: 'http://localhost:9002'
 }
 
-/** Plan prices in main unit (e.g. 10 = 10 EUR/USD). Yearly = per year total. */
+/** Plan prices in main unit (e.g. 9 = 9 EUR/USD). Yearly = per year total. */
 const PLAN_PRICES = {
-	starter: { monthly: 10, yearly: 108 }, // 10/mo, or 9/mo billed yearly
-	pro: { monthly: 22, yearly: 228 },     // 22/mo, or 19/mo billed yearly
+	starter: { monthly: 9, yearly: 97 },
+	pro: { monthly: 19, yearly: 205 },
 } as const
 
 /** Credits pack prices in main unit. */
 const CREDITS_PRICES: Record<number, number> = {
-	300: 10,
-	500: 18,
+	300: 9,
+	500: 15,
+	1000: 27,
 }
 
 type CheckoutBody = {
@@ -125,8 +126,8 @@ export async function POST(req: NextRequest) {
 			description = ''
 			line_items = items
 		} else if (type === 'credits') {
-			const credits = bodyCredits === 500 ? 500 : 300
-			const price = CREDITS_PRICES[credits] ?? 10
+			const credits = bodyCredits === 1000 ? 1000 : bodyCredits === 500 ? 500 : 300
+			const price = CREDITS_PRICES[credits] ?? 9
 			amountCents = Math.round(price * 100)
 			title = `${credits.toLocaleString()} credits for image generation`
 			description = 'Use these credits to generate images or videos.'

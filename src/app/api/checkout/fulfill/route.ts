@@ -5,8 +5,6 @@ import type Stripe from 'stripe'
 import { NextRequest } from 'next/server'
 import type { Prompt, UserProfile, SaleRecord } from '@/lib/types'
 
-const PLATFORM_COMMISSION_RATE = 0.20 // 20% platform fee
-
 function writePurchaseHistory(
 	db: admin.firestore.Firestore,
 	userId: string,
@@ -135,7 +133,7 @@ export async function POST(req: NextRequest) {
 			const plan = metadata.plan ?? 'starter'
 			const billing = metadata.billing ?? 'monthly'
 			const planName = plan === 'pro' ? 'Promptly PRO' : 'Promptly Starter'
-			const creditsAmount = plan === 'pro' ? 7200 : 3600
+			const creditsAmount = plan === 'pro' ? 8000 : 4000
 
 			const batch = adminDb!.batch()
 			const userRef = adminDb!.collection('users').doc(userId)
@@ -227,10 +225,21 @@ export async function POST(req: NextRequest) {
 						const sellerId = promptData.authorId
 						const priceInCents = Math.round(promptData.price * 100)
 
+						// Determine commission rate based on seller's plan
+						let commissionRate = 0.2 // Default for free plan
+						if (sellerId) {
+							const sellerRef = adminDb!.collection('users').doc(sellerId)
+							const sellerDoc = await transaction.get(sellerRef)
+							if (sellerDoc.exists) {
+								const sellerPlan =
+									(sellerDoc.data() as UserProfile).planId ?? 'free'
+								if (sellerPlan === 'pro') commissionRate = 0.0
+								else if (sellerPlan === 'starter') commissionRate = 0.1
+							}
+						}
+
 						const saleRef = adminDb!.collection('sales').doc()
-						const sellerEarning = Math.floor(
-							priceInCents * (1 - PLATFORM_COMMISSION_RATE),
-						)
+						const sellerEarning = Math.floor(priceInCents * (1 - commissionRate))
 						const platformFee = priceInCents - sellerEarning
 
 						transaction.set(saleRef, {

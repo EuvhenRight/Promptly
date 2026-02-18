@@ -29,7 +29,8 @@ import { useToast } from '@/hooks/use-toast'
 import type { UserProfile } from '@/lib/types'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { doc } from 'firebase/firestore'
-import { Banknote, CheckCircle, Coins, Info, Loader2 } from 'lucide-react'
+import { Banknote, Coins, Info, Loader2, Percent } from 'lucide-react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
@@ -60,6 +61,7 @@ function WalletSkeleton() {
 				<Skeleton className='h-36' />
 				<Skeleton className='h-36' />
 			</div>
+			<Skeleton className='h-24' />
 			<Skeleton className='h-64' />
 		</div>
 	)
@@ -131,13 +133,18 @@ export default function WalletPage() {
 	const credits = userProfile?.credits ?? 0
 	const earnings = userProfile?.earnings ?? 0
 	const payoutStatus = userProfile?.payoutStatus ?? 'none'
+	const planId = userProfile?.planId ?? 'free'
 
-	const payoutSchema = createPayoutSchema(credits)
+	let commissionRate = 20
+	if (planId === 'pro') commissionRate = 0
+	else if (planId === 'starter') commissionRate = 10
+
+	const payoutSchema = createPayoutSchema(earnings)
 
 	const form = useForm<PayoutFormValues>({
 		resolver: zodResolver(payoutSchema),
 		defaultValues: {
-			amount: Math.min(credits, MIN_PAYOUT_CREDITS),
+			amount: Math.min(earnings, MIN_PAYOUT_CREDITS),
 		},
 		mode: 'onChange',
 	})
@@ -238,10 +245,39 @@ export default function WalletPage() {
 
 						<Card>
 							<CardHeader>
+								<CardTitle className='flex items-center gap-2'>
+									<Percent className='h-5 w-5' />
+									Sales Commission
+								</CardTitle>
+								<CardDescription>
+									This is the fee applied to each of your prompt sales.
+								</CardDescription>
+							</CardHeader>
+							<CardContent>
+								<p className='text-4xl font-bold'>{commissionRate}%</p>
+								<p className='text-muted-foreground mt-1'>
+									Your current commission rate is based on your{' '}
+									<span className='font-semibold capitalize text-foreground'>
+										{planId}
+									</span>{' '}
+									plan.
+								</p>
+							</CardContent>
+							{planId !== 'pro' && (
+								<CardFooter>
+									<Button asChild variant='secondary'>
+										<Link href='/account/plans'>Upgrade to PRO for 0%</Link>
+									</Button>
+								</CardFooter>
+							)}
+						</Card>
+
+						<Card>
+							<CardHeader>
 								<CardTitle>Request a Payout</CardTitle>
 								<CardDescription>
-									Withdraw your credits. 100 credits = €1.00. Minimum payout is{' '}
-									{MIN_PAYOUT_CREDITS.toLocaleString()} credits (€
+									Withdraw your earned credits. 100 credits = €1.00. Minimum
+									payout is {MIN_PAYOUT_CREDITS.toLocaleString()} credits (€
 									{(MIN_PAYOUT_CREDITS / 100).toFixed(2)}).
 								</CardDescription>
 							</CardHeader>
@@ -278,11 +314,11 @@ export default function WalletPage() {
 																field.onChange(vals[0] ?? 0)
 															}
 															min={MIN_PAYOUT_CREDITS}
-															max={credits}
+															max={earnings}
 															step={100}
 															disabled={
 																form.formState.isSubmitting ||
-																credits < MIN_PAYOUT_CREDITS
+																earnings < MIN_PAYOUT_CREDITS
 															}
 															className='pt-2'
 														/>

@@ -7,8 +7,6 @@ import admin from 'firebase-admin'
 import { getAuth as getAdminAuth } from 'firebase-admin/auth'
 import type { Prompt, UserProfile } from '@/lib/types'
 
-const PLATFORM_COMMISSION_RATE = 0.2 // 20% platform fee
-
 async function handleSinglePromptPurchase(
 	userId: string,
 	promptId: string,
@@ -59,11 +57,18 @@ async function handleSinglePromptPurchase(
 
 		const authorId = promptData.authorId
 		if (authorId && authorId !== userId) {
-			const earningsAmount = Math.floor(
-				creditPrice * (1 - PLATFORM_COMMISSION_RATE),
-			)
 			const authorRef = db.doc(`users/${authorId}`)
-			// Increment both credits and earnings for the author
+			const authorDoc = await transaction.get(authorRef)
+			const authorPlan = authorDoc.exists()
+				? (authorDoc.data() as UserProfile).planId ?? 'free'
+				: 'free'
+
+			let commissionRate = 0.2 // Default for Free plan
+			if (authorPlan === 'pro') commissionRate = 0.0
+			else if (authorPlan === 'starter') commissionRate = 0.1
+
+			const earningsAmount = Math.floor(creditPrice * (1 - commissionRate))
+
 			transaction.update(authorRef, {
 				credits: admin.firestore.FieldValue.increment(earningsAmount),
 				earnings: admin.firestore.FieldValue.increment(earningsAmount),
@@ -88,12 +93,11 @@ async function handleSinglePromptPurchase(
 			'stats.sales': admin.firestore.FieldValue.increment(1),
 		})
 
-		// Create the sale document
 		const saleRef = db.collection('sales').doc()
-		const earningsAmount = Math.floor(
-			creditPrice * (1 - PLATFORM_COMMISSION_RATE),
+		const sellerEarning = Math.floor(
+			creditPrice * (1 - (authorId ? 0.2 : 0)),
 		)
-		const commission = creditPrice - earningsAmount
+		const platformFee = creditPrice - sellerEarning
 
 		transaction.set(saleRef, {
 			type: 'prompt',
@@ -103,16 +107,21 @@ async function handleSinglePromptPurchase(
 			sellerId: promptData.authorId,
 			promptIds: [promptId],
 			revenueDetails: {
-				gross: creditPrice, // Gross is in credits
-				platformFee: commission,
-				sellerEarning: earningsAmount,
+				gross: creditPrice,
+				platformFee,
+				sellerEarning,
 			},
 			currency: 'crd',
 			paymentMethod: 'credits',
 		})
 	})
 
-	if (promptData && !((await getDoc(userRef)).data() as UserProfile).purchasedPrompts?.includes(promptId) ) {
+	if (
+		promptData &&
+		!(
+			(await userRef.get()).data() as UserProfile
+		).purchasedPrompts?.includes(promptId)
+	) {
 		const historyRef = db
 			.collection('users')
 			.doc(userId)
@@ -146,7 +155,11 @@ async function handleCartPurchase(
 
 	await db.runTransaction(async transaction => {
 		const userRef = db.doc(`users/${userId}`)
-		const cartRef = db.collection('users').doc(userId).collection('carts').doc('active')
+		const cartRef = db
+			.collection('users')
+			.doc(userId)
+			.collection('carts')
+			.doc('active')
 		const userDoc = await transaction.get(userRef)
 		if (!userDoc.exists) throw new Error('User not found.')
 		const userData = userDoc.data() as UserProfile
@@ -159,7 +172,9 @@ async function handleCartPurchase(
 
 		for (const pDoc of promptDocs) {
 			if (!pDoc.exists) {
-				console.warn(`Prompt with ID ${pDoc.id} not found during cart purchase. Skipping.`)
+				console.warn(
+					`Prompt with ID ${pDoc.id} not found during cart purchase. Skipping.`,
+				)
 				continue
 			}
 			const pData = pDoc.data()!
@@ -167,37 +182,47 @@ async function handleCartPurchase(
 			const isPurchased = userData.purchasedPrompts?.includes(pDoc.id)
 
 			if (isAuthor || isPurchased) {
-				continue; // Skip this item, don't add to purchasable list
+				continue // Skip this item, don't add to purchasable list
 			}
 
-			purchasablePrompts.push(pDoc);
+			purchasablePrompts.push(pDoc)
 		}
-		
-		let calculatedTotalCost = 0;
+
+		let calculatedTotalCost = 0
 		for (const pDoc of purchasablePrompts) {
 			const pData = pDoc.data()!
-			const creditPrice = Math.round(pData.price * 100);
-			calculatedTotalCost += creditPrice;
-			purchasedPromptDetails.push({ id: pDoc.id, title: pData.title });
+			const creditPrice = Math.round(pData.price * 100)
+			calculatedTotalCost += creditPrice
+			purchasedPromptDetails.push({ id: pDoc.id, title: pData.title })
 
-			// Update prompt sales stat
 			transaction.update(pDoc.ref, {
 				'stats.sales': admin.firestore.FieldValue.increment(1),
 			})
 
-			// Handle author earnings
 			const authorId = pData.authorId
 			if (authorId && authorId !== userId) {
-				const earningsAmount = Math.floor(
-					creditPrice * (1 - PLATFORM_COMMISSION_RATE),
-				)
 				const authorRef = db.doc(`users/${authorId}`)
+				const authorDoc = await transaction.get(authorRef)
+				const authorPlan = authorDoc.exists()
+					? (authorDoc.data() as UserProfile).planId ?? 'free'
+					: 'free'
+
+				let commissionRate = 0.2
+				if (authorPlan === 'pro') commissionRate = 0.0
+				else if (authorPlan === 'starter') commissionRate = 0.1
+
+				const earningsAmount = Math.floor(creditPrice * (1 - commissionRate))
+
 				transaction.update(authorRef, {
 					credits: admin.firestore.FieldValue.increment(earningsAmount),
 					earnings: admin.firestore.FieldValue.increment(earningsAmount),
 				})
-				
-				const notificationRef = db.collection('users').doc(authorId).collection('notifications').doc()
+
+				const notificationRef = db
+					.collection('users')
+					.doc(authorId)
+					.collection('notifications')
+					.doc()
 				transaction.set(notificationRef, {
 					type: 'sale',
 					title: 'Prompt Sold!',
@@ -208,11 +233,12 @@ async function handleCartPurchase(
 					userId: authorId,
 				})
 			}
-			
-			// Create a sale record for each item
-			const saleRef = db.collection('sales').doc();
-			const sellerEarning = Math.floor(creditPrice * (1 - PLATFORM_COMMISSION_RATE));
-			const platformFee = creditPrice - sellerEarning;
+
+			const saleRef = db.collection('sales').doc()
+			const sellerEarning = Math.floor(
+				creditPrice * (1 - (authorId ? 0.2 : 0)),
+			)
+			const platformFee = creditPrice - sellerEarning
 			transaction.set(saleRef, {
 				type: 'prompt',
 				status: 'completed',
@@ -223,29 +249,34 @@ async function handleCartPurchase(
 				revenueDetails: { gross: creditPrice, platformFee, sellerEarning },
 				currency: 'crd',
 				paymentMethod: 'credits',
-			});
+			})
 		}
 
-		totalCreditCost = calculatedTotalCost;
+		totalCreditCost = calculatedTotalCost
 		if (userTotalCredits < totalCreditCost) {
 			throw new Error('Insufficient credits.')
 		}
 
-		// Update buyer's profile only if there are items to purchase
 		if (purchasablePrompts.length > 0) {
 			transaction.update(userRef, {
-				purchasedPrompts: admin.firestore.FieldValue.arrayUnion(...purchasablePrompts.map(p => p.id)),
+				purchasedPrompts: admin.firestore.FieldValue.arrayUnion(
+					...purchasablePrompts.map(p => p.id),
+				),
 				credits: admin.firestore.FieldValue.increment(-totalCreditCost),
 			})
 		}
-		
-		// Clear all original items from cart
-		transaction.update(cartRef, { promptIds: admin.firestore.FieldValue.arrayRemove(...promptIds) })
+
+		transaction.update(cartRef, {
+			promptIds: admin.firestore.FieldValue.arrayRemove(...promptIds),
+		})
 	})
 
-	// Write to purchase history if anything was actually purchased
 	if (purchasedPromptDetails.length > 0) {
-		const historyRef = db.collection('users').doc(userId).collection('purchaseHistory').doc()
+		const historyRef = db
+			.collection('users')
+			.doc(userId)
+			.collection('purchaseHistory')
+			.doc()
 		await historyRef.set({
 			type: 'cart',
 			amountCents: totalCreditCost,

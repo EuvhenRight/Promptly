@@ -32,23 +32,26 @@ import { manageSubscriptionCancellation } from '@/firebase/users'
 import { useToast } from '@/hooks/use-toast'
 
 const FREE_FEATURES = [
+	'500 credits per month',
 	'For personal use only',
-	'Limited generation access',
 	'Lower processing priority',
 	'All creations are public',
+	'20% sales commission',
 ]
 
 const STARTER_FEATURES = [
-	'✨ 3,600 total generation credits',
+	'✨ 4,000 credits per month',
 	'Private generations',
 	'Access to all models',
-	'Unlimited concurrent processing',
+	'10% sales commission',
 ]
 
 const PRO_FEATURES = [
-	'✨ 7,200 total generation credits',
+	'✨ 8,000 credits per month',
 	'All STARTER Features',
-	'Private prompts',
+	'0% sales commission',
+	'Private prompts (invisible to others)',
+	'Unlimited concurrent processing',
 	'50% discount on all our courses',
 ]
 
@@ -170,7 +173,9 @@ export default function PlansPage() {
 	const firestore = useFirestore()
 	const router = useRouter()
 	const { toast } = useToast()
-	const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('yearly')
+	const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>(
+		'yearly',
+	)
 	const subscriptionCardRef = useRef<HTMLDivElement>(null)
 
 	const userProfileRef = useMemoFirebase(
@@ -245,7 +250,7 @@ export default function PlansPage() {
 								</Button>
 							</div>
 							<span className='text-sm text-green-600 font-medium'>
-								Save up to 15% with yearly billing!
+								Save up to 10% with yearly billing!
 							</span>
 						</div>
 
@@ -320,17 +325,14 @@ export default function PlansPage() {
 									</CardDescription>
 									<div className='flex items-baseline gap-2'>
 										<p className='text-4xl font-bold'>
-											€{billingPeriod === 'yearly' ? '9' : '10'}
+											€{billingPeriod === 'yearly' ? '8' : '9'}
 										</p>
-										<span className='text-sm text-muted-foreground'>
-											/ mo
-										</span>
+										<span className='text-sm text-muted-foreground'>/ mo</span>
 									</div>
 									<p className='text-xs text-muted-foreground'>
 										{billingPeriod === 'yearly' && (
 											<span className='text-green-600'>
-												{' '}
-												(Billed yearly at €108)
+												(Billed yearly at €97)
 											</span>
 										)}
 									</p>
@@ -384,7 +386,7 @@ export default function PlansPage() {
 									</CardDescription>
 									<div className='flex items-baseline gap-2'>
 										<p className='text-4xl font-bold'>
-											€{billingPeriod === 'yearly' ? '19' : '22'}
+											€{billingPeriod === 'yearly' ? '17' : '19'}
 										</p>
 										<span className='text-sm text-muted-foreground'>
 											/ mo
@@ -393,7 +395,7 @@ export default function PlansPage() {
 									<p className='text-xs text-muted-foreground'>
 										{billingPeriod === 'yearly' && (
 											<span className='text-green-600'>
-												(Billed yearly at €228)
+												(Billed yearly at €205)
 											</span>
 										)}
 									</p>
@@ -434,7 +436,7 @@ export default function PlansPage() {
 							<p className='mt-2 text-muted-foreground text-center max-w-xl mx-auto'>
 								Purchase credits that never expire and roll over month to month.
 							</p>
-							<div className='mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto'>
+							<div className='mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto'>
 								{/* 300 Credits Card */}
 								<Card className='flex flex-col text-center p-8'>
 									<div className='flex-grow space-y-4'>
@@ -447,7 +449,7 @@ export default function PlansPage() {
 										<p className='text-muted-foreground'>
 											Great for getting started and occasional use.
 										</p>
-										<p className='text-4xl font-bold'>€10</p>
+										<p className='text-4xl font-bold'>€9</p>
 									</div>
 									<Button className='w-full mt-6' size='lg' asChild>
 										<Link href='/checkout?type=credits&credits=300'>
@@ -457,6 +459,27 @@ export default function PlansPage() {
 								</Card>
 
 								{/* 500 Credits Card */}
+								<Card className='flex flex-col text-center p-8'>
+									<div className='flex-grow space-y-4'>
+										<div className='flex justify-center'>
+											<div className='bg-muted text-foreground p-4 rounded-lg inline-block'>
+												<Zap className='h-8 w-8' />
+											</div>
+										</div>
+										<h3 className='text-2xl font-bold'>500 Credits</h3>
+										<p className='text-muted-foreground'>
+											Perfect for power users and frequent creation.
+										</p>
+										<p className='text-4xl font-bold'>€15</p>
+									</div>
+									<Button className='w-full mt-6' size='lg' asChild>
+										<Link href='/checkout?type=credits&credits=500'>
+											Buy Credits
+										</Link>
+									</Button>
+								</Card>
+
+								{/* 1000 Credits Card */}
 								<Card className='relative flex flex-col text-center p-8 border-primary ring-2 ring-primary'>
 									<div className='absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-medium'>
 										Best Value
@@ -467,14 +490,14 @@ export default function PlansPage() {
 												<Zap className='h-8 w-8' />
 											</div>
 										</div>
-										<h3 className='text-2xl font-bold'>500 Credits</h3>
+										<h3 className='text-2xl font-bold'>1000 Credits</h3>
 										<p className='text-muted-foreground'>
-											Perfect for power users and frequent creation.
+											For the true prompt master.
 										</p>
-										<p className='text-4xl font-bold'>€18</p>
+										<p className='text-4xl font-bold'>€27</p>
 									</div>
 									<Button className='w-full mt-6' size='lg' asChild>
-										<Link href='/checkout?type=credits&credits=500'>
+										<Link href='/checkout?type=credits&credits=1000'>
 											Buy Credits
 										</Link>
 									</Button>
