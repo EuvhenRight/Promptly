@@ -22,6 +22,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Dialog, DialogContent, DialogTrigger, DialogClose } from '@/components/ui/dialog';
+import { deductCreditsForGeneration } from '@/firebase/users';
 
 
 const formSchema = z.object({
@@ -30,6 +31,8 @@ const formSchema = z.object({
 });
 
 type GenerationFormValues = z.infer<typeof formSchema>;
+
+const GENERATION_COST = 25;
 
 export default function GeneratePage() {
     const { user, isUserLoading } = useUser();
@@ -98,6 +101,23 @@ export default function GeneratePage() {
     };
 
     async function onSubmit(data: GenerationFormValues) {
+        if (!user) {
+            toast({
+                variant: 'destructive',
+                title: 'Not signed in',
+                description: 'Please sign in to generate images.',
+            });
+            return;
+        }
+        if (credits < GENERATION_COST) {
+            toast({
+                variant: 'destructive',
+                title: 'Insufficient Credits',
+                description: `You need at least ${GENERATION_COST} credits to generate an image.`,
+            });
+            return;
+        }
+
         setIsGenerating(true);
         setGeneratedImageUrl(null);
 
@@ -117,6 +137,11 @@ export default function GeneratePage() {
         try {
             const result = await generateImage(generationInput);
             setGeneratedImageUrl(result.imageUrl);
+
+            if (firestore) {
+                await deductCreditsForGeneration(firestore, user.uid, GENERATION_COST);
+            }
+
             toast({ title: 'Image generated successfully!' });
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Generation Failed', description: error.message });
@@ -232,7 +257,7 @@ export default function GeneratePage() {
                             <div className="space-y-4">
                                <p className="text-sm text-muted-foreground flex justify-between">
                                     <span>Cost:</span>
-                                    <span>2 credits</span>
+                                    <span>{GENERATION_COST} credits</span>
                                 </p>
                                 <Button type="submit" className="w-full" size="lg" disabled={isGenerating}>
                                     {isGenerating ? (
@@ -248,7 +273,7 @@ export default function GeneratePage() {
                                             <Coins className="h-5 w-5 text-amber-500" />
                                             <div>
                                                 <p className="font-bold">{credits.toLocaleString()} Credits</p>
-                                                {credits < 10 && <p className="text-xs text-destructive">Running low!</p>}
+                                                {credits < GENERATION_COST && <p className="text-xs text-destructive">Running low!</p>}
                                             </div>
                                         </div>
                                         <Button variant="link" asChild>

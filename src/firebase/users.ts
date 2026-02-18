@@ -422,3 +422,40 @@ export async function requestPayout(
 		transaction.update(userRef, updateData)
 	})
 }
+
+/**
+ * Deducts a specified amount of credits from a user's account for a generation.
+ * Throws an error if the user has insufficient credits.
+ */
+export async function deductCreditsForGeneration(
+	firestore: Firestore,
+	userId: string,
+	amount: number,
+): Promise<void> {
+	if (!userId) throw new Error('User ID is required.');
+	if (amount <= 0) throw new Error('Credit amount must be positive.');
+
+	const userRef = doc(firestore, 'users', userId);
+
+	try {
+		await runTransaction(firestore, async (transaction) => {
+			const userDoc = await transaction.get(userRef);
+			if (!userDoc.exists()) {
+				throw new Error('User profile does not exist.');
+			}
+
+			const currentCredits = (userDoc.data() as UserProfile).credits ?? 0;
+			if (currentCredits < amount) {
+				throw new Error('Insufficient credits for this action.');
+			}
+
+			transaction.update(userRef, {
+				credits: increment(-amount),
+			});
+		});
+	} catch (error) {
+		console.error('Failed to deduct credits:', error);
+		// Re-throw the original error to be caught by the calling function
+		throw error;
+	}
+}

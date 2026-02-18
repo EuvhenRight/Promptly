@@ -65,9 +65,10 @@ const generateImageFlow = ai.defineFlow(
       }
 
       return { imageUrl };
-    } catch (error) {
+    } catch (error: any) {
       console.error('[Flow: generateImage] Error calling Replicate API:', error);
-      throw new Error('Image generation failed. Please try again later.');
+      const errorMessage = error.detail || error.message || 'An unknown error occurred with the AI model.';
+      throw new Error(errorMessage);
     }
   }
 );
