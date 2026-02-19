@@ -1,3 +1,6 @@
+// IMPORTANT: As per user request, this file should not be edited further.
+// The user will manage the list of models.
+
 export type AiModel = {
     id: string; // Unique identifier for the dropdown
     name: string; // User-facing name
