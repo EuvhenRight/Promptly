@@ -51,7 +51,6 @@ export default function PromptCard({
 	const { data: userProfile } = useDoc<UserProfile>(userProfileRef)
 
 	const isFavorite = userProfile?.favoritePrompts?.includes(prompt.id) ?? false
-	const [hasImageError, setHasImageError] = useState(false)
 
 	const handleToggleFavorite = (e: React.MouseEvent) => {
 		e.preventDefault()
@@ -104,7 +103,6 @@ export default function PromptCard({
 	const isPriority = index < 3
 	const isEager = index >= 3 && index < 8
 	
-	const effectiveLoader = !hasImageError ? firebaseImageLoader : undefined;
 	const finalSrc = imageUrl || '/default-placeholder.png'; // Make sure you have a placeholder
 
 	return (
@@ -117,16 +115,12 @@ export default function PromptCard({
 							alt={prompt.title}
 							width={400}
 							height={500}
-							loader={effectiveLoader}
-							unoptimized={hasImageError}
-							onError={() => {
-								if (!hasImageError) setHasImageError(true);
-							}}
+							loader={firebaseImageLoader}
 							sizes='(max-width: 767px) 100vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw'
 							quality={75}
 							className='w-full h-auto object-cover transition-transform duration-300 ease-in-out group-hover:scale-105'
 							priority={isPriority}
-							loading={isPriority ? undefined : isEager ? 'eager' : 'lazy'}
+							loading={isPriority ? undefined : 'lazy'}
 						/>
 					) : (
 						<Skeleton className='w-full aspect-[4/5]' />
