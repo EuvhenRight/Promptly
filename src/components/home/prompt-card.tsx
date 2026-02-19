@@ -126,7 +126,7 @@ export default function PromptCard({
 							quality={75}
 							className='w-full h-auto object-cover transition-transform duration-300 ease-in-out group-hover:scale-105'
 							priority={isPriority}
-							loading={isEager ? 'eager' : 'lazy'}
+							loading={isPriority ? undefined : isEager ? 'eager' : 'lazy'}
 						/>
 					) : (
 						<Skeleton className='w-full aspect-[4/5]' />
