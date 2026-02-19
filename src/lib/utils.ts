@@ -15,9 +15,9 @@ export function isFirebaseStorageUrl(url: string | undefined): boolean {
 }
 
 /**
- * Custom loader for Next/Image that constructs URLs for resized images from Firebase Storage,
- * assuming the "Resize Images" extension is configured to save resized images in a 'thumbnails' subdirectory.
- * This function will always point to the expected location of a resized, .webp image.
+ * Custom loader for Next/Image that constructs URLs for resized images from Firebase Storage.
+ * It follows the pattern logged by the Resize Images extension, where resized images
+ * are in the same directory but with a size suffix (e.g., _400x400).
  */
 export function firebaseImageLoader({ src, width }: { src: string; width: number }): string {
 	if (!isFirebaseStorageUrl(src)) {
@@ -26,18 +26,17 @@ export function firebaseImageLoader({ src, width }: { src: string; width: number
 
 	try {
 		const url = new URL(src)
-
-		// Decode the path to handle special characters in filenames, e.g., '%2F' for '/'
 		const decodedPath = decodeURIComponent(url.pathname)
-
-		// Extract the object path from the full URL, e.g., "prompts%2Fimage.jpg"
 		const pathParts = decodedPath.split('/o/')
-		if (pathParts.length < 2 || !pathParts[1]) return src
 
+		if (pathParts.length < 2 || !pathParts[1]) {
+			return src // Not a standard Firebase Storage URL format
+		}
 		const fullPath = pathParts[1]
+
 		const lastSlashIndex = fullPath.lastIndexOf('/')
-		const directory = fullPath.substring(0, lastSlashIndex)
-		const filename = fullPath.substring(lastSlashIndex + 1)
+		const directory = lastSlashIndex > -1 ? fullPath.substring(0, lastSlashIndex) : ''
+		const filename = lastSlashIndex > -1 ? fullPath.substring(lastSlashIndex + 1) : fullPath
 
 		// Determine the size suffix based on the requested width.
 		let sizeSuffix: string
@@ -46,26 +45,28 @@ export function firebaseImageLoader({ src, width }: { src: string; width: number
 		} else if (width <= 800) {
 			sizeSuffix = '_800x800'
 		} else {
-			// For any width larger than 800, use the 1200px version.
 			sizeSuffix = '_1200x1200'
 		}
 
-		// Replace the original file extension with the size suffix and .webp
-		const newFilename = filename.replace(/(\.[\w\d_-]+)$/i, `${sizeSuffix}.webp`)
+		// Append suffix before the file extension, preserving the original extension.
+		const extensionIndex = filename.lastIndexOf('.')
+		const nameWithoutExt =
+			extensionIndex > -1 ? filename.substring(0, extensionIndex) : filename
+		const extension =
+			extensionIndex > -1 ? filename.substring(extensionIndex) : ''
 
-		// Construct the path to the resized image inside the 'thumbnails' subfolder
-		const resizedPath = `${directory}/thumbnails/${newFilename}`
+		const newFilename = `${nameWithoutExt}${sizeSuffix}${extension}`
+		const resizedPath = directory ? `${directory}/${newFilename}` : newFilename
 
-		// Re-encode the path and set it on the URL object
-		url.pathname = `/o/${encodeURIComponent(resizedPath)}`
-
+		// Re-construct the pathname. The first part contains the bucket info.
+		url.pathname = `${pathParts[0]}/o/${encodeURIComponent(resizedPath)}`
+		
 		// Ensure the 'alt=media' parameter is present to serve the image content
 		url.searchParams.set('alt', 'media')
 
 		return url.toString()
 	} catch (e) {
 		console.error("Error in firebaseImageLoader:", e)
-		// On any error during URL construction, return the original source
 		return src
 	}
 }

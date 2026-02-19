@@ -12,7 +12,7 @@ import { toggleFavoritePrompt } from '@/firebase/users'
 import { useToast } from '@/hooks/use-toast'
 import { cn, firebaseImageLoader, isFirebaseStorageUrl } from '@/lib/utils'
 import { doc } from 'firebase/firestore'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { PlaceHolderImages } from '@/lib/placeholder-images'
 import { addPromptToCart } from '@/firebase/cart'
 import { Button } from '../ui/button'
@@ -43,8 +43,6 @@ export default function PromptCard({
 	const { user } = useUser()
 	const firestore = useFirestore()
 	const { toast } = useToast()
-
-	const [imageError, setImageError] = useState(false)
 
 	const userProfileRef = useMemoFirebase(
 		() => (user ? doc(firestore, 'users', user.uid) : null),
@@ -99,34 +97,35 @@ export default function PromptCard({
 			}
 		}
 	}
+	
+	const [imageSrc, setImageSrc] = useState(originalImageUrl)
+	const [hasError, setHasError] = useState(false)
+
+	useEffect(() => {
+		setImageSrc(originalImageUrl)
+		setHasError(false)
+	}, [originalImageUrl])
+
 
 	const creditPrice = Math.round(prompt.price * 100)
 
 	const isPriority = index < 4
 
-	const finalSrc = originalImageUrl || '/default-placeholder.png';
-
-	const loader = ({ src, width }: { src: string; width: number }) => {
-		if (imageError || !isFirebaseStorageUrl(src)) {
-			return src;
-		}
-		return firebaseImageLoader({ src, width });
-	};
-
 	return (
 		<div>
 			<div className='group relative w-full overflow-hidden rounded-2xl bg-card'>
 				<Link href={`/prompt/${prompt.id}`} className='block cursor-pointer'>
-					{originalImageUrl ? (
+					{imageSrc ? (
 						<Image
-							src={finalSrc}
+							src={imageSrc}
 							alt={prompt.title}
 							width={400}
 							height={500}
-							loader={loader}
+							loader={hasError ? undefined : firebaseImageLoader}
 							onError={() => {
-								if (!imageError) {
-									setImageError(true);
+								if (!hasError) {
+									setHasError(true)
+									setImageSrc(originalImageUrl)
 								}
 							}}
 							sizes='(max-width: 767px) 100vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw'
