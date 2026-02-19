@@ -24,39 +24,37 @@ export function firebaseImageLoader({ src, width }: { src: string; width: number
     return src; // Not a Firebase Storage URL, use default loader
   }
 
-  // Example src: https://storage.googleapis.com/bucket/o/prompts%2Fmy-image.jpg?alt=media&token=...
-  // We need to transform it to: https://storage.googleapis.com/bucket/o/prompts%2Fmy-image_400x400.jpg?alt=media&token=...
+  try {
+    // Find the position of the '?' to separate the base URL from query parameters
+    const queryIndex = src.indexOf('?');
+    const baseUrl = queryIndex === -1 ? src : src.substring(0, queryIndex);
+    const queryParams = queryIndex === -1 ? '' : src.substring(queryIndex);
 
-  const url = new URL(src);
-  const pathname = decodeURIComponent(url.pathname); // Decodes '%2F' to '/' -> /bucket/o/prompts/my-image.jpg
+    // Find the last dot in the base URL to insert the size suffix
+    const lastDotIndex = baseUrl.lastIndexOf('.');
+    if (lastDotIndex === -1) {
+      return src; // No extension found
+    }
 
-  const lastSlashIndex = pathname.lastIndexOf('/');
-  const lastDotIndex = pathname.lastIndexOf('.');
+    const pathWithoutExtension = baseUrl.substring(0, lastDotIndex);
+    const extension = baseUrl.substring(lastDotIndex);
 
-  if (lastDotIndex <= lastSlashIndex) {
-      // No extension found or path is unusual, return original src
-      return src;
+    let sizeSuffix: string;
+    if (width <= 400) {
+      sizeSuffix = '_400x400';
+    } else if (width <= 800) {
+      sizeSuffix = '_800x800';
+    } else {
+      sizeSuffix = '_1200x1200';
+    }
+
+    // Based on the user's logs, the extension preserves the original file type.
+    // If WebP conversion were enabled, we would change the extension to '.webp'.
+    const newUrl = `${pathWithoutExtension}${sizeSuffix}${extension}${queryParams}`;
+
+    return newUrl;
+  } catch (e) {
+    console.error("Error in firebaseImageLoader:", e);
+    return src; // Return original on error
   }
-
-  const pathWithoutFilename = pathname.substring(0, lastSlashIndex);
-  const filename = pathname.substring(lastSlashIndex + 1, lastDotIndex);
-  const extension = pathname.substring(lastDotIndex); // e.g., '.jpg'
-
-  // Determine the correct size suffix based on requested width
-  let sizeSuffix: string;
-  if (width <= 400) {
-    sizeSuffix = '_400x400';
-  } else if (width <= 800) {
-    sizeSuffix = '_800x800';
-  } else {
-    sizeSuffix = '_1200x1200';
-  }
-
-  const newFilename = `${filename}${sizeSuffix}${extension}`;
-  const newPath = `${pathWithoutFilename}/${newFilename}`;
-
-  // Re-encode the pathname for the URL
-  url.pathname = encodeURIComponent(newPath).replace(/%2F/g, '/');
-
-  return url.toString();
 }
