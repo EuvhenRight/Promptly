@@ -92,15 +92,14 @@ export default function PromptCard({
 		}
 		const imageData = PlaceHolderImages.find(p => p.id === imageIdentifier)
 		return imageData?.imageUrl
-	}, [imageIdentifier])
+	}, [imageIdentifier]);
     
-    const [useFallback, setUseFallback] = useState(false);
+    const [imageError, setImageError] = useState(false);
 
     useEffect(() => {
-        setUseFallback(false);
+        setImageError(false);
     }, [originalImageUrl]);
 
-    const imageSrc = useFallback ? originalImageUrl : originalImageUrl;
 	const creditPrice = Math.round(prompt.price * 100)
 	const isPriority = index < 4
 
@@ -108,21 +107,21 @@ export default function PromptCard({
 		<div>
 			<div className='group relative w-full overflow-hidden rounded-2xl bg-card'>
 				<Link href={`/prompt/${prompt.id}`} className='block cursor-pointer'>
-					{imageSrc ? (
+					{originalImageUrl ? (
 						<Image
-							src={imageSrc}
+							src={originalImageUrl}
 							alt={prompt.title}
-							loader={useFallback ? undefined : firebaseImageLoader}
+							loader={!imageError ? firebaseImageLoader : undefined}
+							unoptimized={imageError}
 							width={400}
 							height={500}
 							sizes='(max-width: 767px) 100vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw'
 							quality={75}
 							className='w-full h-auto object-cover transition-transform duration-300 ease-in-out group-hover:scale-105'
 							priority={isPriority}
-							unoptimized={useFallback}
 							onError={() => {
-								if (!useFallback) {
-									setUseFallback(true)
+								if (!imageError) {
+									setImageError(true)
 								}
 							}}
 						/>

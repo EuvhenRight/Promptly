@@ -26,7 +26,6 @@ export function firebaseImageLoader({ src, width }: { src: string; width: number
 
   try {
     const url = new URL(src);
-    // The path looks like /v0/b/BUCKET_NAME/o/prompts%2Fimage.png
     const pathParts = url.pathname.split('/o/');
     if (pathParts.length < 2 || !pathParts[1]) {
       return src; // Not a standard Firebase Storage URL format
@@ -58,15 +57,15 @@ export function firebaseImageLoader({ src, width }: { src: string; width: number
     // Construct the new path including the 'thumbnails' subfolder
     const resizedPath = directory ? `${directory}/thumbnails/${newFilename}` : `thumbnails/${newFilename}`;
 
-    // Re-construct the pathname. The first part contains the bucket info.
+    // Re-construct the pathname.
     url.pathname = `${pathParts[0]}/o/${encodeURIComponent(resizedPath)}`;
     
-    // Ensure the 'alt=media' parameter is present
+    // IMPORTANT: Ensure 'alt=media' is present.
     url.searchParams.set('alt', 'media');
 
     return url.toString();
   } catch (e) {
-    console.error("Error in firebaseImageLoader:", e);
-    return src; // Fallback to original src on error
+    console.error("Error in firebaseImageLoader, falling back to original src:", e);
+    return src; // Fallback to original src if any part of the logic fails
   }
 }
