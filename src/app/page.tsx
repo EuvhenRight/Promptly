@@ -16,7 +16,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useDebounce } from 'use-debounce'
 import { Button } from '@/components/ui/button'
 import { signInWithGoogle } from '@/firebase/auth'
-import Image from 'next/image'
 
 const mainLinks = ['Featured', 'Hot', 'New', 'Top']
 
@@ -30,40 +29,6 @@ const FeedSkeleton = () => (
 		))}
 	</div>
 )
-
-const ThumbnailTest = () => {
-    const testUrls = [
-      `https://firebasestorage.googleapis.com/v0/b/studio-2725546260-fde38.firebasestorage.app/o/${encodeURIComponent('prompts/thumbnails/454f80bd28f_400x400.png')}?alt=media`,
-      `https://firebasestorage.googleapis.com/v0/b/studio-2725546260-fde38.firebasestorage.app/o/${encodeURIComponent('prompts/thumbnails/a18ad9e5f53_400x400.png')}?alt=media`,
-      `https://firebasestorage.googleapis.com/v0/b/studio-2725546260-fde38.firebasestorage.app/o/${encodeURIComponent('prompts/thumbnails/bb7ab264fb1_400x400.jpeg')}?alt=media`,
-      `https://firebasestorage.googleapis.com/v0/b/studio-2725546260-fde38.firebasestorage.app/o/${encodeURIComponent('prompts/thumbnails/d92d09de6ff_400x400.jpeg')}?alt=media`,
-      `https://firebasestorage.googleapis.com/v0/b/studio-2725546260-fde38.firebasestorage.app/o/${encodeURIComponent('prompts/thumbnails/prompts_366392108e6_400x400.png')}?alt=media`
-    ];
-
-	return (
-		<div className='mb-8 p-4 border-2 border-red-500 rounded-lg'>
-			<h2 className='text-xl font-bold text-center mb-4'>
-				Тестовий показ мініатюр
-			</h2>
-			<p className='text-center text-sm mb-4'>
-				Якщо ці зображення видно, то URL-адреси до мініатюр працюють правильно.
-			</p>
-			<div className='flex justify-center flex-wrap gap-4'>
-				{testUrls.map((url, index) => (
-				<Image
-					key={url}
-					src={url}
-					alt={`Test Thumbnail ${index + 1}`}
-					width={200}
-					height={200}
-					className='object-cover rounded-md'
-					unoptimized // Use unoptimized to prevent Next.js from interfering with our direct URL test
-				/>
-				))}
-			</div>
-		</div>
-	)
-}
 
 export default function Home() {
 	const [activeFilter, setActiveFilter] = useState('Featured')
@@ -291,7 +256,6 @@ export default function Home() {
 					isLoading={loading}
 				/>
 				<div className='container mx-auto px-4 py-8 sm:px-6 lg:px-8'>
-					<ThumbnailTest />
 					{error && (
 						<div className='text-destructive text-center py-4 space-y-2'>
 							<p>Error loading prompts: {error.message}</p>
