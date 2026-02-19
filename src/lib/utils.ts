@@ -17,9 +17,10 @@ export function isFirebaseStorageUrl(url: string | undefined): boolean {
 /**
  * Custom loader for Next/Image that constructs URLs for resized images from Firebase Storage.
  * This relies on the official Firebase "Resize Images" extension being installed.
+ * It preserves the original aspect ratio by requesting images resized by width.
  * @param src - The original image URL from Firebase Storage.
  * @param width - The target width Next.js wants to load.
- * @returns The URL for the resized image (e.g., _800x800.webp).
+ * @returns The URL for the resized image (e.g., .../my-image_400x.webp).
  */
 export function firebaseImageLoader({ src, width }: { src: string; width: number }): string {
   // If it's not a Firebase Storage URL, return it as is.
@@ -32,23 +33,24 @@ export function firebaseImageLoader({ src, width }: { src: string; width: number
   const url = new URL(src);
   const pathname = url.pathname;
   const parts = pathname.split('/');
-  const filename = parts.pop()!; // e.g., my-image.jpg
+  const filename = parts.pop()!;
   const extIndex = filename.lastIndexOf('.');
   const baseName = extIndex > -1 ? filename.substring(0, extIndex) : filename;
-  const extension = extIndex > -1 ? filename.substring(extIndex) : '.jpg';
   
-  // Choose the size suffix based on the requested width.
-  // The sizes (e.g., _400x400) must match what's configured in the Firebase Extension.
+  // The user must configure the Firebase Extension with these sizes, but with 'x' at the end
+  // e.g., "400x,800x,1200x" to preserve aspect ratio by width.
   let sizeSuffix: string;
   if (width <= 400) {
-    sizeSuffix = '_400x400';
+    sizeSuffix = '_400x'; // Request 400px wide version
   } else if (width <= 800) {
-    sizeSuffix = '_800x800';
+    sizeSuffix = '_800x'; // Request 800px wide version
   } else {
-    sizeSuffix = '_1200x1200';
+    sizeSuffix = '_1200x'; // Request 1200px wide version
   }
 
-  const newFilename = `${baseName}${sizeSuffix}.webp`; // Always request .webp
+  // The Firebase Resizer extension appends the size and the new extension.
+  // It also handles converting to WEBP if configured.
+  const newFilename = `${baseName}${sizeSuffix}.webp`;
   const newPathname = [...parts, newFilename].join('/');
   
   // Reconstruct the URL, keeping the original query parameters (like ?alt=media&token=...)
