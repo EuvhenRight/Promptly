@@ -1,7 +1,8 @@
-'use server';
+'use server'
 import { adminDb } from '@/firebase/admin'
+import { verifyAdmin } from '@/lib/admin-auth'
 import { messageForLog } from '@/lib/error-log'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 const DEFAULT_TAG_NAMES = [
 	'ChatGPT Image',
@@ -35,7 +36,6 @@ export async function GET() {
 			name: (doc.data().name as string) || doc.id,
 		}))
 		return NextResponse.json(allTags)
-
 	} catch (err) {
 		console.error('Fetch tags error:', messageForLog(err))
 		return NextResponse.json(
@@ -47,7 +47,10 @@ export async function GET() {
 	}
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+	const adminCheck = await verifyAdmin(request)
+	if (adminCheck) return adminCheck
+
 	if (!adminDb) {
 		return NextResponse.json(
 			{ error: 'Firebase Admin not initialized' },

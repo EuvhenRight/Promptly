@@ -1,8 +1,9 @@
-'use server';
+'use server'
 import { adminDb } from '@/firebase/admin'
 import { messageForLog } from '@/lib/error-log'
 import admin from 'firebase-admin'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { verifyAdmin } from '@/lib/admin-auth'
 
 export type SearchBarBackgroundItem = {
 	id: string
@@ -12,10 +13,13 @@ export type SearchBarBackgroundItem = {
 	createdAt: string | null
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
 	if (!adminDb) {
 		return NextResponse.json(
-			{ error: 'Firebase Admin (adminDb) is not initialized. Check server logs for `admin.ts` initialization errors.' },
+			{
+				error:
+					'Firebase Admin (adminDb) is not initialized. Check server logs for `admin.ts` initialization errors.',
+			},
 			{ status: 503 },
 		)
 	}
@@ -58,7 +62,10 @@ export async function GET(request: Request) {
 	}
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+	const adminCheck = await verifyAdmin(request)
+	if (adminCheck) return adminCheck
+
 	if (!adminDb) {
 		return NextResponse.json(
 			{ error: 'Firebase Admin not initialized' },

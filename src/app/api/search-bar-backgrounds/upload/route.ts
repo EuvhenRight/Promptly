@@ -1,9 +1,13 @@
 import { adminStorage } from '@/firebase/admin'
-import { NextResponse } from 'next/server'
+import { verifyAdmin } from '@/lib/admin-auth'
+import { NextRequest, NextResponse } from 'next/server'
 
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp']
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+	const adminCheck = await verifyAdmin(request)
+	if (adminCheck) return adminCheck
+
 	if (!adminStorage) {
 		return NextResponse.json(
 			{ error: 'Firebase Admin Storage not initialized' },
@@ -31,7 +35,6 @@ export async function POST(request: Request) {
 			)
 		}
 
-		const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
 		const fileName = `${Date.now()}-${file.name}`
 		const filePath = `searchBarBackgrounds/${fileName}`
 

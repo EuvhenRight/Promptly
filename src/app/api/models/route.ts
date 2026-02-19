@@ -1,16 +1,28 @@
-'use server';
+'use server'
 import { adminDb } from '@/firebase/admin'
+import { verifyAdmin } from '@/lib/admin-auth'
 import { messageForLog } from '@/lib/error-log'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
-const DEFAULT_MODEL_NAMES = ['Nano Banana', 'Flux', 'GPT', 'Gemini', 'Midjourney', 'Stable Diffusion', 'Sora']
+const DEFAULT_MODEL_NAMES = [
+	'Nano Banana',
+	'Flux',
+	'GPT',
+	'Gemini',
+	'Midjourney',
+	'Stable Diffusion',
+	'Sora',
+]
 
 export type ModelItem = { id: string; name: string }
 
 export async function GET() {
 	if (!adminDb) {
 		return NextResponse.json(
-			{ error: 'Firebase Admin (adminDb) is not initialized. Check server logs for `admin.ts` initialization errors.' },
+			{
+				error:
+					'Firebase Admin (adminDb) is not initialized. Check server logs for `admin.ts` initialization errors.',
+			},
 			{ status: 503 },
 		)
 	}
@@ -33,7 +45,10 @@ export async function GET() {
 	}
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+	const adminCheck = await verifyAdmin(request)
+	if (adminCheck) return adminCheck
+
 	if (!adminDb) {
 		return NextResponse.json(
 			{ error: 'Firebase Admin not initialized' },

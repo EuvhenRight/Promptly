@@ -1,7 +1,8 @@
-'use server';
+'use server'
 import { adminDb } from '@/firebase/admin'
+import { verifyAdmin } from '@/lib/admin-auth'
 import { messageForLog } from '@/lib/error-log'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 const DEFAULT_CATEGORY_NAMES = [
 	'UGC / TikTok Ads',
@@ -17,7 +18,10 @@ export type CategoryItem = { id: string; name: string }
 export async function GET() {
 	if (!adminDb) {
 		return NextResponse.json(
-			{ error: 'Firebase Admin (adminDb) is not initialized. Check server logs for `admin.ts` initialization errors.' },
+			{
+				error:
+					'Firebase Admin (adminDb) is not initialized. Check server logs for `admin.ts` initialization errors.',
+			},
 			{ status: 503 },
 		)
 	}
@@ -40,7 +44,10 @@ export async function GET() {
 	}
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+	const adminCheck = await verifyAdmin(request)
+	if (adminCheck) return adminCheck
+
 	if (!adminDb) {
 		return NextResponse.json(
 			{ error: 'Firebase Admin not initialized' },
@@ -52,7 +59,6 @@ export async function POST(request: Request) {
 		const col = adminDb.collection('categories')
 		const body = await request.json().catch(() => null)
 
-		// Create one category from body { name } – Firestore auto-generates id (same format as prompt/user ids)
 		if (body && typeof body === 'object' && body.name) {
 			const name = String(body.name).trim()
 			if (!name) {
@@ -62,7 +68,6 @@ export async function POST(request: Request) {
 			return NextResponse.json({ success: true, id: ref.id, name })
 		}
 
-		// Seed default categories (no body) – each gets an auto-generated id
 		for (const name of DEFAULT_CATEGORY_NAMES) {
 			await col.add({ name })
 		}
