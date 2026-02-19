@@ -101,7 +101,6 @@ export default function PromptCard({
 	const creditPrice = Math.round(prompt.price * 100)
 
 	const isPriority = index < 3
-	const isEager = index >= 3 && index < 8
 	
 	const finalSrc = imageUrl || '/default-placeholder.png'; // Make sure you have a placeholder
 
@@ -120,7 +119,6 @@ export default function PromptCard({
 							quality={75}
 							className='w-full h-auto object-cover transition-transform duration-300 ease-in-out group-hover:scale-105'
 							priority={isPriority}
-							loading={isPriority ? undefined : 'lazy'}
 						/>
 					) : (
 						<Skeleton className='w-full aspect-[4/5]' />
