@@ -16,7 +16,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useDebounce } from 'use-debounce'
 import { Button } from '@/components/ui/button'
 import { signInWithGoogle } from '@/firebase/auth'
-import Image from 'next/image'
 
 const mainLinks = ['Featured', 'Hot', 'New', 'Top']
 
@@ -257,19 +256,6 @@ export default function Home() {
 					isLoading={loading}
 				/>
 				<div className='container mx-auto px-4 py-8 sm:px-6 lg:px-8'>
-					<div className='mb-4 border-2 border-dashed border-red-500 p-2'>
-						<p className='text-center text-red-500 font-bold mb-2'>
-							TEST IMAGE:
-						</p>
-						<Image
-							src='https://firebasestorage.googleapis.com/v0/b/studio-2725546260-fde38.firebasestorage.app/o/prompts%2Fthumbnails%2F454f80bd28f_400x400.png?alt=media&token=1554e89b-60eb-4082-b4f4-89defb6a10b6'
-							alt='Test Image'
-							width={400}
-							height={400}
-							className='mx-auto'
-							unoptimized
-						/>
-					</div>
 					{error && (
 						<div className='text-destructive text-center py-4 space-y-2'>
 							<p>Error loading prompts: {error.message}</p>
