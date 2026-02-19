@@ -10,7 +10,7 @@ import { Skeleton } from '../ui/skeleton'
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
 import { toggleFavoritePrompt } from '@/firebase/users'
 import { useToast } from '@/hooks/use-toast'
-import { cn, isFirebaseStorageUrl, firebaseImageLoader } from '@/lib/utils'
+import { cn, firebaseImageLoader, isFirebaseStorageUrl } from '@/lib/utils'
 import { doc } from 'firebase/firestore'
 import React, { useState } from 'react'
 import { PlaceHolderImages } from '@/lib/placeholder-images'
@@ -43,6 +43,8 @@ export default function PromptCard({
 	const { user } = useUser()
 	const firestore = useFirestore()
 	const { toast } = useToast()
+
+	const [imageError, setImageError] = useState(false)
 
 	const userProfileRef = useMemoFirebase(
 		() => (user ? doc(firestore, 'users', user.uid) : null),
@@ -85,36 +87,48 @@ export default function PromptCard({
 	}
 
 	const imageIdentifier = prompt.images?.[0]
-	let imageUrl: string | undefined
+	let originalImageUrl: string | undefined
 
 	if (imageIdentifier) {
 		if (imageIdentifier.startsWith('http')) {
-			imageUrl = imageIdentifier
+			originalImageUrl = imageIdentifier
 		} else {
 			const imageData = PlaceHolderImages.find(p => p.id === imageIdentifier)
 			if (imageData) {
-				imageUrl = imageData.imageUrl
+				originalImageUrl = imageData.imageUrl
 			}
 		}
 	}
 
 	const creditPrice = Math.round(prompt.price * 100)
 
-	const isPriority = index < 3
-	
-	const finalSrc = imageUrl || '/default-placeholder.png'; // Make sure you have a placeholder
+	const isPriority = index < 4
+
+	const finalSrc = originalImageUrl || '/default-placeholder.png';
+
+	const loader = ({ src, width }: { src: string; width: number }) => {
+		if (imageError || !isFirebaseStorageUrl(src)) {
+			return src;
+		}
+		return firebaseImageLoader({ src, width });
+	};
 
 	return (
 		<div>
 			<div className='group relative w-full overflow-hidden rounded-2xl bg-card'>
 				<Link href={`/prompt/${prompt.id}`} className='block cursor-pointer'>
-					{imageUrl ? (
+					{originalImageUrl ? (
 						<Image
 							src={finalSrc}
 							alt={prompt.title}
 							width={400}
 							height={500}
-							loader={firebaseImageLoader}
+							loader={loader}
+							onError={() => {
+								if (!imageError) {
+									setImageError(true);
+								}
+							}}
 							sizes='(max-width: 767px) 100vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw'
 							quality={75}
 							className='w-full h-auto object-cover transition-transform duration-300 ease-in-out group-hover:scale-105'
