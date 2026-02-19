@@ -244,7 +244,6 @@ export default function Home() {
 				userProfile={userProfile}
 			/>
 			<main>
-				{/* DEBUGGING BLOCK START */}
 				<div className='container mx-auto p-4 my-4 border-2 border-red-500 rounded-lg'>
 					<h2 className='text-lg font-bold'>DEBUG: Extracted Filenames</h2>
 					<p className='text-sm text-muted-foreground'>
@@ -257,19 +256,29 @@ export default function Home() {
 							if (!imageUrl) {
 								return <li key={p.id}>Prompt {p.id}: No image URL</li>
 							}
-							try {
-								const url = new URL(imageUrl)
-								const pathWithBucket = url.pathname.split('/o/')[1]
-								const decodedPath = decodeURIComponent(pathWithBucket || '')
-								const filename = decodedPath.split('/').pop()
-								return <li key={p.id}>{filename || 'Could not parse filename'}</li>
-							} catch {
-								return <li key={p.id}>Invalid URL: {imageUrl}</li>
-							}
+                            try {
+                                let pathComponent = '';
+                                if (imageUrl.includes('/o/')) {
+                                    pathComponent = imageUrl.split('/o/')[1]?.split('?')[0] ?? '';
+                                } else if (imageUrl.includes('storage.googleapis.com')) {
+                                    const url = new URL(imageUrl);
+                                    const pathAfterBucket = url.pathname.substring(url.pathname.indexOf('/', 1) + 1);
+                                    pathComponent = pathAfterBucket;
+                                }
+
+                                if (!pathComponent) {
+                                    return <li key={p.id}>Could not parse path component from URL</li>;
+                                }
+
+                                const decodedPath = decodeURIComponent(pathComponent);
+                                const filename = decodedPath.split('/').pop();
+                                return <li key={p.id}>{filename || 'Could not parse filename'}</li>
+                            } catch {
+                                return <li key={p.id}>Invalid URL: {imageUrl}</li>
+                            }
 						})}
 					</ul>
 				</div>
-				{/* DEBUGGING BLOCK END */}
 				<SearchBar
 					activeFilter={activeFilterName}
 					selectedTypeId={selectedTypeId}

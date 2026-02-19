@@ -84,21 +84,31 @@ export default function PromptCard({
 		})
 	}
 
-	const imageIdentifier = prompt.images?.[0]
 	const originalImageUrl = useMemo(() => {
+		const imageIdentifier = prompt.images?.[0]
 		if (!imageIdentifier) return undefined
 		if (imageIdentifier.startsWith('http')) {
 			return imageIdentifier
 		}
 		const imageData = PlaceHolderImages.find(p => p.id === imageIdentifier)
 		return imageData?.imageUrl
-	}, [imageIdentifier]);
+	}, [prompt.images]);
     
-    const [imageError, setImageError] = useState(false);
+    // State to track image source - starts with thumbnail, falls back to original
+    const [imageSrc, setImageSrc] = useState(originalImageUrl ? firebaseImageLoader({ src: originalImageUrl, width: 400 }) : undefined);
 
+    // Effect to reset imageSrc when the prompt (and thus its originalImageUrl) changes
     useEffect(() => {
-        setImageError(false);
+        setImageSrc(originalImageUrl ? firebaseImageLoader({ src: originalImageUrl, width: 400 }) : undefined);
     }, [originalImageUrl]);
+
+    const handleError = () => {
+        // If the thumbnail fails, fall back to the original full-size image
+        if (imageSrc !== originalImageUrl) {
+            setImageSrc(originalImageUrl);
+        }
+    };
+
 
 	const creditPrice = Math.round(prompt.price * 100)
 	const isPriority = index < 4
@@ -107,23 +117,18 @@ export default function PromptCard({
 		<div>
 			<div className='group relative w-full overflow-hidden rounded-2xl bg-card'>
 				<Link href={`/prompt/${prompt.id}`} className='block cursor-pointer'>
-					{originalImageUrl ? (
+					{imageSrc ? (
 						<Image
-							src={originalImageUrl}
+							src={imageSrc}
 							alt={prompt.title}
-							loader={!imageError ? firebaseImageLoader : undefined}
-							unoptimized={imageError}
 							width={400}
 							height={500}
 							sizes='(max-width: 767px) 100vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw'
 							quality={75}
 							className='w-full h-auto object-cover transition-transform duration-300 ease-in-out group-hover:scale-105'
 							priority={isPriority}
-							onError={() => {
-								if (!imageError) {
-									setImageError(true)
-								}
-							}}
+							onError={handleError}
+                            unoptimized={imageSrc === originalImageUrl} // Use unoptimized only for the fallback original
 						/>
 					) : (
 						<Skeleton className='w-full aspect-[4/5]' />
