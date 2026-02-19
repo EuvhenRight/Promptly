@@ -7,7 +7,6 @@ import { useModels } from '@/hooks/use-models'
 import { useTags } from '@/hooks/use-tags'
 import { cn } from '@/lib/utils'
 import { Cpu, Crown, FolderOpen, Tag } from 'lucide-react'
-import Link from 'next/link'
 import type { UserProfile } from '@/lib/types'
 
 interface SubHeaderProps {
@@ -38,34 +37,32 @@ export default function SubHeader({
 	return (
 		<div
 			className={cn(
-				'sticky top-16 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'
+				'sticky top-16 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60',
 			)}
 		>
 			<div className='container mx-auto px-4 sm:px-6 lg:px-8'>
 				<div className='flex items-center gap-4'>
-					<nav className='hidden sm:flex items-center gap-2'>
-						{mainLinks.map(link => (
-							<Link
-								key={link}
-								href='#'
-								onClick={e => {
-									e.preventDefault()
-									onFilterChange(link, link, 'main')
-								}}
-								className={cn(
-									'py-3 px-2 text-sm font-semibold whitespace-nowrap',
-									activeFilter === link
-										? 'border-b-2 border-primary text-primary'
-										: 'text-muted-foreground hover:text-primary',
-								)}
-							>
-								{link}
-							</Link>
-						))}
-					</nav>
-					<div className='hidden sm:block h-6 border-l' />
 					<ScrollArea className='w-full whitespace-nowrap -mx-4 sm:mx-0'>
 						<div className='flex w-max items-center space-x-1 py-2 px-4 sm:px-0'>
+							{mainLinks.map(link => (
+								<Button
+									key={link}
+									variant='ghost'
+									size='sm'
+									onClick={() => onFilterChange(link, link, 'main')}
+									className={cn(
+										'rounded-full px-4 h-9 font-semibold',
+										activeFilter === link
+											? 'bg-primary/10 text-primary'
+											: 'text-muted-foreground hover:bg-muted hover:text-primary',
+									)}
+								>
+									{link}
+								</Button>
+							))}
+
+							<div className='h-6 border-l mx-2' />
+
 							{isProOrAdmin && (
 								<Button
 									variant='ghost'
@@ -144,7 +141,7 @@ export default function SubHeader({
 								</>
 							)}
 						</div>
-						<ScrollBar orientation='horizontal' className='sm:hidden' />
+						<ScrollBar orientation='horizontal' />
 					</ScrollArea>
 				</div>
 			</div>
