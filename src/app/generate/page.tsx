@@ -77,9 +77,17 @@ export default function GeneratePage() {
     const selectedImageModel = imageModels.find(m => m.id === imageForm.watch('model'));
     const selectedVideoModel = videoModels.find(m => m.id === videoForm.watch('model'));
 
-    const currentGenerationCost = activeTab === 'image' 
-        ? (selectedImageModel?.cost ?? 0)
-        : (selectedVideoModel?.cost ?? 0);
+    const duration = videoForm.watch('duration');
+    
+    const currentGenerationCost = useMemo(() => {
+        if (activeTab === 'image') {
+            return selectedImageModel?.cost ?? 0;
+        }
+        if (activeTab === 'video') {
+            return (selectedVideoModel?.cost ?? 0) * duration;
+        }
+        return 0;
+    }, [activeTab, selectedImageModel, selectedVideoModel, duration]);
     
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -228,6 +236,7 @@ export default function GeneratePage() {
                                         <Select
                                         onValueChange={field.onChange}
                                         defaultValue={field.value}
+                                        disabled={!selectedImageModel?.supportsAspectRatio}
                                         >
                                         <FormControl>
                                             <SelectTrigger>
