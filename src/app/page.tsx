@@ -16,6 +16,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useDebounce } from 'use-debounce'
 import { Button } from '@/components/ui/button'
 import { signInWithGoogle } from '@/firebase/auth'
+import Image from 'next/image'
 
 const mainLinks = ['Featured', 'Hot', 'New', 'Top']
 
@@ -29,6 +30,31 @@ const FeedSkeleton = () => (
 		))}
 	</div>
 )
+
+const ThumbnailTest = () => {
+	const testUrl =
+		'https://firebasestorage.googleapis.com/v0/b/studio-2725546260-fde38.firebasestorage.app/o/prompts%2Fthumbnails%2F454f80bd28f_400x400.png?alt=media&token=1554e89b-60eb-4082-b4f4-89defb6a10b6'
+	return (
+		<div className='mb-8 p-4 border-2 border-red-500 rounded-lg'>
+			<h2 className='text-xl font-bold text-center mb-4'>
+				Тестовий показ мініатюри
+			</h2>
+			<p className='text-center text-sm mb-4'>
+				Якщо це зображення видно, то URL-адреси мініатюр працюють правильно.
+			</p>
+			<div className='flex justify-center'>
+				<Image
+					src={testUrl}
+					alt='Test Thumbnail'
+					width={400}
+					height={400}
+					className='object-cover rounded-md'
+					unoptimized // Use unoptimized to prevent Next.js from interfering with our direct URL test
+				/>
+			</div>
+		</div>
+	)
+}
 
 export default function Home() {
 	const [activeFilter, setActiveFilter] = useState('Featured')
@@ -256,6 +282,7 @@ export default function Home() {
 					isLoading={loading}
 				/>
 				<div className='container mx-auto px-4 py-8 sm:px-6 lg:px-8'>
+					<ThumbnailTest />
 					{error && (
 						<div className='text-destructive text-center py-4 space-y-2'>
 							<p>Error loading prompts: {error.message}</p>
