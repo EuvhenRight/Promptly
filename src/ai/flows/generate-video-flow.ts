@@ -1,23 +1,24 @@
 'use server';
 
 /**
- * @fileOverview A flow to generate video from a text prompt using Google's Veo model.
+ * @fileOverview A flow to generate video from a text prompt using Replicate.
  */
 
 import { ai } from '@/ai/genkit';
-import { googleAI } from '@genkit-ai/google-genai';
 import { z } from 'genkit';
-import { MediaPart } from 'genkit';
+import { getReplicateClient } from '@/lib/replicate';
+import { AVAILABLE_MODELS } from '@/lib/ai-models';
 
 const GenerateVideoInputSchema = z.object({
+  modelId: z.string().describe('The ID of the video model to use from ai-models.ts.'),
   prompt: z.string().describe('The text prompt for video generation.'),
-  durationSeconds: z.number().min(2).max(8).optional().default(5).describe('Length of the video in seconds.'),
+  duration: z.number().optional().default(8).describe('Duration of the video in seconds.'),
+  aspectRatio: z.string().optional().describe('The aspect ratio of the video.'),
 });
 export type GenerateVideoInput = z.infer<typeof GenerateVideoInputSchema>;
 
 const GenerateVideoOutputSchema = z.object({
-  videoUrl: z.string().describe('The data URI of the generated video.'), // data:video/mp4;base64,...
-  contentType: z.string().describe('The MIME type of the video.'),
+  videoUrl: z.string().describe('The URL of the generated video.'),
 });
 export type GenerateVideoOutput = z.infer<typeof GenerateVideoOutputSchema>;
 
@@ -32,63 +33,57 @@ const generateVideoFlow = ai.defineFlow(
     outputSchema: GenerateVideoOutputSchema,
   },
   async (input) => {
-    // Note: Video generation is slow and can take up to a minute.
-    // Ensure serverless function timeouts are configured appropriately (e.g., > 60 seconds).
-    let { operation } = await ai.generate({
-      model: googleAI.model('veo-2.0-generate-001'),
-      prompt: input.prompt,
-      config: {
-        durationSeconds: input.durationSeconds,
-        aspectRatio: '16:9',
-      },
-    });
-
-    if (!operation) {
-      throw new Error('Expected the model to return an operation for video generation.');
+    const selectedModel = AVAILABLE_MODELS.find(m => m.id === input.modelId && m.type === 'video');
+    if (!selectedModel) {
+        throw new Error(`Video model with ID "${input.modelId}" not found.`);
     }
 
-    // Poll the operation status. Timeout after 55 seconds to stay within typical serverless limits.
-    const startTime = Date.now();
-    const timeout = 55000;
+    const replicate = await getReplicateClient();
 
-    while (!operation.done && Date.now() - startTime < timeout) {
-      // Wait for 5 seconds before checking again.
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-      operation = await ai.checkOperation(operation);
-    }
-
-    if (!operation.done) {
-        throw new Error('Video generation timed out. Please try again with a shorter duration or simpler prompt.');
-    }
-
-    if (operation.error) {
-      throw new Error(`Video generation failed: ${operation.error.message}`);
-    }
-
-    const videoPart = operation.output?.message?.content.find((p) => !!p.media && p.media.contentType?.startsWith('video/'));
-    if (!videoPart || !videoPart.media?.url) {
-      throw new Error('Failed to find the generated video in the operation output.');
-    }
-
-    // The returned URL is temporary and needs an API key. We must fetch it on the server.
-    const fetch = (await import('node-fetch')).default;
-    // The GEMINI_API_KEY is automatically used by the google-genai plugin,
-    // but the download URL requires it to be manually appended.
-    const videoDownloadResponse = await fetch(
-      `${videoPart.media.url}&key=${process.env.GEMINI_API_KEY}`
-    );
-    
-    if (!videoDownloadResponse.ok || !videoDownloadResponse.body) {
-        throw new Error(`Failed to download generated video. Status: ${videoDownloadResponse.status}`);
-    }
-
-    const videoBuffer = await videoDownloadResponse.buffer();
-    const base64Video = videoBuffer.toString('base64');
-    const contentType = videoPart.media.contentType || 'video/mp4';
-    
-    return {
-      videoUrl: `data:${contentType};base64,${base64Video}`,
-      contentType: contentType,
+    const replicateInput: any = {
+        prompt: input.prompt,
+        duration: input.duration,
+        resolution: "720p", // Hardcode for now, can be an option later
     };
+
+    if (input.aspectRatio) {
+        replicateInput.aspect_ratio = input.aspectRatio;
+    }
+
+    console.log('[Flow: generateVideo] Calling Replicate with model version:', selectedModel.ref);
+    console.log('[Flow: generateVideo] Input parameters:', JSON.stringify(replicateInput, null, 2));
+
+    try {
+      const output = (await replicate.run(
+        selectedModel.ref,
+        {
+          input: replicateInput,
+        }
+      )) as { url: () => string } | string; // The output can be an object with a url method or a direct string
+
+      let videoUrl: string;
+
+      if (typeof output === 'string') {
+        videoUrl = output;
+      } else if (typeof output === 'object' && output !== null && typeof (output as any).url === 'function') {
+        videoUrl = (output as { url: () => string }).url();
+      } else if (Array.isArray(output)) {
+        videoUrl = output[0] as string; // Take the first URL if it's an array
+      } else {
+         throw new Error('Unexpected output format from Replicate API.');
+      }
+      
+      if (!videoUrl) {
+        throw new Error('Video generation failed to produce a URL.');
+      }
+
+      return { videoUrl };
+
+    } catch (error: any) {
+      const errorMessage = error.detail ? `${error.title}: ${error.detail}` : error.message || 'An unknown error occurred with the AI model.';
+      console.error('[Flow: generateVideo] Error calling Replicate API:', errorMessage);
+      console.error('Full Replicate Error:', JSON.stringify(error, null, 2));
+      throw new Error(errorMessage);
+    }
   }
 );

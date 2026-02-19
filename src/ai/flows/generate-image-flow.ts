@@ -67,10 +67,8 @@ const generateImageFlow = ai.defineFlow(
         replicateInput.image = input.referenceImageUrl;
     }
 
-    // --- DEBUG LOGGING ---
     console.log('[Flow: generateImage] Calling Replicate with model version:', selectedModel.ref);
     console.log('[Flow: generateImage] Input parameters:', JSON.stringify(replicateInput, null, 2));
-    // --- END DEBUG LOGGING ---
 
     try {
       const output = (await replicate.run(
@@ -89,7 +87,6 @@ const generateImageFlow = ai.defineFlow(
 
       return { imageUrl };
     } catch (error: any) {
-      // Improved error logging as suggested
       const errorMessage = error.detail ? `${error.title}: ${error.detail}` : error.message || 'An unknown error occurred with the AI model.';
       console.error('[Flow: generateImage] Error calling Replicate API:', errorMessage);
       console.error('Full Replicate Error:', JSON.stringify(error, null, 2));
