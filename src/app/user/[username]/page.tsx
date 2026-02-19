@@ -396,7 +396,7 @@ export default function PublicProfilePage() {
 															height={imgHeight}
 															sizes='(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 33vw'
 															className='object-cover w-full h-full'
-															loader={isFirebaseStorageUrl(img) ? firebaseImageLoader : undefined}
+															loader={firebaseImageLoader}
 														/>
 													) : (
 														<Skeleton className='w-full h-full' />

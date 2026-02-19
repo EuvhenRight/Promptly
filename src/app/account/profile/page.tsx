@@ -148,7 +148,7 @@ function PromptGrid({ prompts }: { prompts: Prompt[] }) {
 										width={imgWidth}
 										height={imgHeight}
 										className='object-cover w-full h-full group-hover:scale-105 transition-transform duration-300'
-										loader={isFirebaseStorageUrl(img) ? firebaseImageLoader : undefined}
+										loader={firebaseImageLoader}
 									/>
 								)}
 							</div>

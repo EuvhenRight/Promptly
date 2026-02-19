@@ -117,7 +117,7 @@ export default function PromptCard({
 		quality: 75,
 		className:
 			'w-full h-auto object-cover transition-transform duration-300 ease-in-out group-hover:scale-105',
-		...(isFirebaseStorageUrl(imageUrl) && { loader: firebaseImageLoader }),
+		loader: firebaseImageLoader,
 		...(isPriority ? { priority: true } : isEager ? { loading: 'eager' as const } : { loading: 'lazy' as const }),
 	}
 

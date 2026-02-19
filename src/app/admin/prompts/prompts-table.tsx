@@ -182,7 +182,7 @@ export const columns: ColumnDef<Prompt>[] = [
 					height='64'
 					src={imageUrl}
 					width='64'
-					loader={isFirebaseStorageUrl(imageUrl) ? firebaseImageLoader : undefined}
+					loader={firebaseImageLoader}
 				/>
 			) : (
 				<div className='h-16 w-16 bg-muted rounded-md flex items-center justify-center text-xs text-muted-foreground'>

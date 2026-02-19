@@ -260,7 +260,7 @@ export default function CartPage() {
 											alt={item.title}
 											fill
 											className='object-cover'
-											loader={isFirebaseStorageUrl(itemImage) ? firebaseImageLoader : undefined}
+											loader={firebaseImageLoader}
 										/>
 									)}
 								</div>
