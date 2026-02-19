@@ -18,38 +18,31 @@ export function isFirebaseStorageUrl(url: string | undefined): boolean {
  * Custom loader for Next/Image that constructs URLs for resized images from Firebase Storage.
  * This relies on the official Firebase "Resize Images" extension being installed.
  * If the URL is not a Firebase Storage URL, it returns the original source.
- *
- * @param src - The original image URL.
- * @param width - The target width Next.js wants to load.
- * @returns The URL for the resized image or the original URL.
  */
 export function firebaseImageLoader({ src, width }: { src: string; width: number }): string {
   if (!isFirebaseStorageUrl(src)) {
     return src; // Not a Firebase Storage URL, use default loader
   }
 
-  const urlParts = src.split('?');
-  const baseUrl = urlParts[0];
-  const queryParams = urlParts.length > 1 ? `?${urlParts[1]}` : '';
+  // Example src: https://storage.googleapis.com/bucket/o/prompts%2Fmy-image.jpg?alt=media&token=...
+  // We need to transform it to: https://storage.googleapis.com/bucket/o/prompts%2Fmy-image_400x400.jpg?alt=media&token=...
 
-  const objectPathSegment = '/o/';
-  const objectPathStartIndex = baseUrl.indexOf(objectPathSegment);
+  const url = new URL(src);
+  const pathname = decodeURIComponent(url.pathname); // Decodes '%2F' to '/' -> /bucket/o/prompts/my-image.jpg
 
-  if (objectPathStartIndex === -1) {
-    return src; // Unexpected URL format
+  const lastSlashIndex = pathname.lastIndexOf('/');
+  const lastDotIndex = pathname.lastIndexOf('.');
+
+  if (lastDotIndex <= lastSlashIndex) {
+      // No extension found or path is unusual, return original src
+      return src;
   }
 
-  const prefix = baseUrl.substring(0, objectPathStartIndex + objectPathSegment.length);
-  const encodedFullPath = baseUrl.substring(objectPathStartIndex + objectPathSegment.length);
-  const fullPath = decodeURIComponent(encodedFullPath);
+  const pathWithoutFilename = pathname.substring(0, lastSlashIndex);
+  const filename = pathname.substring(lastSlashIndex + 1, lastDotIndex);
+  const extension = pathname.substring(lastDotIndex); // e.g., '.jpg'
 
-  const lastSlashIndex = fullPath.lastIndexOf('/');
-  const directory = lastSlashIndex > -1 ? fullPath.substring(0, lastSlashIndex) : '';
-  const filename = lastSlashIndex > -1 ? fullPath.substring(lastSlashIndex + 1) : fullPath;
-
-  const filenameExtIndex = filename.lastIndexOf('.');
-  const baseFilename = filenameExtIndex > -1 ? filename.substring(0, filenameExtIndex) : filename;
-
+  // Determine the correct size suffix based on requested width
   let sizeSuffix: string;
   if (width <= 400) {
     sizeSuffix = '_400x400';
@@ -59,8 +52,11 @@ export function firebaseImageLoader({ src, width }: { src: string; width: number
     sizeSuffix = '_1200x1200';
   }
 
-  const newFullPath = `${directory}/thumbnails/${baseFilename}${sizeSuffix}.webp`;
-  const encodedNewFullPath = encodeURIComponent(newFullPath);
+  const newFilename = `${filename}${sizeSuffix}${extension}`;
+  const newPath = `${pathWithoutFilename}/${newFilename}`;
 
-  return `${prefix}${encodedNewFullPath}${queryParams}`;
+  // Re-encode the pathname for the URL
+  url.pathname = encodeURIComponent(newPath).replace(/%2F/g, '/');
+
+  return url.toString();
 }
