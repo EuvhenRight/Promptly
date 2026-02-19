@@ -10,7 +10,7 @@ import { Skeleton } from '../ui/skeleton'
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
 import { toggleFavoritePrompt } from '@/firebase/users'
 import { useToast } from '@/hooks/use-toast'
-import { cn, isFirebaseStorageUrl, firebaseImageLoader } from '@/lib/utils'
+import { cn, isFirebaseStorageUrl } from '@/lib/utils'
 import { doc } from 'firebase/firestore'
 import React from 'react'
 import { PlaceHolderImages } from '@/lib/placeholder-images'
@@ -117,7 +117,7 @@ export default function PromptCard({
 		quality: 75,
 		className:
 			'w-full h-auto object-cover transition-transform duration-300 ease-in-out group-hover:scale-105',
-		loader: firebaseImageLoader,
+		unoptimized: isFirebaseStorageUrl(imageUrl!),
 		...(isPriority ? { priority: true } : isEager ? { loading: 'eager' as const } : { loading: 'lazy' as const }),
 	}
 

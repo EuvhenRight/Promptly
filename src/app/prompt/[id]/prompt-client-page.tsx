@@ -38,7 +38,7 @@ import type {
 	PromptPrivateContent,
 	UserProfile,
 } from '@/lib/types'
-import { cn, isFirebaseStorageUrl, firebaseImageLoader } from '@/lib/utils'
+import { cn, isFirebaseStorageUrl } from '@/lib/utils'
 import {
 	collection,
 	doc,
@@ -624,7 +624,7 @@ export default function PromptClientPage() {
                                     sizes='(max-width: 1023px) 90vw, 50vw'
                                     className='w-full h-auto object-contain'
                                     priority
-                                    loader={firebaseImageLoader}
+                                    unoptimized={isFirebaseStorageUrl(promptImage)}
                                 />
                             )}
                             {promptImage && (
@@ -671,7 +671,7 @@ export default function PromptClientPage() {
                                                 width={1920}
                                                 height={1080}
                                                 className='w-full h-auto object-contain max-h-[90vh] rounded-lg'
-                                                loader={firebaseImageLoader}
+                                                unoptimized={isFirebaseStorageUrl(promptImage)}
                                             />
                                             <DialogClose className='absolute right-4 top-4 rounded-full p-2 bg-black/50 text-white opacity-80 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary data-[state=open]:text-muted-foreground'>
                                                 <X className='h-8 w-8' />

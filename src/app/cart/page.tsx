@@ -22,7 +22,7 @@ import {
 } from '@/firebase'
 import { useToast } from '@/hooks/use-toast'
 import type { Cart, Prompt, UserProfile } from '@/lib/types'
-import { isFirebaseStorageUrl, firebaseImageLoader } from '@/lib/utils'
+import { isFirebaseStorageUrl } from '@/lib/utils'
 import { collection, doc, documentId, query, where } from 'firebase/firestore'
 import { Coins, Loader2, Trash2 } from 'lucide-react'
 import Image from 'next/image'
@@ -260,7 +260,7 @@ export default function CartPage() {
 											alt={item.title}
 											fill
 											className='object-cover'
-											loader={firebaseImageLoader}
+											unoptimized={isFirebaseStorageUrl(itemImage)}
 										/>
 									)}
 								</div>
