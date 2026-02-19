@@ -1,6 +1,7 @@
 'use client';
 
 import { generateImage, type GenerateImageInput } from '@/ai/flows/generate-image-flow';
+import { generateVideo, type GenerateVideoInput } from '@/ai/flows/generate-video-flow';
 import Footer from '@/components/layout/footer';
 import Header from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
@@ -29,17 +30,26 @@ import { rehostImage } from '@/app/admin/prompts/actions';
 import { useCategories } from '@/hooks/use-categories';
 import { useTypes } from '@/hooks/use-types';
 import { useModels } from '@/hooks/use-models';
+import { Slider } from '@/components/ui/slider';
 
 
-const formSchema = z.object({
+const imageFormSchema = z.object({
     prompt: z.string().min(1, 'Please enter a prompt.'),
     model: z.string().min(1, 'Please select a model.'),
     aspectRatio: z.string().optional(),
 });
 
-type GenerationFormValues = z.infer<typeof formSchema>;
+const videoFormSchema = z.object({
+    prompt: z.string().min(1, 'Please enter a prompt.'),
+    duration: z.coerce.number().min(2).max(8).default(5),
+});
 
-const GENERATION_COST = 25;
+type ImageFormValues = z.infer<typeof imageFormSchema>;
+type VideoFormValues = z.infer<typeof videoFormSchema>;
+
+
+const GENERATION_COST_IMAGE = 25;
+const GENERATION_COST_VIDEO = 100; // Example cost
 
 export default function GeneratePage() {
     const { user, isUserLoading } = useUser();
@@ -52,6 +62,8 @@ export default function GeneratePage() {
     const [referenceImage, setReferenceImage] = useState<File | null>(null);
     const [referenceImagePreview, setReferenceImagePreview] = useState<string | null>(null);
     const [isSubmittingPrompt, setIsSubmittingPrompt] = useState(false);
+    const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+    const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
 
     const { categories } = useCategories();
     const { types } = useTypes();
@@ -70,8 +82,8 @@ export default function GeneratePage() {
         []
     );
 
-    const form = useForm<GenerationFormValues>({
-        resolver: zodResolver(formSchema),
+    const imageForm = useForm<ImageFormValues>({
+        resolver: zodResolver(imageFormSchema),
         defaultValues: {
             prompt: '',
             model: accessibleModels[0]?.id,
@@ -79,11 +91,19 @@ export default function GeneratePage() {
         },
     });
 
+    const videoForm = useForm<VideoFormValues>({
+        resolver: zodResolver(videoFormSchema),
+        defaultValues: {
+            prompt: '',
+            duration: 5,
+        },
+    });
+
     useEffect(() => {
-        if (accessibleModels.length > 0 && !form.getValues('model')) {
-            form.setValue('model', accessibleModels[0].id);
+        if (accessibleModels.length > 0 && !imageForm.getValues('model')) {
+            imageForm.setValue('model', accessibleModels[0].id);
         }
-    }, [accessibleModels, form]);
+    }, [accessibleModels, imageForm]);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -114,7 +134,7 @@ export default function GeneratePage() {
         }
     };
 
-    async function onSubmit(data: GenerationFormValues) {
+    async function onImageSubmit(data: ImageFormValues) {
         if (!user) {
             toast({
                 variant: 'destructive',
@@ -123,11 +143,11 @@ export default function GeneratePage() {
             });
             return;
         }
-        if (credits < GENERATION_COST) {
+        if (credits < GENERATION_COST_IMAGE) {
             toast({
                 variant: 'destructive',
                 title: 'Insufficient Credits',
-                description: `You need at least ${GENERATION_COST} credits to generate an image.`,
+                description: `You need at least ${GENERATION_COST_IMAGE} credits to generate an image.`,
                 action: <Link href="/account/plans#credits">Buy Credits</Link>
             });
             return;
@@ -148,7 +168,7 @@ export default function GeneratePage() {
             setGeneratedImageUrl(result.imageUrl);
 
             if (firestore) {
-                await deductCreditsForGeneration(firestore, user.uid, GENERATION_COST);
+                await deductCreditsForGeneration(firestore, user.uid, GENERATION_COST_IMAGE);
             }
 
             toast({ title: 'Image generated successfully!' });
@@ -156,6 +176,49 @@ export default function GeneratePage() {
             toast({ variant: 'destructive', title: 'Generation Failed', description: error.message });
         } finally {
             setIsGenerating(false);
+        }
+    }
+
+    async function onVideoSubmit(data: VideoFormValues) {
+        if (!user) {
+            toast({
+                variant: 'destructive',
+                title: 'Not signed in',
+                description: 'Please sign in to generate videos.',
+            });
+            return;
+        }
+        if (credits < GENERATION_COST_VIDEO) {
+            toast({
+                variant: 'destructive',
+                title: 'Insufficient Credits',
+                description: `You need at least ${GENERATION_COST_VIDEO} credits to generate a video.`,
+                action: <Link href="/account/plans#credits">Buy Credits</Link>
+            });
+            return;
+        }
+
+        setIsGeneratingVideo(true);
+        setGeneratedVideoUrl(null);
+
+        const videoInput: GenerateVideoInput = {
+            prompt: data.prompt,
+            durationSeconds: data.duration,
+        };
+
+        try {
+            const result = await generateVideo(videoInput);
+            setGeneratedVideoUrl(result.videoUrl);
+
+            if (firestore) {
+                await deductCreditsForGeneration(firestore, user.uid, GENERATION_COST_VIDEO);
+            }
+
+            toast({ title: 'Video generated successfully!' });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Video Generation Failed', description: error.message });
+        } finally {
+            setIsGeneratingVideo(false);
         }
     }
 
@@ -206,13 +269,15 @@ export default function GeneratePage() {
         }
     };
     
-    const selectedModelInfo = accessibleModels.find(m => m.id === form.getValues('model'));
+    const selectedModelInfo = accessibleModels.find(m => m.id === imageForm.getValues('model'));
     const firestoreModel = models.find(m => m.name === selectedModelInfo?.name);
     const imagesType = types.find(t => t.name.toLowerCase() === 'images');
     const availableCategories = categories.filter(c => c.name && c.id);
     const randomCategory = availableCategories.length > 0 
         ? availableCategories[Math.floor(Math.random() * availableCategories.length)] 
         : null;
+
+    const currentGenerationCost = activeTab === 'image' ? GENERATION_COST_IMAGE : GENERATION_COST_VIDEO;
 
     return (
         <div className="flex min-h-screen flex-col">
@@ -232,150 +297,188 @@ export default function GeneratePage() {
                             onClick={() => setActiveTab('video')}
                             variant={activeTab === 'video' ? 'default' : 'outline'}
                             className="flex-1"
-                            disabled
                         >
                             <Video className="mr-2 h-4 w-4" /> Video
                         </Button>
                     </div>
 
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                            <FormField
-                                control={form.control}
-                                name="model"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Select a model</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Choose a model" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                {accessibleModels.map(model => (
-                                                    <SelectItem key={model.id} value={model.id}>
-                                                        {model.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            
-                            <FormField
-                                control={form.control}
-                                name="aspectRatio"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Aspect Ratio</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Choose an aspect ratio" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="1:1">1:1 (Square)</SelectItem>
-                                                <SelectItem value="16:9">16:9 (Widescreen)</SelectItem>
-                                                <SelectItem value="2:3">2:3 (Portrait)</SelectItem>
-                                                <SelectItem value="21:9">21:9 (Cinematic)</SelectItem>
-                                                <SelectItem value="9:16">9:16 (Tall Portrait)</SelectItem>
-                                                <SelectItem value="9:21">9:21 (Extra Tall)</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormField
-                                control={form.control}
-                                name="prompt"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Prompt</FormLabel>
-                                        <FormControl>
-                                            <Textarea
-                                                placeholder="A beautiful sunset over mountains..."
-                                                rows={5}
-                                                {...field}
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormItem>
-                                <FormLabel>Reference Image (Optional)</FormLabel>
-                                <div
-                                    className="relative border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary"
-                                    onDragOver={handleDragOver}
-                                    onDrop={handleDrop}
-                                    onClick={() => document.getElementById('file-upload')?.click()}
-                                >
-                                    <input id="file-upload" type="file" className="hidden" accept="image/png, image/jpeg, image/webp" onChange={handleFileChange} />
-                                    {referenceImagePreview ? (
-                                        <>
-                                            <Image src={referenceImagePreview} alt="Reference preview" layout="fill" className="object-contain rounded-md" />
-                                             <Button
-                                                variant="destructive"
-                                                size="icon"
-                                                className="absolute top-2 right-2 h-6 w-6 z-10"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setReferenceImage(null);
-                                                    setReferenceImagePreview(null);
-                                                }}
-                                            >
-                                                <X className="h-4 w-4" />
-                                            </Button>
-                                        </>
-                                    ) : (
-                                        <div className="space-y-1">
-                                            <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
-                                            <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
-                                            <p className="text-xs text-muted-foreground">PNG, JPG, WEBP up to 10MB</p>
-                                        </div>
+                    {activeTab === 'image' && (
+                        <Form {...imageForm}>
+                            <form onSubmit={imageForm.handleSubmit(onImageSubmit)} className="space-y-6">
+                                <FormField
+                                    control={imageForm.control}
+                                    name="model"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Select a model</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Choose a model" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {accessibleModels.map(model => (
+                                                        <SelectItem key={model.id} value={model.id}>
+                                                            {model.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
                                     )}
-                                </div>
-                            </FormItem>
+                                />
+                                
+                                <FormField
+                                    control={imageForm.control}
+                                    name="aspectRatio"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Aspect Ratio</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Choose an aspect ratio" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="1:1">1:1 (Square)</SelectItem>
+                                                    <SelectItem value="16:9">16:9 (Widescreen)</SelectItem>
+                                                    <SelectItem value="2:3">2:3 (Portrait)</SelectItem>
+                                                    <SelectItem value="21:9">21:9 (Cinematic)</SelectItem>
+                                                    <SelectItem value="9:16">9:16 (Tall Portrait)</SelectItem>
+                                                    <SelectItem value="9:21">9:21 (Extra Tall)</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
 
-                            <div className="space-y-4">
-                               <p className="text-sm text-muted-foreground flex justify-between">
-                                    <span>Cost:</span>
-                                    <span>{GENERATION_COST} credits</span>
-                                </p>
-                                <div className="grid grid-cols-1 gap-2">
-                                    <Button type="submit" className="w-full" size="lg" disabled={isGenerating}>
-                                        {isGenerating ? (
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                <FormField
+                                    control={imageForm.control}
+                                    name="prompt"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Prompt</FormLabel>
+                                            <FormControl>
+                                                <Textarea
+                                                    placeholder="A beautiful sunset over mountains..."
+                                                    rows={5}
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                <FormItem>
+                                    <FormLabel>Reference Image (Optional)</FormLabel>
+                                    <div
+                                        className="relative border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary"
+                                        onDragOver={handleDragOver}
+                                        onDrop={handleDrop}
+                                        onClick={() => document.getElementById('file-upload')?.click()}
+                                    >
+                                        <input id="file-upload" type="file" className="hidden" accept="image/png, image/jpeg, image/webp" onChange={handleFileChange} />
+                                        {referenceImagePreview ? (
+                                            <>
+                                                <Image src={referenceImagePreview} alt="Reference preview" layout="fill" className="object-contain rounded-md" />
+                                                <Button
+                                                    variant="destructive"
+                                                    size="icon"
+                                                    className="absolute top-2 right-2 h-6 w-6 z-10"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setReferenceImage(null);
+                                                        setReferenceImagePreview(null);
+                                                    }}
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </>
                                         ) : (
-                                            <Sparkles className="mr-2 h-4 w-4" />
-                                        )}
-                                        Generate image
-                                    </Button>
-                                </div>
-                                <Card>
-                                    <CardContent className="pt-4 flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Coins className="h-5 w-5 text-amber-500" />
-                                            <div>
-                                                <p className="font-bold">{credits.toLocaleString()} Credits</p>
-                                                {credits < GENERATION_COST && <p className="text-xs text-destructive">Running low!</p>}
+                                            <div className="space-y-1">
+                                                <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
+                                                <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
+                                                <p className="text-xs text-muted-foreground">PNG, JPG, WEBP up to 10MB</p>
                                             </div>
-                                        </div>
-                                        <Button variant="link" asChild>
-                                            <Link href="/account/plans#credits">Buy more</Link>
-                                        </Button>
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        </form>
-                    </Form>
+                                        )}
+                                    </div>
+                                </FormItem>
+                            </form>
+                        </Form>
+                    )}
+
+                    {activeTab === 'video' && (
+                         <Form {...videoForm}>
+                            <form onSubmit={videoForm.handleSubmit(onVideoSubmit)} className="space-y-6">
+                                <FormField
+                                    control={videoForm.control}
+                                    name="prompt"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Video Prompt</FormLabel>
+                                            <FormControl>
+                                                <Textarea placeholder="A majestic dragon soaring over a mystical forest..." rows={5} {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={videoForm.control}
+                                    name="duration"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Duration: {field.value} seconds</FormLabel>
+                                            <FormControl>
+                                                <Slider defaultValue={[5]} min={2} max={8} step={1} onValueChange={(v) => field.onChange(v[0])} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                             </form>
+                        </Form>
+                    )}
+
+                    <div className="space-y-4 pt-4 border-t">
+                        <p className="text-sm text-muted-foreground flex justify-between">
+                            <span>Cost:</span>
+                            <span>{currentGenerationCost} credits</span>
+                        </p>
+                        <div className="grid grid-cols-1 gap-2">
+                            <Button
+                                onClick={activeTab === 'image' ? imageForm.handleSubmit(onImageSubmit) : videoForm.handleSubmit(onVideoSubmit)}
+                                className="w-full" size="lg"
+                                disabled={isGenerating || isGeneratingVideo}
+                            >
+                                {(isGenerating || isGeneratingVideo) ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Sparkles className="mr-2 h-4 w-4" />
+                                )}
+                                Generate {activeTab}
+                            </Button>
+                        </div>
+                        <Card>
+                            <CardContent className="pt-4 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Coins className="h-5 w-5 text-amber-500" />
+                                    <div>
+                                        <p className="font-bold">{credits.toLocaleString()} Credits</p>
+                                        {credits < currentGenerationCost && <p className="text-xs text-destructive">Running low!</p>}
+                                    </div>
+                                </div>
+                                <Button variant="link" asChild>
+                                    <Link href="/account/plans#credits">Buy more</Link>
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </div>
 
                 {/* Right Panel */}
@@ -384,42 +487,77 @@ export default function GeneratePage() {
                     backgroundSize: '20px 20px',
                 }}>
                     <div className="w-full max-w-4xl">
-                        {isGenerating && (
-                            <div className="space-y-4 text-center">
-                                <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
-                                <h3 className="text-lg font-semibold">Generating...</h3>
-                                <p className="text-muted-foreground">This may take a moment.</p>
-                            </div>
+                        {activeTab === 'image' && (
+                             <>
+                                {isGenerating && (
+                                    <div className="space-y-4 text-center">
+                                        <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
+                                        <h3 className="text-lg font-semibold">Generating...</h3>
+                                        <p className="text-muted-foreground">This may take a moment.</p>
+                                    </div>
+                                )}
+                                {!isGenerating && !generatedImageUrl && (
+                                    <div className="text-center">
+                                        <Sparkles className="mx-auto h-12 w-12 text-muted-foreground" />
+                                        <h3 className="mt-4 text-lg font-semibold">AI Image Generation</h3>
+                                        <p className="mt-2 text-sm text-muted-foreground">
+                                            Enter a prompt on the left to start generating. Your image will appear here.
+                                        </p>
+                                    </div>
+                                )}
+                                {!isGenerating && generatedImageUrl && (
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle>Finalize and Submit Your Prompt</CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <PromptForm 
+                                                onSubmit={handleCreatePrompt}
+                                                isSubmitting={isSubmittingPrompt}
+                                                initialData={{
+                                                    title: imageForm.getValues('prompt').split(' ').slice(0, 6).join(' '),
+                                                    privateContent: imageForm.getValues('prompt'),
+                                                    imageUrl: generatedImageUrl,
+                                                    categoryId: randomCategory?.id || '',
+                                                    typeId: imagesType?.id || '',
+                                                    modelId: firestoreModel?.id || '',
+                                                }}
+                                            />
+                                        </CardContent>
+                                    </Card>
+                                )}
+                             </>
                         )}
-                        {!isGenerating && !generatedImageUrl && (
-                            <div className="text-center">
-                                <Sparkles className="mx-auto h-12 w-12 text-muted-foreground" />
-                                <h3 className="mt-4 text-lg font-semibold">AI Image Generation</h3>
-                                <p className="mt-2 text-sm text-muted-foreground">
-                                    Enter a prompt on the left to start generating. Your image will appear here.
-                                </p>
+                         {activeTab === 'video' && (
+                            <div className="w-full max-w-4xl text-center">
+                                {isGeneratingVideo && (
+                                    <div className="space-y-4">
+                                        <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
+                                        <h3 className="text-lg font-semibold">Generating Video...</h3>
+                                        <p className="text-muted-foreground">This can take up to a minute. Please be patient.</p>
+                                    </div>
+                                )}
+                                {!isGeneratingVideo && !generatedVideoUrl && (
+                                     <div className="text-center">
+                                        <Sparkles className="mx-auto h-12 w-12 text-muted-foreground" />
+                                        <h3 className="mt-4 text-lg font-semibold">AI Video Generation</h3>
+                                        <p className="mt-2 text-sm text-muted-foreground">
+                                            Enter a prompt on the left to create a video. Your result will appear here.
+                                        </p>
+                                    </div>
+                                )}
+                                {!isGeneratingVideo && generatedVideoUrl && (
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle>Your Generated Video</CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <video src={generatedVideoUrl} controls autoPlay loop className="rounded-lg w-full" />
+                                            {/* TODO: Add 'Create Prompt from Video' functionality */}
+                                        </CardContent>
+                                    </Card>
+                                )}
                             </div>
-                        )}
-                        {!isGenerating && generatedImageUrl && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Finalize and Submit Your Prompt</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <PromptForm 
-                                        onSubmit={handleCreatePrompt}
-                                        isSubmitting={isSubmittingPrompt}
-                                        initialData={{
-                                            title: form.getValues('prompt').split(' ').slice(0, 6).join(' '),
-                                            privateContent: form.getValues('prompt'),
-                                            imageUrl: generatedImageUrl,
-                                            categoryId: randomCategory?.id || '',
-                                            typeId: imagesType?.id || '',
-                                            modelId: firestoreModel?.id || '',
-                                        }}
-                                    />
-                                </CardContent>
-                            </Card>
                         )}
                     </div>
                 </div>
