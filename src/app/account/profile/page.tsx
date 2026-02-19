@@ -64,7 +64,7 @@ import {
 	TableRow,
 } from '@/components/ui/table'
 import { PlaceHolderImages } from '@/lib/placeholder-images'
-import { cn, isFirebaseStorageUrl } from '@/lib/utils'
+import { cn, isFirebaseStorageUrl, firebaseImageLoader } from '@/lib/utils'
 
 function ProfileSkeleton() {
 	return (
@@ -148,7 +148,7 @@ function PromptGrid({ prompts }: { prompts: Prompt[] }) {
 										width={imgWidth}
 										height={imgHeight}
 										className='object-cover w-full h-full group-hover:scale-105 transition-transform duration-300'
-										unoptimized={isFirebaseStorageUrl(img)}
+										loader={isFirebaseStorageUrl(img) ? firebaseImageLoader : undefined}
 									/>
 								)}
 							</div>

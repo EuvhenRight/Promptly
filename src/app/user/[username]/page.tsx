@@ -41,7 +41,7 @@ import { useParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { signInWithGoogle } from '@/firebase/auth'
 import { PlaceHolderImages } from '@/lib/placeholder-images'
-import { cn, isFirebaseStorageUrl } from '@/lib/utils'
+import { cn, isFirebaseStorageUrl, firebaseImageLoader } from '@/lib/utils'
 
 function PublicProfileSkeleton() {
 	return (
@@ -396,7 +396,7 @@ export default function PublicProfilePage() {
 															height={imgHeight}
 															sizes='(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 33vw'
 															className='object-cover w-full h-full'
-															unoptimized={isFirebaseStorageUrl(img)}
+															loader={isFirebaseStorageUrl(img) ? firebaseImageLoader : undefined}
 														/>
 													) : (
 														<Skeleton className='w-full h-full' />
