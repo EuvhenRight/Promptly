@@ -12,7 +12,7 @@ import { toggleFavoritePrompt } from '@/firebase/users'
 import { useToast } from '@/hooks/use-toast'
 import { cn, firebaseImageLoader, isFirebaseStorageUrl } from '@/lib/utils'
 import { doc } from 'firebase/firestore'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { PlaceHolderImages } from '@/lib/placeholder-images'
 import { addPromptToCart } from '@/firebase/cart'
 import { Button } from '../ui/button'
@@ -85,30 +85,23 @@ export default function PromptCard({
 	}
 
 	const imageIdentifier = prompt.images?.[0]
-	let originalImageUrl: string | undefined
-
-	if (imageIdentifier) {
+	const originalImageUrl = useMemo(() => {
+		if (!imageIdentifier) return undefined
 		if (imageIdentifier.startsWith('http')) {
-			originalImageUrl = imageIdentifier
-		} else {
-			const imageData = PlaceHolderImages.find(p => p.id === imageIdentifier)
-			if (imageData) {
-				originalImageUrl = imageData.imageUrl
-			}
+			return imageIdentifier
 		}
-	}
-	
-	const [imageSrc, setImageSrc] = useState(originalImageUrl)
-	const [hasError, setHasError] = useState(false)
+		const imageData = PlaceHolderImages.find(p => p.id === imageIdentifier)
+		return imageData?.imageUrl
+	}, [imageIdentifier])
+    
+    const [useFallback, setUseFallback] = useState(false);
 
-	useEffect(() => {
-		setImageSrc(originalImageUrl)
-		setHasError(false)
-	}, [originalImageUrl])
+    useEffect(() => {
+        setUseFallback(false);
+    }, [originalImageUrl]);
 
-
+    const imageSrc = useFallback ? originalImageUrl : originalImageUrl;
 	const creditPrice = Math.round(prompt.price * 100)
-
 	const isPriority = index < 4
 
 	return (
@@ -119,19 +112,19 @@ export default function PromptCard({
 						<Image
 							src={imageSrc}
 							alt={prompt.title}
+							loader={useFallback ? undefined : firebaseImageLoader}
 							width={400}
 							height={500}
-							loader={hasError ? undefined : firebaseImageLoader}
-							onError={() => {
-								if (!hasError) {
-									setHasError(true)
-									setImageSrc(originalImageUrl)
-								}
-							}}
 							sizes='(max-width: 767px) 100vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw'
 							quality={75}
 							className='w-full h-auto object-cover transition-transform duration-300 ease-in-out group-hover:scale-105'
 							priority={isPriority}
+							unoptimized={useFallback}
+							onError={() => {
+								if (!useFallback) {
+									setUseFallback(true)
+								}
+							}}
 						/>
 					) : (
 						<Skeleton className='w-full aspect-[4/5]' />
