@@ -219,9 +219,38 @@ export default function GeneratePage() {
                                 <FormField control={imageForm.control} name="model" render={({ field }) => (
                                     <FormItem><FormLabel>Select a model</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Choose an image model" /></SelectTrigger></FormControl><SelectContent>{imageModels.map(model => (<SelectItem key={model.id} value={model.id}>{model.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
                                 )}/>
-                                <FormField control={imageForm.control} name="aspectRatio" render={({ field }) => (
-                                    <FormItem><FormLabel>Aspect Ratio</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Choose an aspect ratio" /></SelectTrigger></FormControl><SelectContent><SelectItem value="1:1">1:1 (Square)</SelectItem><SelectItem value="16:9">16:9 (Widescreen)</SelectItem><SelectItem value="2:3">2:3 (Portrait)</SelectItem><SelectItem value="9:16">9:16 (Story/TikTok)</SelectItem></SelectContent></Select><FormMessage /></FormItem>
-                                )}/>
+                                <FormField
+                                    control={imageForm.control}
+                                    name="aspectRatio"
+                                    render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Aspect Ratio</FormLabel>
+                                        <Select
+                                        onValueChange={field.onChange}
+                                        defaultValue={field.value}
+                                        >
+                                        <FormControl>
+                                            <SelectTrigger>
+                                            <SelectValue placeholder="Choose an aspect ratio" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="1:1">1:1 (Square)</SelectItem>
+                                            <SelectItem value="2:3">2:3 (Portrait)</SelectItem>
+                                            <SelectItem value="3:2">3:2 (Landscape)</SelectItem>
+                                            <SelectItem value="3:4">3:4 (Portrait)</SelectItem>
+                                            <SelectItem value="4:3">4:3 (Landscape)</SelectItem>
+                                            <SelectItem value="4:5">4:5 (Portrait)</SelectItem>
+                                            <SelectItem value="5:4">5:4 (Landscape)</SelectItem>
+                                            <SelectItem value="9:16">9:16 (Story/TikTok)</SelectItem>
+                                            <SelectItem value="16:9">16:9 (Widescreen)</SelectItem>
+                                            <SelectItem value="21:9">21:9 (Cinematic)</SelectItem>
+                                        </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                    )}
+                                />
                                 <FormField control={imageForm.control} name="prompt" render={({ field }) => (
                                     <FormItem><FormLabel>Prompt</FormLabel><FormControl><Textarea placeholder="A beautiful sunset over mountains..." rows={5} {...field} /></FormControl><FormMessage /></FormItem>
                                 )}/>
