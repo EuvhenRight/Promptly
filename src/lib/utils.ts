@@ -17,10 +17,11 @@ export function isFirebaseStorageUrl(url: string | undefined): boolean {
 /**
  * Custom loader for Next/Image that constructs URLs for resized images from Firebase Storage.
  * This relies on the official Firebase "Resize Images" extension being installed.
- * It preserves the original aspect ratio by requesting images resized by width.
+ * It requests images that have been resized to fit within a bounding box (e.g., 400x400),
+ * which preserves the original aspect ratio.
  * @param src - The original image URL from Firebase Storage.
  * @param width - The target width Next.js wants to load.
- * @returns The URL for the resized image (e.g., .../my-image_400x.webp).
+ * @returns The URL for the resized image (e.g., .../my-image_400x400.webp).
  */
 export function firebaseImageLoader({ src, width }: { src: string; width: number }): string {
   // If it's not a Firebase Storage URL, return it as is.
@@ -37,15 +38,15 @@ export function firebaseImageLoader({ src, width }: { src: string; width: number
   const extIndex = filename.lastIndexOf('.');
   const baseName = extIndex > -1 ? filename.substring(0, extIndex) : filename;
   
-  // The user must configure the Firebase Extension with these sizes, but with 'x' at the end
-  // e.g., "400x,800x,1200x" to preserve aspect ratio by width.
+  // The user must configure the Firebase Extension with these sizes,
+  // e.g., "400x400,800x800,1200x1200".
   let sizeSuffix: string;
   if (width <= 400) {
-    sizeSuffix = '_400x'; // Request 400px wide version
+    sizeSuffix = '_400x400';
   } else if (width <= 800) {
-    sizeSuffix = '_800x'; // Request 800px wide version
+    sizeSuffix = '_800x800';
   } else {
-    sizeSuffix = '_1200x'; // Request 1200px wide version
+    sizeSuffix = '_1200x1200';
   }
 
   // The Firebase Resizer extension appends the size and the new extension.
