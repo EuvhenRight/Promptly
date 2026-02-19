@@ -47,7 +47,7 @@ export function TypesProvider({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Resolve type IDs to display names. Uses types from API (id → name).
+ * Resolve type IDs to display names. Uses types from a client-side context.
  * Falls back to raw ID if not in map.
  */
 export function useTypes(): TypesContextValue {
@@ -61,6 +61,6 @@ export function useTypes(): TypesContextValue {
 			const arr = Array.isArray(ids) ? ids : [ids]
 			return arr.map(id => String(id).trim())
 		},
-		isLoading: false,
+		isLoading: true,
 	}
 }

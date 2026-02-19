@@ -56,12 +56,14 @@ export function CategoriesProvider({
 }
 
 /**
- * Resolve category IDs to display names. Uses categories from API (id → name).
- * Falls back to raw ID if not in map (e.g. legacy or missing).
+ * Resolve category IDs to display names. Uses categories from a client-side context.
+ * Falls back to raw ID if not in map.
  */
 export function useCategories(): CategoriesContextValue {
 	const ctx = useContext(CategoriesContext)
 	if (ctx) return ctx
+	// This fallback is for components used outside the provider, though they shouldn't exist.
+	// It indicates a loading state and prevents crashes.
 	return {
 		categories: [],
 		nameById: {},
@@ -70,6 +72,6 @@ export function useCategories(): CategoriesContextValue {
 			const arr = Array.isArray(ids) ? ids : [ids]
 			return arr.map(id => String(id).trim())
 		},
-		isLoading: false,
+		isLoading: true, // Indicate loading as the context is not available.
 	}
 }

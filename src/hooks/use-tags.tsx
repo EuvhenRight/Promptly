@@ -47,8 +47,8 @@ export function TagsProvider({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Resolve tag IDs to display names. Uses tags from API (id → name).
- * Falls back to raw ID if not in map (e.g. legacy or missing).
+ * Resolve tag IDs to display names. Uses tags from a client-side context.
+ * Falls back to raw ID if not in map.
  */
 export function useTags(): TagsContextValue {
 	const ctx = useContext(TagsContext)
@@ -61,6 +61,6 @@ export function useTags(): TagsContextValue {
 			const arr = Array.isArray(ids) ? ids : [ids]
 			return arr.map(id => String(id).trim())
 		},
-		isLoading: false,
+		isLoading: true,
 	}
 }

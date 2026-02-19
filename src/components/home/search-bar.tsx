@@ -16,6 +16,18 @@ import { type SortByOption } from '@/hooks/use-prompts-feed'
 import { useTypes } from '@/hooks/use-types'
 import { ArrowDownUp, ChevronDown, Loader2, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import {
+	useCollection,
+	useFirestore,
+	useMemoFirebase,
+} from '@/firebase'
+import { collection, query, where, limit } from 'firebase/firestore'
+
+type SearchBarBackground = {
+	id: string
+	imageUrl: string
+	isActive: boolean
+}
 
 const sortOptions: { label: string; value: SortByOption }[] = [
 	{ label: 'Newest', value: 'createdAt:desc' },
@@ -55,8 +67,31 @@ export default function SearchBar({
 	const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(
 		null,
 	)
+	const firestore = useFirestore()
 	const { types, isLoading: typesLoading } = useTypes()
 	const { models, isLoading: modelsLoading } = useModels()
+
+	const backgroundQuery = useMemoFirebase(
+		() =>
+			firestore
+				? query(
+						collection(firestore, 'searchBarBackgrounds'),
+						where('isActive', '==', true),
+						limit(1),
+					)
+				: null,
+		[firestore],
+	)
+	const { data: activeBackgrounds } =
+		useCollection<SearchBarBackground>(backgroundQuery)
+
+	useEffect(() => {
+		if (activeBackgrounds && activeBackgrounds.length > 0) {
+			setBackgroundImageUrl(activeBackgrounds[0].imageUrl)
+		} else {
+			setBackgroundImageUrl(null)
+		}
+	}, [activeBackgrounds])
 
 	const currentTitle = `${activeFilter} Prompts`
 	const resultsText =
@@ -71,29 +106,6 @@ export default function SearchBar({
 
 	const selectedSortLabel =
 		sortOptions.find(o => o.value === sortBy)?.label || 'Sort'
-
-	const fetchBackground = () => {
-		fetch('/api/search-bar-backgrounds?active=true', { cache: 'no-store' })
-			.then(res => (res.ok ? res.json() : null))
-			.then(data => {
-				if (data && typeof data === 'object' && data.imageUrl) {
-					setBackgroundImageUrl(data.imageUrl)
-				} else {
-					setBackgroundImageUrl(null)
-				}
-			})
-			.catch(() => setBackgroundImageUrl(null))
-	}
-
-	useEffect(() => {
-		fetchBackground()
-		const onVisibilityChange = () => {
-			if (document.visibilityState === 'visible') fetchBackground()
-		}
-		document.addEventListener('visibilitychange', onVisibilityChange)
-		return () =>
-			document.removeEventListener('visibilitychange', onVisibilityChange)
-	}, [])
 
 	return (
 		<section

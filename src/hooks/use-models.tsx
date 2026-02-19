@@ -47,7 +47,7 @@ export function ModelsProvider({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Resolve model IDs to display names. Uses models from API (id → name).
+ * Resolve model IDs to display names. Uses models from a client-side context.
  * Falls back to raw ID if not in map.
  */
 export function useModels(): ModelsContextValue {
@@ -61,6 +61,6 @@ export function useModels(): ModelsContextValue {
 			const arr = Array.isArray(ids) ? ids : [ids]
 			return arr.map(id => String(id).trim())
 		},
-		isLoading: false,
+		isLoading: true,
 	}
 }

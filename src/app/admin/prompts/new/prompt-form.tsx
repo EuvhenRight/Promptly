@@ -21,6 +21,10 @@ import {
 	SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { useCategories } from '@/hooks/use-categories'
+import { useModels } from '@/hooks/use-models'
+import { useTags } from '@/hooks/use-tags'
+import { useTypes } from '@/hooks/use-types'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Loader2 } from 'lucide-react'
 import Image from 'next/image'
@@ -84,47 +88,13 @@ export function PromptForm({
 	const [imagePreview, setImagePreview] = useState<string | undefined>(
 		initialData?.imageUrl,
 	)
-	const [categoryOptions, setCategoryOptions] = useState<
-		{ id: string; name: string }[]
-	>([])
-	const [tagOptions, setTagOptions] = useState<{ id: string; name: string }[]>(
-		[],
-	)
-	const [typeOptions, setTypeOptions] = useState<
-		{ id: string; name: string }[]
-	>([])
-	const [modelOptions, setModelOptions] = useState<
-		{ id: string; name: string }[]
-	>([])
 	const fileInputRef = React.useRef<HTMLInputElement>(null)
 
-	useEffect(() => {
-		fetch('/api/categories')
-			.then(res => (res.ok ? res.json() : []))
-			.then(data => setCategoryOptions(Array.isArray(data) ? data : []))
-			.catch(() => setCategoryOptions([]))
-	}, [])
-
-	useEffect(() => {
-		fetch('/api/tags')
-			.then(res => (res.ok ? res.json() : []))
-			.then(data => setTagOptions(Array.isArray(data) ? data : []))
-			.catch(() => setTagOptions([]))
-	}, [])
-
-	useEffect(() => {
-		fetch('/api/types')
-			.then(res => (res.ok ? res.json() : []))
-			.then(data => setTypeOptions(Array.isArray(data) ? data : []))
-			.catch(() => setTypeOptions([]))
-	}, [])
-
-	useEffect(() => {
-		fetch('/api/models')
-			.then(res => (res.ok ? res.json() : []))
-			.then(data => setModelOptions(Array.isArray(data) ? data : []))
-			.catch(() => setModelOptions([]))
-	}, [])
+	const { categories: categoryOptions, isLoading: categoriesLoading } =
+		useCategories()
+	const { tags: tagOptions, isLoading: tagsLoading } = useTags()
+	const { types: typeOptions, isLoading: typesLoading } = useTypes()
+	const { models: modelOptions, isLoading: modelsLoading } = useModels()
 
 	useEffect(() => {
 		if (initialData) {
@@ -333,7 +303,7 @@ export function PromptForm({
 												<Select
 													onValueChange={field.onChange}
 													value={field.value}
-													disabled={isSubmitting}
+													disabled={isSubmitting || categoriesLoading}
 												>
 													<FormControl>
 														<SelectTrigger>
@@ -343,7 +313,7 @@ export function PromptForm({
 														</SelectTrigger>
 													</FormControl>
 													<SelectContent>
-														{categoryOptions.length === 0 ? (
+														{categoriesLoading ? (
 															<div className='py-2 text-center text-sm text-muted-foreground'>
 																Loading categories…
 															</div>
@@ -376,7 +346,7 @@ export function PromptForm({
 														field.onChange(v === '__none__' ? '' : v)
 													}
 													value={field.value || '__none__'}
-													disabled={isSubmitting}
+													disabled={isSubmitting || typesLoading}
 												>
 													<FormControl>
 														<SelectTrigger>
@@ -389,7 +359,7 @@ export function PromptForm({
 													</FormControl>
 													<SelectContent>
 														<SelectItem value='__none__'>None</SelectItem>
-														{typeOptions.length === 0 ? (
+														{typesLoading ? (
 															<div className='py-2 text-center text-sm text-muted-foreground'>
 																Loading types…
 															</div>
@@ -422,7 +392,7 @@ export function PromptForm({
 														field.onChange(v === '__none__' ? '' : v)
 													}
 													value={field.value || '__none__'}
-													disabled={isSubmitting}
+													disabled={isSubmitting || modelsLoading}
 												>
 													<FormControl>
 														<SelectTrigger>
@@ -435,7 +405,7 @@ export function PromptForm({
 													</FormControl>
 													<SelectContent>
 														<SelectItem value='__none__'>None</SelectItem>
-														{modelOptions.length === 0 ? (
+														{modelsLoading ? (
 															<div className='py-2 text-center text-sm text-muted-foreground'>
 																Loading models…
 															</div>
@@ -473,7 +443,7 @@ export function PromptForm({
 											<FormItem>
 												<FormLabel>Tags</FormLabel>
 												<div className='space-y-2 rounded-md border p-3'>
-													{tagOptions.length === 0 ? (
+													{tagsLoading ? (
 														<p className='text-sm text-muted-foreground'>
 															Loading tags…
 														</p>
