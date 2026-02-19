@@ -10,9 +10,9 @@ import { Skeleton } from '../ui/skeleton'
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
 import { toggleFavoritePrompt } from '@/firebase/users'
 import { useToast } from '@/hooks/use-toast'
-import { cn, isFirebaseStorageUrl } from '@/lib/utils'
+import { cn, isFirebaseStorageUrl, firebaseImageLoader } from '@/lib/utils'
 import { doc } from 'firebase/firestore'
-import React from 'react'
+import React, { useState } from 'react'
 import { PlaceHolderImages } from '@/lib/placeholder-images'
 import { addPromptToCart } from '@/firebase/cart'
 import { Button } from '../ui/button'
@@ -51,6 +51,7 @@ export default function PromptCard({
 	const { data: userProfile } = useDoc<UserProfile>(userProfileRef)
 
 	const isFavorite = userProfile?.favoritePrompts?.includes(prompt.id) ?? false
+	const [hasImageError, setHasImageError] = useState(false)
 
 	const handleToggleFavorite = (e: React.MouseEvent) => {
 		e.preventDefault()
@@ -86,8 +87,6 @@ export default function PromptCard({
 
 	const imageIdentifier = prompt.images?.[0]
 	let imageUrl: string | undefined
-	let imageWidth: number = 400
-	let imageHeight: number = 500
 
 	if (imageIdentifier) {
 		if (imageIdentifier.startsWith('http')) {
@@ -96,8 +95,6 @@ export default function PromptCard({
 			const imageData = PlaceHolderImages.find(p => p.id === imageIdentifier)
 			if (imageData) {
 				imageUrl = imageData.imageUrl
-				imageWidth = imageData.width
-				imageHeight = imageData.height
 			}
 		}
 	}
@@ -106,27 +103,31 @@ export default function PromptCard({
 
 	const isPriority = index < 3
 	const isEager = index >= 3 && index < 8
-
-	const imageProps: Omit<React.ComponentProps<typeof Image>, 'src' | 'alt'> & { src: string; alt: string } = {
-		src: imageUrl!,
-		alt: prompt.title,
-		width: imageWidth,
-		height: imageHeight,
-		sizes:
-			'(max-width: 767px) 100vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw',
-		quality: 75,
-		className:
-			'w-full h-auto object-cover transition-transform duration-300 ease-in-out group-hover:scale-105',
-		unoptimized: isFirebaseStorageUrl(imageUrl!),
-		...(isPriority ? { priority: true } : isEager ? { loading: 'eager' as const } : { loading: 'lazy' as const }),
-	}
+	
+	const effectiveLoader = !hasImageError ? firebaseImageLoader : undefined;
+	const finalSrc = imageUrl || '/default-placeholder.png'; // Make sure you have a placeholder
 
 	return (
 		<div>
 			<div className='group relative w-full overflow-hidden rounded-2xl bg-card'>
 				<Link href={`/prompt/${prompt.id}`} className='block cursor-pointer'>
 					{imageUrl ? (
-						<Image {...imageProps} />
+						<Image
+							src={finalSrc}
+							alt={prompt.title}
+							width={400}
+							height={500}
+							loader={effectiveLoader}
+							unoptimized={hasImageError}
+							onError={() => {
+								if (!hasImageError) setHasImageError(true);
+							}}
+							sizes='(max-width: 767px) 100vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw'
+							quality={75}
+							className='w-full h-auto object-cover transition-transform duration-300 ease-in-out group-hover:scale-105'
+							priority={isPriority}
+							loading={isEager ? 'eager' : 'lazy'}
+						/>
 					) : (
 						<Skeleton className='w-full aspect-[4/5]' />
 					)}

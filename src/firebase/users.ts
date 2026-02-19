@@ -51,9 +51,12 @@ export async function uploadAvatar(
 	userId: string,
 	file: File,
 ): Promise<string> {
-	if (!file) throw new Error('No file provided for upload.')
+	if (!file) throw new Error('No file provided for upload.');
 	if (!/^image\//.test(file.type)) {
-		throw new Error('File must be an image (jpeg, png, gif, webp).')
+		throw new Error('File must be an image (jpeg, png, gif, webp).');
+	}
+	if (file.size > 5 * 1024 * 1024) { // 5MB limit
+		throw new Error('File is too large. Maximum size is 5MB.');
 	}
 
 	const storage = getStorage()
@@ -72,9 +75,12 @@ export async function uploadCoverImage(
 	userId: string,
 	file: File,
 ): Promise<string> {
-	if (!file) throw new Error('No file provided for upload.')
+	if (!file) throw new Error('No file provided for upload.');
 	if (!/^image\//.test(file.type)) {
-		throw new Error('File must be an image (jpeg, png, gif, webp).')
+		throw new Error('File must be an image (jpeg, png, gif, webp).');
+	}
+	if (file.size > 5 * 1024 * 1024) { // 5MB limit
+		throw new Error('File is too large. Maximum size is 5MB.');
 	}
 
 	const storage = getStorage()

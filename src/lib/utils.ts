@@ -15,30 +15,28 @@ export function isFirebaseStorageUrl(url: string | undefined): boolean {
 }
 
 /**
- * Custom loader for Next/Image that constructs URLs for resized images from Firebase Storage.
- * This relies on the official Firebase "Resize Images" extension being installed.
- * If the URL is not a Firebase Storage URL, it returns the original source.
+ * Custom loader for Next/Image that constructs URLs for resized images from Firebase Storage,
+ * assuming the "Resize Images" extension is configured to save resized images in a 'thumbnails' subdirectory.
+ * This version points to a specific resized version (e.g., _400x400.webp).
  */
 export function firebaseImageLoader({ src, width }: { src: string; width: number }): string {
   if (!isFirebaseStorageUrl(src)) {
-    return src; // Not a Firebase Storage URL, use default loader
+    return src;
   }
 
   try {
-    // Find the position of the '?' to separate the base URL from query parameters
-    const queryIndex = src.indexOf('?');
-    const baseUrl = queryIndex === -1 ? src : src.substring(0, queryIndex);
-    const queryParams = queryIndex === -1 ? '' : src.substring(queryIndex);
+    const url = new URL(src);
+    const pathName = decodeURIComponent(url.pathname); // Decode to get a clean path like '/v0/b/...'
 
-    // Find the last dot in the base URL to insert the size suffix
-    const lastDotIndex = baseUrl.lastIndexOf('.');
-    if (lastDotIndex === -1) {
-      return src; // No extension found
-    }
+    const objectPathMatch = pathName.match(/\/o\/(.+)/);
+    if (!objectPathMatch || !objectPathMatch[1]) return src;
 
-    const pathWithoutExtension = baseUrl.substring(0, lastDotIndex);
-    const extension = baseUrl.substring(lastDotIndex);
+    const fullPath = objectPathMatch[1];
+    const lastSlashIndex = fullPath.lastIndexOf('/');
+    const directory = fullPath.substring(0, lastSlashIndex);
+    const filename = fullPath.substring(lastSlashIndex + 1);
 
+    // Determine the size suffix based on requested width
     let sizeSuffix: string;
     if (width <= 400) {
       sizeSuffix = '_400x400';
@@ -48,11 +46,17 @@ export function firebaseImageLoader({ src, width }: { src: string; width: number
       sizeSuffix = '_1200x1200';
     }
 
-    // Based on the user's logs, the extension preserves the original file type.
-    // If WebP conversion were enabled, we would change the extension to '.webp'.
-    const newUrl = `${pathWithoutExtension}${sizeSuffix}${extension}${queryParams}`;
+    // It's better to request WebP if the extension is configured to convert.
+    // Assuming WebP conversion is on.
+    const newFilename = filename.replace(/(\.[\w\d_-]+)$/i, `${sizeSuffix}.webp`);
 
-    return newUrl;
+    // Prepend 'thumbnails/' to the filename
+    const resizedPath = `${directory}/thumbnails/${newFilename}`;
+
+    // Reconstruct the URL for the resized image
+    url.pathname = `/o/${encodeURIComponent(resizedPath)}`;
+    
+    return url.toString();
   } catch (e) {
     console.error("Error in firebaseImageLoader:", e);
     return src; // Return original on error
