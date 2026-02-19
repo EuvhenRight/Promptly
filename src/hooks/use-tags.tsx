@@ -1,5 +1,7 @@
 'use client'
 
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase'
+import { collection } from 'firebase/firestore'
 import React, { createContext, useContext, useEffect, useState } from 'react'
 
 export type TagItem = { id: string; name: string }
@@ -14,25 +16,20 @@ type TagsContextValue = {
 const TagsContext = createContext<TagsContextValue | null>(null)
 
 export function TagsProvider({ children }: { children: React.ReactNode }) {
+	const firestore = useFirestore()
 	const [nameById, setNameById] = useState<Record<string, string>>({})
-	const [tags, setTags] = useState<TagItem[]>([])
-	const [isLoading, setIsLoading] = useState(true)
+
+	const tagsQuery = useMemoFirebase(
+		() => (firestore ? collection(firestore, 'tags') : null),
+		[firestore],
+	)
+	const { data: tags, isLoading } = useCollection<TagItem>(tagsQuery)
 
 	useEffect(() => {
-		setIsLoading(true)
-		fetch('/api/tags')
-			.then(res => (res.ok ? res.json() : []))
-			.then((data: TagItem[]) => {
-				const list = Array.isArray(data) ? data : []
-				setTags(list)
-				setNameById(Object.fromEntries(list.map(t => [t.id, t.name])))
-			})
-			.catch(() => {
-				setTags([])
-				setNameById({})
-			})
-			.finally(() => setIsLoading(false))
-	}, [])
+		if (tags) {
+			setNameById(Object.fromEntries(tags.map(t => [t.id, t.name])))
+		}
+	}, [tags])
 
 	const getNames = (ids: string[] | string | undefined): string[] => {
 		if (ids == null) return []
@@ -40,7 +37,12 @@ export function TagsProvider({ children }: { children: React.ReactNode }) {
 		return arr.map(id => nameById[id.trim()] ?? id)
 	}
 
-	const value: TagsContextValue = { tags, nameById, getNames, isLoading }
+	const value: TagsContextValue = {
+		tags: tags ?? [],
+		nameById,
+		getNames,
+		isLoading,
+	}
 	return <TagsContext.Provider value={value}>{children}</TagsContext.Provider>
 }
 

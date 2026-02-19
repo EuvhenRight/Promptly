@@ -1,5 +1,7 @@
 'use client'
 
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase'
+import { collection } from 'firebase/firestore'
 import React, { createContext, useContext, useEffect, useState } from 'react'
 
 export type CategoryItem = { id: string; name: string }
@@ -18,25 +20,21 @@ export function CategoriesProvider({
 }: {
 	children: React.ReactNode
 }) {
+	const firestore = useFirestore()
 	const [nameById, setNameById] = useState<Record<string, string>>({})
-	const [categories, setCategories] = useState<CategoryItem[]>([])
-	const [isLoading, setIsLoading] = useState(true)
+
+	const categoriesQuery = useMemoFirebase(
+		() => (firestore ? collection(firestore, 'categories') : null),
+		[firestore],
+	)
+	const { data: categories, isLoading } =
+		useCollection<CategoryItem>(categoriesQuery)
 
 	useEffect(() => {
-		setIsLoading(true)
-		fetch('/api/categories')
-			.then(res => (res.ok ? res.json() : []))
-			.then((data: CategoryItem[]) => {
-				const list = Array.isArray(data) ? data : []
-				setCategories(list)
-				setNameById(Object.fromEntries(list.map(c => [c.id, c.name])))
-			})
-			.catch(() => {
-				setCategories([])
-				setNameById({})
-			})
-			.finally(() => setIsLoading(false))
-	}, [])
+		if (categories) {
+			setNameById(Object.fromEntries(categories.map(c => [c.id, c.name])))
+		}
+	}, [categories])
 
 	const getNames = (ids: string[] | string | undefined): string[] => {
 		if (ids == null) return []
@@ -45,7 +43,7 @@ export function CategoriesProvider({
 	}
 
 	const value: CategoriesContextValue = {
-		categories,
+		categories: categories ?? [],
 		nameById,
 		getNames,
 		isLoading,

@@ -1,5 +1,7 @@
 'use client'
 
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase'
+import { collection } from 'firebase/firestore'
 import React, { createContext, useContext, useEffect, useState } from 'react'
 
 export type TypeItem = { id: string; name: string }
@@ -14,25 +16,20 @@ type TypesContextValue = {
 const TypesContext = createContext<TypesContextValue | null>(null)
 
 export function TypesProvider({ children }: { children: React.ReactNode }) {
+	const firestore = useFirestore()
 	const [nameById, setNameById] = useState<Record<string, string>>({})
-	const [types, setTypes] = useState<TypeItem[]>([])
-	const [isLoading, setIsLoading] = useState(true)
+
+	const typesQuery = useMemoFirebase(
+		() => (firestore ? collection(firestore, 'types') : null),
+		[firestore],
+	)
+	const { data: types, isLoading } = useCollection<TypeItem>(typesQuery)
 
 	useEffect(() => {
-		setIsLoading(true)
-		fetch('/api/types')
-			.then(res => (res.ok ? res.json() : []))
-			.then((data: TypeItem[]) => {
-				const list = Array.isArray(data) ? data : []
-				setTypes(list)
-				setNameById(Object.fromEntries(list.map(t => [t.id, t.name])))
-			})
-			.catch(() => {
-				setTypes([])
-				setNameById({})
-			})
-			.finally(() => setIsLoading(false))
-	}, [])
+		if (types) {
+			setNameById(Object.fromEntries(types.map(t => [t.id, t.name])))
+		}
+	}, [types])
 
 	const getNames = (ids: string[] | string | undefined): string[] => {
 		if (ids == null) return []
@@ -40,7 +37,12 @@ export function TypesProvider({ children }: { children: React.ReactNode }) {
 		return arr.map(id => nameById[id.trim()] ?? id)
 	}
 
-	const value: TypesContextValue = { types, nameById, getNames, isLoading }
+	const value: TypesContextValue = {
+		types: types ?? [],
+		nameById,
+		getNames,
+		isLoading,
+	}
 	return <TypesContext.Provider value={value}>{children}</TypesContext.Provider>
 }
 
