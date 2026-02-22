@@ -63,7 +63,7 @@ export function PanelLayout({
 			{/* Right column: scroll container so header (sticky) stays visible; we scroll this to top on pathname change */}
 			<div
 				ref={rightColumnRef}
-				className='flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden'
+				className='flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden scroll-smooth'
 			>
 				<PanelHeader
 					config={navConfig}

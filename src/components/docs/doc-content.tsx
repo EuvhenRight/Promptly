@@ -2,6 +2,8 @@
 
 import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
+import rehypeRaw from 'rehype-raw'
+import rehypeSlug from 'rehype-slug'
 import remarkGfm from 'remark-gfm'
 import { DOC_SLUG_TO_FILE } from '@/lib/docs-map'
 import { MermaidDiagram } from './mermaid-diagram'
@@ -56,7 +58,12 @@ export function DocContent({ content }: { content: string }) {
 	return (
 		<article className="max-w-none">
 			<div className="docs-content">
-				<ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
+				<ReactMarkdown
+					remarkPlugins={[remarkGfm]}
+					remarkRehypeOptions={{ allowDangerousHtml: true }}
+					rehypePlugins={[rehypeRaw, rehypeSlug]}
+					components={mdComponents}
+				>
 					{content}
 				</ReactMarkdown>
 			</div>

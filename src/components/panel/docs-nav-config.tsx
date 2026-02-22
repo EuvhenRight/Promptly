@@ -1,10 +1,12 @@
 import {
 	ArrowLeft,
+	BarChart3,
 	BookOpen,
 	Code,
 	Database,
 	FileCheck,
 	FileJson,
+	FileText,
 	GitBranch,
 	Home,
 	Layout,
@@ -15,6 +17,7 @@ import {
 	Settings,
 	Shield,
 	TestTube,
+	Users,
 } from 'lucide-react'
 import type { PanelNavConfig } from './types'
 
@@ -24,6 +27,9 @@ export const DOCS_NAV_CONFIG: PanelNavConfig = {
 	homeHref: '/docs',
 	items: [
 		{ href: '/docs/overview', label: 'Огляд', icon: Home },
+		{ href: '/docs/dashboard', label: 'Дашборд планів', icon: BarChart3, separatorBefore: true },
+		{ href: '/docs/strategy-2026', label: 'Стратегія 2026', icon: FileText },
+		{ href: '/docs/team-plan', label: 'Повний план команди', icon: Users },
 		{ href: '/docs/architecture', label: 'Архітектура', icon: GitBranch },
 		{ href: '/docs/frontend', label: 'Frontend', icon: Layout },
 		{ href: '/docs/backend', label: 'Backend', icon: Server },
@@ -37,7 +43,7 @@ export const DOCS_NAV_CONFIG: PanelNavConfig = {
 		{ href: '/docs/todo-refactor', label: 'TODO та рефакторинг', icon: ListTodo },
 		{ href: '/docs/features-summary', label: 'Зведення можливостей', icon: FileCheck },
 		{ href: '/docs/testing', label: 'Тестування', icon: TestTube },
-		{ href: '/admin', label: 'Back to Admin Panel', icon: ArrowLeft, separatorBefore: true },
+		{ href: '/admin', label: 'Назад до панелі адміна', icon: ArrowLeft, separatorBefore: true },
 	],
 	getIsActive(href, pathname) {
 		return pathname === href || (pathname === '/docs' && href === '/docs/overview')

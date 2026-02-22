@@ -13,6 +13,8 @@ export const DOC_SLUG_TO_FILE: Record<string, string> = {
 	'todo-refactor': '10-todo-refactor.md',
 	'features-summary': '11-features-summary.md',
 	testing: '12-testing.md',
+	'strategy-2026': '13-strategy-2026.md',
+	'team-plan': '14-team-plan.md',
 }
 
 export function getDocFilename(slug: string): string | null {
@@ -24,6 +26,9 @@ export const DOC_SLUGS = Object.keys(DOC_SLUG_TO_FILE) as string[]
 /** Ordered slugs for prev/next pagination (matches sidebar order, includes api-spec). */
 export const DOC_ORDERED_SLUGS: string[] = [
 	'overview',
+	'dashboard',
+	'strategy-2026',
+	'team-plan',
 	'architecture',
 	'frontend',
 	'backend',

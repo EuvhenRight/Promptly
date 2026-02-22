@@ -9,10 +9,12 @@ import {
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import {
+	BarChart3,
 	BookOpen,
 	Code,
 	Database,
 	FileJson,
+	FileText,
 	GitBranch,
 	Home,
 	Layout,
@@ -24,6 +26,7 @@ import {
 	Server,
 	Settings,
 	Shield,
+	Users,
 } from 'lucide-react'
 import Link from 'next/link'
 import { createContext, useContext } from 'react'
@@ -36,6 +39,9 @@ export const DocsSidebarContext = createContext<{
 
 const DOCS_NAV = [
 	{ slug: 'overview', label: 'Огляд', icon: Home },
+	{ slug: 'dashboard', label: 'Дашборд планів', icon: BarChart3 },
+	{ slug: 'strategy-2026', label: 'Стратегія 2026', icon: FileText },
+	{ slug: 'team-plan', label: 'Повний план команди', icon: Users },
 	{ slug: 'architecture', label: 'Архітектура', icon: GitBranch },
 	{ slug: 'frontend', label: 'Frontend', icon: Layout },
 	{ slug: 'backend', label: 'Backend', icon: Server },

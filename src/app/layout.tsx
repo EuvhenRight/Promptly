@@ -23,9 +23,37 @@ const fontSpaceGrotesk = Space_Grotesk({
 	variable: '--font-space-grotesk',
 })
 
+const siteUrl =
+	process.env.NEXT_PUBLIC_SITE_URL ||
+	(process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined)
+
 export const metadata: Metadata = {
-	title: 'Promptly',
-	description: 'A marketplace for the best AI prompts.',
+	metadataBase: siteUrl ? new URL(siteUrl) : undefined,
+	title: {
+		default: 'Promptly — Find, Buy & Sell AI Prompts',
+		template: '%s | Promptly',
+	},
+	description:
+		'Find, buy, and sell AI prompts. Discover prompts for Midjourney, ChatGPT, and more. Verified reviews, creator earnings, ready to use.',
+	openGraph: {
+		title: 'Promptly — Find, Buy & Sell AI Prompts',
+		description:
+			'Find, buy, and sell AI prompts. Discover prompts for Midjourney, ChatGPT, and more. Verified reviews, creator earnings.',
+		url: siteUrl,
+		siteName: 'Promptly',
+		type: 'website',
+		images: siteUrl ? [{ url: '/og-image.png', width: 1200, height: 630 }] : [],
+	},
+	twitter: {
+		card: 'summary_large_image',
+		title: 'Promptly — Find, Buy & Sell AI Prompts',
+		description:
+			'Find, buy, and sell AI prompts. Verified reviews. Creator-first marketplace.',
+	},
+	robots: {
+		index: true,
+		follow: true,
+	},
 }
 
 export default function RootLayout({
