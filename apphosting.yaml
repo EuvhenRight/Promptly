@@ -1,0 +1,60 @@
+# Settings to manage and configure a Firebase App Hosting backend.
+# https://firebase.google.com/docs/app-hosting/configure
+#
+# IMPORTANT: After adding a new secret reference below (e.g. STRIPE_SECRET_KEY),
+# you must grant the backend access to it. This is a one-time setup per secret.
+#
+# Since you are using Studio, you must do this manually in the Google Cloud Console:
+# 1. Find the service account emails in IAM for "App Hosting Backend" and "Cloud Build".
+# 2. Go to Secret Manager, select the secret, and in PERMISSIONS, grant both emails
+#    the "Secret Manager Secret Accessor" role.
+
+runConfig:
+  maxInstances: 1
+
+env:
+  - variable: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+    value: pk_test_51Sv0wvLNMP4OpKJBDCBq1jlhUjUGAcTKzLaKmZ8FyR9AOtWJnnixDGjCBwiQRRHBDRrLQ0yc1Ly95UsiJRPLfkEZ005qrvaxAm
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: STRIPE_CURRENCY
+    value: eur
+    availability:
+      - BUILD
+      - RUNTIME
+  
+  # --- START FIREBASE CONFIG - REPLACE WITH YOUR VALUES ---
+  # Your web app's Firebase configuration.
+  # Find this in your Firebase project settings -> Your apps -> Web app.
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: "REPLACE_WITH_YOUR_API_KEY"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: "REPLACE_WITH_YOUR_PROJECT_ID.firebaseapp.com"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: "REPLACE_WITH_YOUR_PROJECT_ID"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: "REPLACE_WITH_YOUR_PROJECT_ID.appspot.com"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "REPLACE_WITH_YOUR_MESSAGING_SENDER_ID"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "REPLACE_WITH_YOUR_APP_ID"
+    availability:
+      - BUILD
+      - RUNTIME
+  # --- END FIREBASE CONFIG ---

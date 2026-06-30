@@ -1,0 +1,46 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    /**
+     * Checks if the request is from an authenticated user.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the user has an 'admin' role by reading their Firestore profile.
+     * This is a cross-service read from Firestore within Storage rules.
+     */
+    function isAdmin() {
+      return isSignedIn() && get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Rules for the 'prompts' directory where all prompt images are stored.
+    match /prompts/{allPaths=**} {
+      // Allow anyone to read the images. This is required for the app to display them.
+      allow read: if true;
+      
+      // Allow authenticated users to upload images. Prompt creation is still protected
+      // by Firestore rules (admin-only). This allows admins and creators to add images.
+      allow write: if isSignedIn();
+    }
+
+    // Rules for user avatars and cover images - users can upload their own
+    match /users/{userId}/avatar/{allPaths=**} {
+      allow read: if true;
+      allow write: if isSignedIn() && request.auth.uid == userId;
+    }
+    match /users/{userId}/cover/{allPaths=**} {
+      allow read: if true;
+      allow write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    match /searchBarBackgrounds/{allPaths=**} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+  }
+}

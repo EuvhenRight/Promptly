@@ -1,0 +1,26 @@
+diff --git a/node_modules/next/dist/esm/server/image-optimizer.js b/node_modules/next/dist/esm/server/image-optimizer.js
+index 1234567..abcdefg 100644
+--- a/node_modules/next/dist/esm/server/image-optimizer.js
++++ b/node_modules/next/dist/esm/server/image-optimizer.js
+@@ -660,7 +660,7 @@ async function optimizeImage({ buffer, contentType, quality, width, height, conc
+ }
+ export async function fetchExternalImage(href) {
+     const res = await fetch(href, {
+-        signal: AbortSignal.timeout(7000)
++        signal: AbortSignal.timeout(30000)
+     }).catch((err)=>err);
+     if (res instanceof Error) {
+         const err = res;
+diff --git a/node_modules/next/dist/server/image-optimizer.js b/node_modules/next/dist/server/image-optimizer.js
+index 1234567..abcdefg 100644
+--- a/node_modules/next/dist/server/image-optimizer.js
++++ b/node_modules/next/dist/server/image-optimizer.js
+@@ -776,7 +776,7 @@ function getPreviouslyCachedImageOrNull(upstreamImage, previousCacheEntry) {
+ }
+ async function fetchExternalImage(href) {
+     const res = await fetch(href, {
+-        signal: AbortSignal.timeout(7000)
++        signal: AbortSignal.timeout(30000)
+     }).catch((err)=>err);
+     if (res instanceof Error) {
+         const err = res;

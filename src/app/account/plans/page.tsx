@@ -1,0 +1,527 @@
+'use client'
+
+import AccountSidebar from '@/components/account/account-sidebar'
+import Footer from '@/components/layout/footer'
+import Header from '@/components/layout/header'
+import { Button } from '@/components/ui/button'
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+} from '@/components/ui/card'
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from '@/components/ui/accordion'
+import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase'
+import type { UserProfile } from '@/lib/types'
+import { doc } from 'firebase/firestore'
+import { Check, Crown, Loader2, Star, Zap } from 'lucide-react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import React, { useEffect, useRef, useState } from 'react'
+import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
+import { add, format } from 'date-fns'
+import { manageSubscriptionCancellation } from '@/firebase/users'
+import { useToast } from '@/hooks/use-toast'
+
+const FREE_FEATURES = [
+	'500 credits per month',
+	'For personal use only',
+	'Lower processing priority',
+	'All creations are public',
+	'20% sales commission',
+]
+
+const STARTER_FEATURES = [
+	'✨ 4,000 credits per month',
+	'Private generations',
+	'Access to all models',
+	'10% sales commission',
+]
+
+const PRO_FEATURES = [
+	'✨ 8,000 credits per month',
+	'All STARTER Features',
+	'0% sales commission',
+	'Private prompts (invisible to others)',
+	'Unlimited concurrent processing',
+]
+
+const FAQ_ITEMS = [
+	{
+		q: 'Can I change plans anytime?',
+		a: 'Yes, you can upgrade or downgrade your plan at any time. Changes take effect immediately.',
+	},
+	{
+		q: 'Do unused credits expire?',
+		a: 'Monthly credits reset each billing cycle, but extra credits purchased separately never expire.',
+	},
+	{
+		q: 'What payment methods do you accept?',
+		a: 'We accept all major credit cards, PayPal, and other popular payment methods.',
+	},
+	{
+		q: 'Is there a free trial?',
+		a: "Yes! Start with our Free plan to try Promptly before upgrading to a paid plan.",
+	},
+]
+
+const SubscriptionStatusCard = React.forwardRef<
+	HTMLDivElement,
+	{ profile: UserProfile }
+>(({ profile }, ref) => {
+	const firestore = useFirestore()
+	const { toast } = useToast()
+	const [isCancelling, setIsCancelling] = useState(false)
+	const {
+		planId,
+		planPurchasedAt,
+		planBillingPeriod,
+		planWillCancelAtPeriodEnd,
+	} = profile
+
+	if (!planId || planId === 'free') {
+		return null
+	}
+
+	const handleCancellation = async (cancel: boolean) => {
+		setIsCancelling(true)
+		try {
+			await manageSubscriptionCancellation(firestore, profile.uid, cancel)
+			toast({
+				title: `Subscription ${cancel ? 'Cancellation Scheduled' : 'Reactivated'}`,
+				description: cancel
+					? 'Your plan will remain active until the end of the current billing period.'
+					: 'Your plan will now renew automatically as scheduled.',
+			})
+		} catch (error: any) {
+			toast({
+				variant: 'destructive',
+				title: 'Error',
+				description: error.message,
+			})
+		} finally {
+			setIsCancelling(false)
+		}
+	}
+
+	const planName = planId === 'pro' ? 'PRO' : 'Starter'
+	const purchaseDate = planPurchasedAt?.toDate()
+	const renewalDate =
+		purchaseDate &&
+		(planBillingPeriod === 'yearly'
+			? add(purchaseDate, { years: 1 })
+			: add(purchaseDate, { months: 1 }))
+
+	return (
+		<Card className='mb-8' ref={ref}>
+			<CardHeader>
+				<CardTitle>Current Subscription</CardTitle>
+				<CardDescription>
+					Manage your active plan and billing details.
+				</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<p>
+					You are currently on the{' '}
+					<span className='font-bold text-primary'>{planName}</span> plan.
+				</p>
+				{renewalDate && (
+					<p className='text-muted-foreground text-sm mt-1'>
+						{planWillCancelAtPeriodEnd
+							? `Your subscription will remain active until ${format(renewalDate, 'PPP')}.`
+							: `Your plan automatically renews on ${format(renewalDate, 'PPP')}.`}
+					</p>
+				)}
+			</CardContent>
+			<CardFooter>
+				{planWillCancelAtPeriodEnd ? (
+					<Button
+						variant='outline'
+						onClick={() => handleCancellation(false)}
+						disabled={isCancelling}
+					>
+						{isCancelling && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+						Reactivate Subscription
+					</Button>
+				) : (
+					<Button
+						variant='destructive'
+						onClick={() => handleCancellation(true)}
+						disabled={isCancelling}
+					>
+						{isCancelling && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+						Cancel Subscription
+					</Button>
+				)}
+			</CardFooter>
+		</Card>
+	)
+})
+SubscriptionStatusCard.displayName = 'SubscriptionStatusCard'
+
+export default function PlansPage() {
+	const { user, isUserLoading } = useUser()
+	const firestore = useFirestore()
+	const router = useRouter()
+	const { toast } = useToast()
+	const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>(
+		'yearly',
+	)
+	const subscriptionCardRef = useRef<HTMLDivElement>(null)
+
+	const userProfileRef = useMemoFirebase(
+		() => (user ? doc(firestore, 'users', user.uid) : null),
+		[firestore, user],
+	)
+	const { data: userProfile, isLoading: isProfileLoading } =
+		useDoc<UserProfile>(userProfileRef)
+	const currentPlan = userProfile?.planId ?? 'free'
+
+	const credits = userProfile?.credits ?? 0
+
+	useEffect(() => {
+		if (!isUserLoading && !user) {
+			router.replace('/plans')
+		}
+	}, [user, isUserLoading, router])
+
+	if (isUserLoading || isProfileLoading) {
+		return (
+			<div className='flex min-h-screen flex-col'>
+				<Header />
+				<main className='flex-grow container mx-auto px-4 py-8'>
+					<Skeleton className='h-96 w-full animate-pulse rounded-lg bg-muted' />
+				</main>
+				<Footer />
+			</div>
+		)
+	}
+
+	if (!user || !userProfile) {
+		return null
+	}
+
+	return (
+		<div className='flex min-h-screen flex-col'>
+			<Header />
+			<main className='flex-grow container mx-auto px-4 py-8 sm:px-6 lg:px-8'>
+				<div className='flex flex-col lg:flex-row gap-8'>
+					<AccountSidebar credits={credits} />
+
+					<div className='flex-1 min-w-0'>
+						<SubscriptionStatusCard
+							profile={userProfile}
+							ref={subscriptionCardRef}
+						/>
+
+						<h1 className='font-headline text-3xl font-bold'>
+							Choose Your Plan
+						</h1>
+						<p className='mt-2 text-muted-foreground'>
+							Unlock the full potential of Promptly with our flexible pricing
+							options. Start free and upgrade when you're ready.
+						</p>
+
+						{/* Billing Toggle */}
+						<div className='mt-6 flex items-center gap-4'>
+							<div className='flex items-center gap-3'>
+								<Button
+									variant={billingPeriod === 'monthly' ? 'default' : 'outline'}
+									size='sm'
+									onClick={() => setBillingPeriod('monthly')}
+								>
+									Monthly
+								</Button>
+								<Button
+									variant={billingPeriod === 'yearly' ? 'default' : 'outline'}
+									size='sm'
+									onClick={() => setBillingPeriod('yearly')}
+								>
+									Yearly
+								</Button>
+							</div>
+							<span className='text-sm text-green-600 font-medium'>
+								Save up to 10% with yearly billing!
+							</span>
+						</div>
+
+						{/* Plan Cards */}
+						<div className='mt-8 grid grid-cols-1 md:grid-cols-3 gap-6'>
+							{/* Free */}
+							<Card
+								className={cn(
+									'flex flex-col',
+									currentPlan === 'free' && 'border-primary ring-2 ring-primary',
+								)}
+							>
+								<CardHeader className='items-center text-center'>
+									<div className='flex h-10 w-10 items-center justify-center rounded-full bg-muted'>
+										<Star className='h-6 w-6 text-muted-foreground' />
+									</div>
+									<CardTitle>Free</CardTitle>
+									<CardDescription>
+										Get started with limited access.
+									</CardDescription>
+									<p className='text-4xl font-bold'>€0</p>
+								</CardHeader>
+								<CardContent className='space-y-3 flex-grow'>
+									{FREE_FEATURES.map(f => (
+										<div key={f} className='flex items-start gap-2'>
+											<Check className='h-4 w-4 text-green-600 shrink-0 mt-1' />
+											<span className='text-sm'>{f}</span>
+										</div>
+									))}
+								</CardContent>
+								<CardFooter>
+									{currentPlan === 'free' ? (
+										<Button variant='outline' className='w-full' disabled>
+											Current Plan
+										</Button>
+									) : (
+										<Button
+											variant='outline'
+											className='w-full'
+											onClick={() => {
+												subscriptionCardRef.current?.scrollIntoView({
+													behavior: 'smooth',
+												})
+												toast({
+													title: 'How to Downgrade',
+													description:
+														'Please cancel your current plan to switch to the Free plan at the end of your billing cycle.',
+												})
+											}}
+										>
+											Downgrade
+										</Button>
+									)}
+								</CardFooter>
+							</Card>
+
+							{/* Starter */}
+							<Card
+								className={cn(
+									'flex flex-col',
+									currentPlan === 'starter' &&
+										'border-primary ring-2 ring-primary',
+								)}
+							>
+								<CardHeader className='items-center text-center'>
+									<div className='flex h-10 w-10 items-center justify-center rounded-full bg-muted'>
+										<Zap className='h-6 w-6 text-primary' />
+									</div>
+									<CardTitle>Starter</CardTitle>
+									<CardDescription>
+										For enthusiasts creating occasionally.
+									</CardDescription>
+									<div className='flex items-baseline gap-2'>
+										<p className='text-4xl font-bold'>
+											€{billingPeriod === 'yearly' ? '8' : '9'}
+										</p>
+										<span className='text-sm text-muted-foreground'>/ mo</span>
+									</div>
+									<p className='text-xs text-muted-foreground'>
+										{billingPeriod === 'yearly' && (
+											<span className='text-green-600'>
+												(Billed yearly at €97)
+											</span>
+										)}
+									</p>
+								</CardHeader>
+								<CardContent className='space-y-3 flex-grow'>
+									{STARTER_FEATURES.map(f => (
+										<div key={f} className='flex items-start gap-2'>
+											<Check className='h-4 w-4 text-green-600 shrink-0 mt-1' />
+											<span className='text-sm'>{f}</span>
+										</div>
+									))}
+								</CardContent>
+								<CardFooter>
+									{currentPlan === 'starter' ? (
+										<Button className='w-full' disabled>
+											Current Plan
+										</Button>
+									) : (
+										<Button className='w-full' asChild>
+											<Link
+												href={`/checkout?type=plan&plan=starter&billing=${billingPeriod}`}
+											>
+												{currentPlan === 'pro'
+													? 'Downgrade to Starter'
+													: 'Get Started with Starter'}
+											</Link>
+										</Button>
+									)}
+								</CardFooter>
+							</Card>
+
+							{/* Pro */}
+							<Card
+								className={cn(
+									'relative flex flex-col',
+									currentPlan === 'pro' && 'border-primary ring-2 ring-primary',
+								)}
+							>
+								{currentPlan !== 'pro' && (
+									<div className='absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-medium'>
+										Most Popular
+									</div>
+								)}
+								<CardHeader className='items-center text-center'>
+									<div className='flex h-10 w-10 items-center justify-center rounded-full bg-muted'>
+										<Crown className='h-6 w-6 text-amber-500' />
+									</div>
+									<CardTitle>Pro</CardTitle>
+									<CardDescription>
+										For experts creating daily.
+									</CardDescription>
+									<div className='flex items-baseline gap-2'>
+										<p className='text-4xl font-bold'>
+											€{billingPeriod === 'yearly' ? '17' : '19'}
+										</p>
+										<span className='text-sm text-muted-foreground'>
+											/ mo
+										</span>
+									</div>
+									<p className='text-xs text-muted-foreground'>
+										{billingPeriod === 'yearly' && (
+											<span className='text-green-600'>
+												(Billed yearly at €205)
+											</span>
+										)}
+									</p>
+								</CardHeader>
+								<CardContent className='space-y-3 flex-grow'>
+									{PRO_FEATURES.map(f => (
+										<div key={f} className='flex items-start gap-2'>
+											<Check className='h-4 w-4 text-green-600 shrink-0 mt-1' />
+											<span className='text-sm'>{f}</span>
+										</div>
+									))}
+								</CardContent>
+								<CardFooter>
+									{currentPlan === 'pro' ? (
+										<Button className='w-full' disabled>
+											Current Plan
+										</Button>
+									) : (
+										<Button className='w-full' asChild>
+											<Link
+												href={`/checkout?type=plan&plan=pro&billing=${billingPeriod}`}
+											>
+												{currentPlan === 'starter'
+													? 'Upgrade to Pro'
+													: 'Get Started with Pro'}
+											</Link>
+										</Button>
+									)}
+								</CardFooter>
+							</Card>
+						</div>
+
+						{/* Need Extra Credits */}
+						<section id='credits' className='mt-16'>
+							<h2 className='font-headline text-3xl font-bold text-center'>
+								Need Extra Credits?
+							</h2>
+							<p className='mt-2 text-muted-foreground text-center max-w-xl mx-auto'>
+								Purchase credits that never expire and roll over month to month.
+							</p>
+							<div className='mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto'>
+								{/* 300 Credits Card */}
+								<Card className='flex flex-col text-center p-8'>
+									<div className='flex-grow space-y-4'>
+										<div className='flex justify-center'>
+											<div className='bg-muted text-foreground p-4 rounded-lg inline-block'>
+												<Zap className='h-8 w-8' />
+											</div>
+										</div>
+										<h3 className='text-2xl font-bold'>300 Credits</h3>
+										<p className='text-muted-foreground'>
+											Great for getting started and occasional use.
+										</p>
+										<p className='text-4xl font-bold'>€9</p>
+									</div>
+									<Button className='w-full mt-6' size='lg' asChild>
+										<Link href='/checkout?type=credits&credits=300'>
+											Buy Credits
+										</Link>
+									</Button>
+								</Card>
+
+								{/* 500 Credits Card */}
+								<Card className='flex flex-col text-center p-8'>
+									<div className='flex-grow space-y-4'>
+										<div className='flex justify-center'>
+											<div className='bg-muted text-foreground p-4 rounded-lg inline-block'>
+												<Zap className='h-8 w-8' />
+											</div>
+										</div>
+										<h3 className='text-2xl font-bold'>500 Credits</h3>
+										<p className='text-muted-foreground'>
+											Perfect for power users and frequent creation.
+										</p>
+										<p className='text-4xl font-bold'>€15</p>
+									</div>
+									<Button className='w-full mt-6' size='lg' asChild>
+										<Link href='/checkout?type=credits&credits=500'>
+											Buy Credits
+										</Link>
+									</Button>
+								</Card>
+
+								{/* 1000 Credits Card */}
+								<Card className='relative flex flex-col text-center p-8 border-primary ring-2 ring-primary'>
+									<div className='absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-medium'>
+										Best Value
+									</div>
+									<div className='flex-grow space-y-4'>
+										<div className='flex justify-center'>
+											<div className='bg-primary/10 text-primary p-4 rounded-lg inline-block'>
+												<Zap className='h-8 w-8' />
+											</div>
+										</div>
+										<h3 className='text-2xl font-bold'>1000 Credits</h3>
+										<p className='text-muted-foreground'>
+											For the true prompt master.
+										</p>
+										<p className='text-4xl font-bold'>€27</p>
+									</div>
+									<Button className='w-full mt-6' size='lg' asChild>
+										<Link href='/checkout?type=credits&credits=1000'>
+											Buy Credits
+										</Link>
+									</Button>
+								</Card>
+							</div>
+						</section>
+
+						{/* FAQ */}
+						<section className='mt-16'>
+							<h2 className='font-headline text-2xl font-bold mb-6'>
+								Frequently Asked Questions
+							</h2>
+							<Accordion type='single' collapsible className='w-full'>
+								{FAQ_ITEMS.map((item, i) => (
+									<AccordionItem key={i} value={`faq-${i}`}>
+										<AccordionTrigger>{item.q}</AccordionTrigger>
+										<AccordionContent>{item.a}</AccordionContent>
+									</AccordionItem>
+								))}
+							</Accordion>
+						</section>
+					</div>
+				</div>
+			</main>
+			<Footer />
+		</div>
+	)
+}

@@ -1,0 +1,514 @@
+{
+  "entities": {
+    "Sale": {
+      "title": "Sale Record",
+      "type": "object",
+      "description": "A record of a single completed transaction on the platform.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "The type of purchase.",
+          "enum": ["prompt", "cart", "credits", "subscription"]
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the sale.",
+          "enum": ["completed", "refunded"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the sale occurred."
+        },
+        "buyerId": {
+          "type": "string",
+          "description": "The UID of the user who made the purchase."
+        },
+        "sellerId": {
+          "type": "string",
+          "description": "The UID of the user who sold the prompt (if applicable)."
+        },
+        "promptIds": {
+          "type": "array",
+          "description": "An array of prompt IDs included in the sale.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "revenueDetails": {
+          "type": "object",
+          "properties": {
+            "gross": {
+              "type": "number",
+              "description": "The total transaction amount in the smallest currency unit (e.g., cents)."
+            },
+            "platformFee": {
+              "type": "number",
+              "description": "The portion of the gross amount taken by the platform, in cents."
+            },
+            "sellerEarning": {
+              "type": "number",
+              "description": "The net amount earned by the seller, in cents."
+            }
+          },
+          "required": ["gross", "platformFee", "sellerEarning"]
+        }
+      },
+      "required": ["type", "status", "createdAt", "buyerId", "revenueDetails"]
+    },
+    "UserProfile": {
+      "title": "User Profile",
+      "type": "object",
+      "description": "Stores public and private profile information for a user.",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The unique identifier for the user, matching the Firebase Auth UID."
+        },
+        "username": {
+          "type": "string",
+          "description": "The user's unique, public-facing username for URLs."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The user's public display name."
+        },
+        "photoURL": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL of the user's profile picture."
+        },
+        "role": {
+          "type": "string",
+          "description": "The user's role in the application.",
+          "enum": [
+            "user",
+            "admin"
+          ]
+        },
+        "planId": {
+          "type": "string",
+          "description": "The identifier of the user's current subscription plan.",
+          "enum": ["free", "starter", "pro"]
+        },
+        "planPurchasedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the current plan was purchased or renewed."
+        },
+        "planBillingPeriod": {
+          "type": "string",
+          "description": "The billing cycle for the subscription.",
+          "enum": ["monthly", "yearly"]
+        },
+        "planWillCancelAtPeriodEnd": {
+          "type": "boolean",
+          "description": "If true, the subscription will not auto-renew at the end of the current period."
+        },
+        "purchasedPrompts": {
+          "type": "array",
+          "description": "An array of prompt IDs that the user has purchased.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "credits": {
+          "type": "number",
+          "description": "Credit balance purchased by the user."
+        },
+        "earnings": {
+          "type": "number",
+          "description": "Credit balance earned from prompt sales, available for payout."
+        },
+        "payoutStatus": {
+          "type": "string",
+          "description": "Current status of a pending payout request.",
+          "enum": [
+            "none",
+            "pending",
+            "approved",
+            "processing",
+            "paid",
+            "rejected"
+          ]
+        }
+      },
+      "required": [
+        "uid",
+        "email",
+        "displayName",
+        "photoURL",
+        "role"
+      ]
+    },
+    "PublicProfile": {
+      "title": "Public User Profile",
+      "type": "object",
+      "description": "Stores only the public-facing information for a user.",
+      "properties": {
+        "uid": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "photoURL": {
+          "type": "string",
+          "format": "uri"
+        },
+        "description": {
+          "type": "string"
+        },
+        "coverImageURL": {
+          "type": "string",
+          "format": "uri"
+        },
+        "planId": {
+          "type": "string",
+          "enum": ["free", "starter", "pro"]
+        },
+        "isVerified": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "uid",
+        "username",
+        "displayName"
+      ]
+    },
+    "Prompt": {
+      "title": "Prompt",
+      "type": "object",
+      "description": "Represents a single AI prompt listing in the marketplace.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "authorId": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "price": {
+          "type": "number"
+        },
+        "isPrivate": {
+          "type": "boolean",
+          "description": "If true, this prompt is only visible to users with a PRO subscription."
+        },
+        "images": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "categoryId": {
+            "type": "string"
+        },
+        "modelId": {
+          "type": "string"
+        },
+        "typeId": {
+          "type": "string"
+        },
+        "rating": {
+          "type": "object",
+          "properties": {
+            "average": {
+              "type": "number"
+            },
+            "count": {
+              "type": "number"
+            }
+          }
+        }
+      },
+      "required": [
+        "authorId",
+        "title",
+        "description",
+        "price"
+      ]
+    },
+    "Model": {
+      "title": "Model",
+      "type": "object",
+      "description": "Represents an AI model used to generate prompts.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "PromptPrivateContent": {
+      "title": "Prompt Private Content",
+      "type": "object",
+      "description": "The actual, protected content of the prompt.",
+      "properties": {
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ]
+    },
+    "Cart": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Cart",
+      "type": "object",
+      "description": "Represents a shopping cart for a user, containing a list of prompts they intend to purchase.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the cart."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who owns this cart. (Relationship: User 1:1 Cart)"
+        },
+        "promptIds": {
+          "type": "array",
+          "description": "References to Prompts in the cart. (Relationship: Cart 1:N Prompt)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the cart was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the cart was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "promptIds",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PurchaseHistoryRecord": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Purchase History Record",
+      "type": "object",
+      "description": "Represents a single entry in a user's purchase history.",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["prompt", "cart", "credits", "plan"] },
+        "amountCents": { "type": "number" },
+        "currency": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "promptIds": { "type": "array", "items": { "type": "string" } },
+        "promptTitles": { "type": "array", "items": { "type": "string" } },
+        "creditsAmount": { "type": "number" },
+        "plan": { "type": "string", "enum": ["starter", "pro"] },
+        "billing": { "type": "string", "enum": ["monthly", "yearly"] },
+        "description": { "type": "string" }
+      },
+      "required": ["id", "type", "amountCents", "currency", "createdAt"]
+    },
+    "PayoutRequest": {
+      "title": "Payout Request",
+      "type": "object",
+      "description": "Represents a user's request to withdraw their earnings.",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": {
+          "type": "string"
+        },
+        "amountCredits": {
+          "type": "number"
+        },
+        "amountCurrency": {
+          "type": "number"
+        },
+        "currency": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "approved",
+            "rejected",
+            "paid"
+          ]
+        },
+        "requestedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "processedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "amountCredits",
+        "status",
+        "requestedAt"
+      ]
+    },
+    "Notification": {
+      "title": "Notification",
+      "type": "object",
+      "description": "Represents a notification for a user (e.g., a sale, a payout status change).",
+      "properties": {
+        "id": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": ["sale", "payout", "follow", "comment", "like"]
+        },
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "link": { "type": "string", "format": "uri" },
+        "isRead": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "type", "title", "createdAt", "isRead"]
+    }
+  },
+  "auth": {
+    "providers": [
+      "google.com"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/entities/UserProfile"
+          },
+          "description": "Stores user profile information, including roles and purchases."
+        }
+      },
+      {
+        "path": "/public-profiles/{userId}",
+        "definition": {
+          "entityName": "PublicProfile",
+          "schema": {
+            "$ref": "#/entities/PublicProfile"
+          },
+          "description": "Stores public-facing user profile information."
+        }
+      },
+      {
+        "path": "/users/{userId}/carts/{cartId}",
+        "definition": {
+          "entityName": "Cart",
+          "schema": {
+            "$ref": "#/entities/Cart"
+          },
+          "description": "Stores shopping carts for each user."
+        }
+      },
+      {
+        "path": "/users/{userId}/purchaseHistory/{historyId}",
+        "definition": {
+          "entityName": "PurchaseHistoryRecord",
+          "schema": {
+            "$ref": "#/entities/PurchaseHistoryRecord"
+          },
+          "description": "Stores purchase history for each user."
+        }
+      },
+       {
+        "path": "/users/{userId}/notifications/{notificationId}",
+        "definition": {
+          "entityName": "Notification",
+          "schema": {
+            "$ref": "#/entities/Notification"
+          },
+          "description": "Stores notifications for a user."
+        }
+      },
+      {
+        "path": "/prompts/{promptId}",
+        "definition": {
+          "entityName": "Prompt",
+          "schema": {
+            "$ref": "#/entities/Prompt"
+          },
+          "description": "Publicly accessible data for a prompt listing."
+        }
+      },
+      {
+        "path": "/models/{modelId}",
+        "definition": {
+          "entityName": "Model",
+          "schema": {
+            "$ref": "#/entities/Model"
+          },
+          "description": "Publicly accessible list of AI models."
+        }
+      },
+      {
+        "path": "/prompts/{promptId}/private/content",
+        "definition": {
+          "entityName": "PromptPrivateContent",
+          "schema": {
+            "$ref": "#/entities/PromptPrivateContent"
+          },
+          "description": "Private content of a prompt, accessible only after purchase or by admins."
+        }
+      },
+      {
+        "path": "/payouts/{payoutId}",
+        "definition": {
+          "entityName": "PayoutRequest",
+          "schema": {
+            "$ref": "#/entities/PayoutRequest"
+          },
+          "description": "Stores all user requests for payouts. Accessible only by admins."
+        }
+      },
+      {
+        "path": "/sales/{saleId}",
+        "definition": {
+          "entityName": "Sale",
+          "schema": {
+            "$ref": "#/entities/Sale"
+          },
+          "description": "Centralized collection for all sale transactions for analytics and admin purposes."
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed for a full-featured marketplace. It separates private user data (users) from public data (public-profiles) for security and query performance. Subcollections under users (carts, purchaseHistory, notifications) ensure data is scoped to the user, simplifying security rules. Centralized collections like sales and payouts are designed for admin access and analytics. Reference data (categories, tags, models) is kept separate for easy management."
+  }
+}

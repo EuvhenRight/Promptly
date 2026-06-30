@@ -1,0 +1,431 @@
+'use client'
+
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+} from '@/components/ui/card'
+import {
+	Dialog,
+	DialogContent,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+	Pagination,
+	PaginationContent,
+	PaginationItem,
+	PaginationLink,
+	PaginationNext,
+	PaginationPrevious,
+} from '@/components/ui/pagination'
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select'
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from '@/components/ui/table'
+import { useToast } from '@/hooks/use-toast'
+import { Loader2, Pencil, PlusCircle, Trash } from 'lucide-react'
+import { useEffect, useState } from 'react'
+
+type TagItem = { id: string; name: string }
+
+export default function AdminTagsPage() {
+	const { toast } = useToast()
+	const [tags, setTags] = useState<TagItem[]>([])
+	const [loading, setLoading] = useState(true)
+	const [newName, setNewName] = useState('')
+	const [adding, setAdding] = useState(false)
+	const [editTag, setEditTag] = useState<TagItem | null>(null)
+	const [editName, setEditName] = useState('')
+	const [savingEdit, setSavingEdit] = useState(false)
+	const [deleteTag, setDeleteTag] = useState<TagItem | null>(null)
+	const [deleting, setDeleting] = useState(false)
+	const [itemsPerPage, setItemsPerPage] = useState(10)
+	const [currentPage, setCurrentPage] = useState(1)
+	const [seeding, setSeeding] = useState(false)
+
+	const fetchTags = async () => {
+		setLoading(true)
+		try {
+			const res = await fetch('/api/tags')
+			const data = await res.json()
+			setTags(Array.isArray(data) ? data : [])
+		} catch {
+			setTags([])
+		} finally {
+			setLoading(false)
+		}
+	}
+
+	useEffect(() => {
+		fetchTags()
+	}, [])
+
+	const handleCreate = async () => {
+		const name = newName.trim()
+		if (!name) {
+			toast({
+				variant: 'destructive',
+				title: 'Name required',
+				description: 'Enter a tag name.',
+			})
+			return
+		}
+		setAdding(true)
+		try {
+			const res = await fetch('/api/tags', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ name }),
+			})
+			const data = await res.json()
+			if (!res.ok) throw new Error(data.error || 'Failed to create')
+			toast({ title: 'Tag created', description: data.name ?? name })
+			setNewName('')
+			fetchTags()
+		} catch (e) {
+			toast({
+				variant: 'destructive',
+				title: 'Error',
+				description: e instanceof Error ? e.message : 'Failed to create tag.',
+			})
+		} finally {
+			setAdding(false)
+		}
+	}
+
+	const handleSeed = async () => {
+		setSeeding(true)
+		try {
+			const res = await fetch('/api/tags', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({}), // Empty body triggers seeding
+			})
+			const data = await res.json()
+			if (!res.ok) throw new Error(data.error || 'Failed to seed')
+			toast({ title: 'Seeding complete', description: data.message })
+			fetchTags() // Refresh the list
+		} catch (e) {
+			toast({
+				variant: 'destructive',
+				title: 'Error',
+				description: e instanceof Error ? e.message : 'Failed to seed tags.',
+			})
+		} finally {
+			setSeeding(false)
+		}
+	}
+
+	const handleUpdate = async () => {
+		if (!editTag) return
+		const name = editName.trim()
+		if (!name) {
+			toast({ variant: 'destructive', title: 'Name required' })
+			return
+		}
+		setSavingEdit(true)
+		try {
+			const res = await fetch(`/api/tags/${editTag.id}`, {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ name }),
+			})
+			const data = await res.json()
+			if (!res.ok) throw new Error(data.error || 'Failed to update')
+			toast({ title: 'Tag updated', description: name })
+			setEditTag(null)
+			setEditName('')
+			fetchTags()
+		} catch (e) {
+			toast({
+				variant: 'destructive',
+				title: 'Error',
+				description: e instanceof Error ? e.message : 'Failed to update tag.',
+			})
+		} finally {
+			setSavingEdit(false)
+		}
+	}
+
+	const handleDelete = async () => {
+		if (!deleteTag) return
+		setDeleting(true)
+		try {
+			const res = await fetch(`/api/tags/${deleteTag.id}`, {
+				method: 'DELETE',
+			})
+			const data = await res.json()
+			if (!res.ok) throw new Error(data.error || 'Failed to delete')
+			toast({ title: 'Tag deleted', description: deleteTag.name })
+			setDeleteTag(null)
+			fetchTags()
+		} catch (e) {
+			toast({
+				variant: 'destructive',
+				title: 'Error',
+				description: e instanceof Error ? e.message : 'Failed to delete tag.',
+			})
+		} finally {
+			setDeleting(false)
+		}
+	}
+
+	const pageCount = Math.ceil(tags.length / itemsPerPage)
+	const paginatedTags = tags.slice(
+		(currentPage - 1) * itemsPerPage,
+		currentPage * itemsPerPage,
+	)
+
+	return (
+		<div className='space-y-6'>
+			<div className='flex items-center justify-between gap-4'>
+				<h1 className='text-lg font-semibold md:text-2xl'>Tags</h1>
+			</div>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>Add tag</CardTitle>
+					<CardDescription>
+						Create a new tag. ID is auto-generated by Firestore.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className='flex flex-wrap items-end gap-4'>
+					<div className='space-y-2'>
+						<Label htmlFor='new-name'>Name</Label>
+						<Input
+							id='new-name'
+							placeholder='e.g. Midjourney'
+							value={newName}
+							onChange={e => setNewName(e.target.value)}
+							disabled={adding}
+						/>
+					</div>
+					<Button onClick={handleCreate} disabled={adding}>
+						{adding && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+						<PlusCircle className='mr-2 h-4 w-4' />
+						Add
+					</Button>
+					<Button
+						onClick={handleSeed}
+						disabled={seeding || tags.length > 0}
+						variant='outline'
+					>
+						{seeding && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+						Seed Defaults
+					</Button>
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<div className='flex items-start justify-between gap-4'>
+						<div>
+							<CardTitle>All tags</CardTitle>
+							<CardDescription>
+								Edit or delete tags. Use POST /api/tags (no body) to seed
+								defaults.
+							</CardDescription>
+						</div>
+						<Select
+							value={`${itemsPerPage}`}
+							onValueChange={value => {
+								setItemsPerPage(Number(value))
+								setCurrentPage(1)
+							}}
+						>
+							<SelectTrigger className='w-auto gap-2'>
+								<SelectValue placeholder='Items per page' />
+							</SelectTrigger>
+							<SelectContent>
+								{[10, 20, 50].map(pageSize => (
+									<SelectItem key={pageSize} value={`${pageSize}`}>
+										{pageSize} per page
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+				</CardHeader>
+				<CardContent>
+					{loading ? (
+						<div className='flex justify-center py-8'>
+							<Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
+						</div>
+					) : paginatedTags.length === 0 ? (
+						<p className='text-muted-foreground py-4'>
+							No tags yet. Add one above or seed defaults with: POST /api/tags
+							(no body).
+						</p>
+					) : (
+						<Table>
+							<TableHeader>
+								<TableRow>
+									<TableHead>ID</TableHead>
+									<TableHead>Name</TableHead>
+									<TableHead className='w-[120px]'>Actions</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{paginatedTags.map(tag => (
+									<TableRow key={tag.id}>
+										<TableCell className='font-mono text-sm'>
+											{tag.id}
+										</TableCell>
+										<TableCell>{tag.name}</TableCell>
+										<TableCell>
+											<div className='flex gap-2'>
+												<Button
+													variant='ghost'
+													size='icon'
+													onClick={() => {
+														setEditTag(tag)
+														setEditName(tag.name)
+													}}
+												>
+													<Pencil className='h-4 w-4' />
+												</Button>
+												<Button
+													variant='ghost'
+													size='icon'
+													className='text-destructive hover:text-destructive'
+													onClick={() => setDeleteTag(tag)}
+												>
+													<Trash className='h-4 w-4' />
+												</Button>
+											</div>
+										</TableCell>
+									</TableRow>
+								))}
+							</TableBody>
+						</Table>
+					)}
+				</CardContent>
+				{pageCount > 1 && (
+					<CardFooter className='justify-end'>
+						<Pagination>
+							<PaginationContent>
+								<PaginationItem>
+									<PaginationPrevious
+										onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+										disabled={currentPage === 1}
+									/>
+								</PaginationItem>
+								{Array.from({ length: pageCount }, (_, i) => i + 1).map(
+									page => (
+										<PaginationItem key={page}>
+											<PaginationLink
+												onClick={() => setCurrentPage(page)}
+												isActive={currentPage === page}
+											>
+												{page}
+											</PaginationLink>
+										</PaginationItem>
+									),
+								)}
+								<PaginationItem>
+									<PaginationNext
+										onClick={() =>
+											setCurrentPage(p => Math.min(pageCount, p + 1))
+										}
+										disabled={currentPage === pageCount}
+									/>
+								</PaginationItem>
+							</PaginationContent>
+						</Pagination>
+					</CardFooter>
+				)}
+			</Card>
+
+			<Dialog open={!!editTag} onOpenChange={open => !open && setEditTag(null)}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Edit tag</DialogTitle>
+					</DialogHeader>
+					<div className='space-y-2 py-4'>
+						<Label>Name</Label>
+						<Input
+							value={editName}
+							onChange={e => setEditName(e.target.value)}
+							disabled={savingEdit}
+							placeholder='Tag name'
+						/>
+						{editTag && (
+							<p className='text-xs text-muted-foreground'>
+								ID: {editTag.id} (cannot change)
+							</p>
+						)}
+					</div>
+					<DialogFooter>
+						<Button
+							variant='outline'
+							onClick={() => setEditTag(null)}
+							disabled={savingEdit}
+						>
+							Cancel
+						</Button>
+						<Button onClick={handleUpdate} disabled={savingEdit}>
+							{savingEdit && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+							Save
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			<AlertDialog
+				open={!!deleteTag}
+				onOpenChange={open => !open && setDeleteTag(null)}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Delete tag?</AlertDialogTitle>
+						<AlertDialogDescription>
+							This will remove &quot;{deleteTag?.name}&quot;. Prompts using this
+							tag will keep the reference but the name may not resolve until you
+							re-add a tag with the same ID.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={handleDelete}
+							disabled={deleting}
+							className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+						>
+							{deleting && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+							Delete
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+		</div>
+	)
+}

@@ -1,0 +1,96 @@
+'use client'
+
+import { Bell, Coins, Settings, Star, User, Wallet } from 'lucide-react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { cn } from '@/lib/utils'
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase'
+import { collection, query, where } from 'firebase/firestore'
+import { Badge } from '@/components/ui/badge'
+import type { Notification as NotificationType } from '@/lib/types'
+
+const navItems = [
+	{ href: '/account', label: 'Account', icon: Settings },
+	{ href: '/account/plans', label: 'Plans', icon: Star },
+	{ href: '/account/wallet', label: 'Wallet', icon: Wallet },
+	{ href: '/account/notifications', label: 'Notifications', icon: Bell },
+	{ href: '/account/profile', label: 'Profile', icon: User },
+]
+
+type AccountSidebarProps = {
+	credits?: number
+}
+
+export default function AccountSidebar({ credits = 0 }: AccountSidebarProps) {
+	const pathname = usePathname()
+	const { user } = useUser()
+	const firestore = useFirestore()
+
+	const unreadQuery = useMemoFirebase(
+		() =>
+			user && firestore
+				? query(
+						collection(firestore, 'users', user.uid, 'notifications'),
+						where('isRead', '==', false),
+					)
+				: null,
+		[user, firestore],
+	)
+
+	const { data: unreadNotifications } =
+		useCollection<NotificationType>(unreadQuery)
+	const unreadCount = unreadNotifications?.length ?? 0
+
+	return (
+		<aside className='w-full lg:w-56 shrink-0 space-y-6 lg:sticky lg:top-24 self-start'>
+			<div>
+				<h3 className='mb-2 px-3 text-sm font-semibold tracking-tight'>
+					Dashboard
+				</h3>
+				<nav className='flex flex-row lg:flex-col gap-1 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0'>
+					{navItems.map(({ href, label, icon: Icon }) => {
+						const isActive = pathname === href
+						const isNotifications = label === 'Notifications'
+						return (
+							<Link
+								key={href}
+								href={href}
+								className={cn(
+									'flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors',
+									isActive
+										? 'bg-muted text-foreground'
+										: 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
+								)}
+							>
+								<div className='flex items-center gap-2'>
+									<Icon className='h-4 w-4 shrink-0' />
+									{label}
+								</div>
+								{isNotifications && unreadCount > 0 && (
+									<Badge className='h-5 min-w-5 p-0 flex items-center justify-center rounded-full bg-primary text-primary-foreground'>
+										{unreadCount > 9 ? '9+' : unreadCount}
+									</Badge>
+								)}
+							</Link>
+						)
+					})}
+				</nav>
+			</div>
+			<div className='flex items-center gap-2 p-3 rounded-lg border bg-muted/30'>
+				<Coins className='h-4 w-4 text-amber-600 shrink-0' />
+				<div className='min-w-0'>
+					<p className='text-sm font-medium'>{credits.toLocaleString()} Credits</p>
+					<p className='text-xs text-muted-foreground'>
+						{credits < 50 ? 'Running low!' : 'Available'}
+					</p>
+				</div>
+				<Link
+					href='/account/plans#credits'
+					className='ml-auto text-xs font-medium text-primary hover:underline shrink-0'
+				>
+					Buy more
+				</Link>
+			</div>
+		</aside>
+	)
+}
