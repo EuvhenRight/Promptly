@@ -9,6 +9,8 @@ A modern marketplace for buying, selling, and discovering AI prompts. Built with
 [![Stripe](https://img.shields.io/badge/Stripe-20-635BFF?logo=stripe)](https://stripe.com/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
 
+🌐 **Live demo:** [promptly-iota-sand.vercel.app](https://promptly-iota-sand.vercel.app/)
+
 ## Overview
 
 Promptly is a full-stack marketplace where creators publish AI prompts (for ChatGPT, Gemini, Midjourney, and more) and users can browse, purchase, and run them. The platform handles authentication, payments, content moderation, ratings, comments, and creator payouts end-to-end.
@@ -25,6 +27,24 @@ I designed and built the platform end-to-end — from the public marketplace and
 - **Firestore schema designed for read patterns** — composite indexes and security rules tuned for the marketplace's hottest queries.
 - **In-app documentation** — Markdown + Mermaid diagrams + Swagger UI for the OpenAPI 3.0 spec.
 - **Multi-target deploy** — same build runs on Firebase App Hosting and Netlify with no code changes.
+
+## Screenshots
+
+### Marketplace home
+
+![Home page](https://raw.githubusercontent.com/EuvhenRight/Promptly/main/public/Screenshot-home.png)
+
+### Prompt detail with AI-generated preview
+
+![AI prompt page](https://raw.githubusercontent.com/EuvhenRight/Promptly/main/public/Screenshot-AI_prompt.png)
+
+### Image gallery / generations
+
+![Generated images](https://raw.githubusercontent.com/EuvhenRight/Promptly/main/public/Screenshot-images.png)
+
+### Plans & pricing
+
+![Plans and pricing](https://raw.githubusercontent.com/EuvhenRight/Promptly/main/public/Screenshot-price.png)
 
 ## Features
 
