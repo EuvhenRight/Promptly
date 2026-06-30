@@ -13,6 +13,19 @@ A modern marketplace for buying, selling, and discovering AI prompts. Built with
 
 Promptly is a full-stack marketplace where creators publish AI prompts (for ChatGPT, Gemini, Midjourney, and more) and users can browse, purchase, and run them. The platform handles authentication, payments, content moderation, ratings, comments, and creator payouts end-to-end.
 
+I designed and built the platform end-to-end — from the public marketplace and authenticated dashboards to the admin moderation panel, Stripe-powered payments, creator payouts, and AI generation flows. The codebase is production-grade: typed end-to-end, tested at four levels (unit / integration / contract / e2e), documented in-app, and deployable to both Firebase App Hosting and Netlify.
+
+## Highlights
+
+- **Production-grade Next.js 15 App Router** — RSC, server actions, route handlers, and a custom Firebase Storage image loader for optimized thumbnails.
+- **Stripe end-to-end** — Checkout, idempotent webhook fulfilment, subscription plans, and creator payouts via Stripe Connect with admin approval.
+- **Type-safe boundaries** — Zod schemas shared between forms and API handlers; one source of truth from input validation to Firestore writes.
+- **Pluggable AI layer** — Google Genkit flows wrap Gemini and Replicate, so swapping providers is a one-file change.
+- **Four-layer test pyramid** — unit ([Vitest](https://vitest.dev/)), integration, contract, and end-to-end ([Playwright](https://playwright.dev/)).
+- **Firestore schema designed for read patterns** — composite indexes and security rules tuned for the marketplace's hottest queries.
+- **In-app documentation** — Markdown + Mermaid diagrams + Swagger UI for the OpenAPI 3.0 spec.
+- **Multi-target deploy** — same build runs on Firebase App Hosting and Netlify with no code changes.
+
 ## Features
 
 - **Prompt marketplace** — browse, search, filter by category, model, type, tags, price, and rating
@@ -42,6 +55,37 @@ Promptly is a full-stack marketplace where creators publish AI prompts (for Chat
 | Testing | [Vitest](https://vitest.dev/), [Playwright](https://playwright.dev/), [Testing Library](https://testing-library.com/) |
 | Hosting | [Firebase App Hosting](https://firebase.google.com/docs/app-hosting), [Netlify](https://www.netlify.com/) |
 
+## Engineering Decisions
+
+### Firestore schema designed for the read patterns
+
+Promptly's hottest paths are "feed with N filters + sort" and "prompt detail + comments." The document layout, composite indexes ([firestore.indexes.json](firestore.indexes.json)), and security rules ([firestore.rules](firestore.rules)) are tuned to make these reads cheap without server-side aggregation jobs.
+
+### Type-safe boundaries everywhere
+
+- All API route handlers under [src/app/api/](src/app/api/) validate input with Zod.
+- Forms reuse the same Zod schemas, so client and server share one source of truth.
+- Domain types live in [src/lib/types.ts](src/lib/types.ts) and are imported by both Firestore helpers and React components.
+
+### Stripe integration, end to end
+
+- Checkout session creation under [src/app/api/checkout/](src/app/api/checkout/).
+- Idempotent webhook fulfilment with status reconciliation.
+- Subscription plans backed by a Stripe → Firebase sync script ([scripts/sync-stripe-to-firebase.js](scripts/sync-stripe-to-firebase.js)).
+- Creator payouts via Stripe Connect, with admin approval gating.
+
+### AI flows isolated behind Genkit
+
+[src/ai/flows/](src/ai/flows/) defines `generate-image-flow`, `generate-video-flow`, and `suggest-relevant-tags` as Genkit functions. The rest of the app calls them like any other server action, so swapping the underlying model (Gemini ↔ Replicate ↔ future providers) is a one-file change.
+
+### Image pipeline
+
+Originals upload to `prompts/`, the Firebase "Resize Images" extension produces `_400/_800/_1200` variants in `prompts/thumbnails/`, and a custom Next/Image loader (`firebaseImageLoader` in [src/lib/utils.ts](src/lib/utils.ts)) rewrites URLs at request time. A component-level `onError` fallback guarantees the original loads even if a thumbnail is missing.
+
+### Multi-target deploy
+
+The same build runs on Firebase App Hosting ([apphosting.yaml](apphosting.yaml)) and Netlify ([netlify.toml](netlify.toml)) with no code changes — useful for switching providers without lock-in.
+
 ## Getting Started
 
 ### Prerequisites
@@ -60,36 +104,11 @@ npm install
 
 ### Environment
 
-Copy `.env.example` to `.env.local` and fill in your credentials:
+Copy `.env.example` to `.env` and fill in the values from your Firebase and Stripe dashboards. See [docs/09-env.md](docs/09-env.md) for the full variable reference.
 
 ```bash
-cp .env.example .env.local
+cp .env.example .env
 ```
-
-Required variables:
-
-```env
-# Firebase (client)
-NEXT_PUBLIC_FIREBASE_API_KEY=
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
-NEXT_PUBLIC_FIREBASE_APP_ID=
-
-# Firebase Admin (server) — optional, used as fallback to service-account.json
-FIREBASE_PROJECT_ID=
-FIREBASE_CLIENT_EMAIL=
-FIREBASE_PRIVATE_KEY=
-
-# Stripe
-STRIPE_SECRET_KEY=
-STRIPE_WEBHOOK_SECRET=
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
-STRIPE_CURRENCY=eur
-```
-
-See [docs/09-env.md](docs/09-env.md) for a complete reference.
 
 ### Run
 
@@ -109,6 +128,17 @@ npm run genkit:watch   # watch mode
 ```
 
 ## Testing
+
+Four layers, each running independently:
+
+| Layer | Tooling | Lives in |
+| --- | --- | --- |
+| Unit | Vitest + Testing Library | `tests/unit` |
+| Integration (API route handlers) | Vitest | `tests/integration` |
+| Contract (request/response shapes) | Vitest | `tests/contracts` |
+| End-to-end (browser flows) | Playwright | `tests/e2e` |
+
+E2E covers the golden paths: home → filter → prompt → cart → checkout, plus auth redirect, community feed, plan upgrades, and docs navigation.
 
 ```bash
 npm run test              # vitest watch mode
@@ -188,6 +218,19 @@ Key documents:
 - [Environment variables](docs/09-env.md)
 - [Testing](docs/12-testing.md)
 - [2026 strategy](docs/13-strategy-2026.md)
+
+## What I'm Most Proud Of
+
+- **Full-stack ownership** — schema, API, UI, payments, admin, infrastructure, and documentation.
+- **Type-safety from form input to Firestore document** — Zod schemas reused on both sides of the wire mean bugs are caught at compile time, not in production.
+- **Pluggable AI layer** — model providers are an implementation detail, not an architecture decision.
+- **An admin panel that's actually usable** — every domain entity is editable without writing one-off scripts.
+
+## What I'd Do Differently Next Time
+
+- Move heavier server logic to Firebase Cloud Functions instead of Next.js route handlers, to decouple cost and scaling.
+- Introduce a feature-flag layer earlier — late-stage A/B tests around plan pricing required code edits I'd rather have done as config.
+- Add an event-bus pattern (Pub/Sub or similar) between Stripe webhooks and downstream side-effects, so payment, fulfilment, and notification can be observed and retried independently.
 
 ## Contributing
 
